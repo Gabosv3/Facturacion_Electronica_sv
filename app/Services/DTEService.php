@@ -169,28 +169,59 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
     }
 
     /**
-     * Formatear número de documento según tipo
+     * Formatear número de documento según tipo (CAT-022)
+     *
+     * Tipos de documento según Ministerio de Hacienda:
+     * 36 = NIT (Número de Identificación Tributaria) - Contribuyentes IVA
+     * 13 = DUI (Documento Único de Identidad) - Personas naturales SIN IVA
+     * 02 = Carnet de Residente
+     * 03 = Pasaporte
+     * 37 = Otro
+     *
+     * IMPORTANTE: El MH requiere que el DUI se envíe SIN guión (solo 9 dígitos)
      */
     private function formatearNumeroDocumento(string $tipoDocumento, string $numeroDocumento): string
     {
-        // Limpiar el número (quitar espacios, guiones, etc.)
-        $numero = preg_replace('/[^0-9]/', '', $numeroDocumento);
-        
         switch ($tipoDocumento) {
-            case '13': // DUI
-                // Formato: ########-#
-                if (strlen($numero) === 9) {
-                    return substr($numero, 0, 8) . '-' . substr($numero, 8, 1);
+            case '13': // DUI - Persona natural SIN IVA
+                // Limpiar el número (quitar espacios, guiones, letras, etc.)
+                $numero = preg_replace('/[^0-9]/', '', $numeroDocumento);
+
+                // El DUI debe tener exactamente 9 dígitos
+                // IMPORTANTE: Se envía SIN guión al MH (solo números)
+                if (strlen($numero) < 9) {
+                    // Si tiene menos de 9 dígitos, rellenar con ceros a la izquierda
+                    $numero = str_pad($numero, 9, '0', STR_PAD_LEFT);
+                } elseif (strlen($numero) > 9) {
+                    // Si tiene más de 9 dígitos, tomar solo los primeros 9
+                    $numero = substr($numero, 0, 9);
                 }
+
+                // Retornar solo números, SIN guión
                 return $numero;
-                
-            case '36': // NIT
+
+            case '36': // NIT - Contribuyente inscrito en IVA
+                // Limpiar el número (quitar espacios, guiones, etc.)
+                $numero = preg_replace('/[^0-9]/', '', $numeroDocumento);
+
                 // NO formatear NIT - enviarlo sin guiones (solo números)
-                return $numero;
-                
+                // El NIT debe tener 14 dígitos
+                if (strlen($numero) < 14) {
+                    $numero = str_pad($numero, 14, '0', STR_PAD_LEFT);
+                }
+                // Solo enviar los primeros 14 dígitos
+                return substr($numero, 0, 14);
+
+            case '02': // Carnet de Residente
+            case '03': // Pasaporte
+            case '37': // Otro
+                // Para estos tipos, se permite alfanumérico
+                // Quitar solo espacios, pero permitir letras y números
+                return trim($numeroDocumento);
+
             default:
-                // Para otros tipos, devolver sin formato (solo números)
-                return $numero;
+                // Por defecto, limpiar espacios
+                return trim($numeroDocumento);
         }
     }
 
@@ -252,13 +283,13 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
     'nrc' => $datos['receptor']['nrc'] ?? null,
     'nombre' => $datos['receptor']['nombre'],
     'codActividad' => $datos['receptor']['cod_actividad'] ?? null,
-    'descActividad' => !empty($datos['receptor']['desc_actividad']) && strlen($datos['receptor']['desc_actividad']) >= 5 
-        ? $datos['receptor']['desc_actividad'] 
+    'descActividad' => !empty($datos['receptor']['desc_actividad']) && strlen($datos['receptor']['desc_actividad']) >= 5
+        ? $datos['receptor']['desc_actividad']
         : 'ACTIVIDADES NO ESPECIFICADAS',
     'direccion' => [
         'departamento' => $datos['receptor']['departamento'],
         'municipio' => $datos['receptor']['municipio'],
-        'distrito' => $datos['receptor']['distrito'] ?? '03',  // ← DEBE ESTAR AQUÍ
+        'distrito' => $datos['receptor']['distrito'] ? str_pad($datos['receptor']['distrito'], 2, '0', STR_PAD_LEFT) : '03', // Código de distrito según CAT-12 (formato 2 dígitos)
         'complemento' => $datos['receptor']['complemento'],
     ],
     'telefono' => $datos['receptor']['telefono'] ?? null,

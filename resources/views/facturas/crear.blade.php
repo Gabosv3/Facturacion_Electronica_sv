@@ -6,6 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Generar Factura - DTE El Salvador</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="{{ asset('js/catalogo-municipios.js') }}"></script>
 </head>
 <body class="bg-gray-100">
     <div class="container mx-auto px-4 py-8">
@@ -37,11 +38,13 @@
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Documento *</label>
                                 <select name="receptor_tipo_documento" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
                                     <option value="">Seleccione...</option>
-                                    <option value="13">DUI</option>
-                                    <option value="36">NIT</option>
-                                    <option value="37">Pasaporte</option>
-                                    <option value="02">Carnet de Residente</option>
+                                    <option value="36">NIT - Registro de contribuyente IVA</option>
+                                    <option value="13">DUI - Persona natural sin IVA</option>
+                                    <option value="02">Carnet de residente</option>
+                                    <option value="03">Pasaporte</option>
+                                    <option value="37">Otro</option>
                                 </select>
+                                <p class="text-xs text-gray-500 mt-1">DUI solo para personas naturales NO inscritas en IVA</p>
                             </div>
 
                             <div>
@@ -112,14 +115,17 @@
 
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Municipio *</label>
-                                <input type="text" name="receptor_municipio" placeholder="Código (01-33)" maxlength="2" pattern="[0-9]{2}" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required value="{{ old('receptor_municipio') }}">
-                                <p class="text-xs text-gray-500 mt-1">Código de 2 dígitos del municipio</p>
+                                <select name="receptor_municipio" id="municipioSelect" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+                                    <option value="">Seleccione primero un departamento</option>
+                                </select>
+                                <p class="text-xs text-gray-500 mt-1" id="municipioHelp">Seleccione un departamento para ver los municipios</p>
                             </div>
 
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Distrito *</label>
-                                <input type="text" name="receptor_distrito" value="03" maxlength="2" pattern="[0-9]{2}" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
-                                <p class="text-xs text-gray-500 mt-1">Por defecto: 03</p>
+                                <input type="text" name="receptor_distrito" id="distritoInput" value="03" maxlength="2" pattern="[0-9]{2}" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+                                <p class="text-xs text-gray-500 mt-1">Código de distrito (2 dígitos). Por defecto: 03</p>
+                                <p class="text-xs text-yellow-600 mt-1">⚠️ IMPORTANTE: El catálogo CAT-12 de distritos corresponde a los municipios ANTES de la consolidación. Usa el código que funcionaba anteriormente.</p>
                             </div>
 
                             <div class="md:col-span-3">
@@ -337,6 +343,152 @@
         }
 
         attachCalculateEvents();
+
+        // ==========================================
+        // Municipios dinámicos según departamento (CAT-13)
+        // ==========================================
+        const departamentoSelect = document.querySelector('select[name="receptor_departamento"]');
+        const municipioSelect = document.getElementById('municipioSelect');
+        const municipioHelp = document.getElementById('municipioHelp');
+
+        departamentoSelect.addEventListener('change', function() {
+            const departamento = this.value;
+
+            // Limpiar el select de municipios
+            municipioSelect.innerHTML = '<option value="">Seleccione un municipio</option>';
+
+            if (departamento && catalogoMunicipios[departamento]) {
+                const municipios = catalogoMunicipios[departamento];
+
+                // Agregar los municipios correspondientes
+                municipios.forEach(function(municipio) {
+                    const option = document.createElement('option');
+                    option.value = municipio.codigo;
+                    option.textContent = municipio.nombre;
+                    municipioSelect.appendChild(option);
+                });
+
+                municipioHelp.textContent = `${municipios.length} municipio(s) disponible(s)`;
+                municipioHelp.className = 'text-xs text-green-600 mt-1 font-medium';
+                municipioSelect.disabled = false;
+            } else {
+                municipioHelp.textContent = 'Seleccione un departamento para ver los municipios';
+                municipioHelp.className = 'text-xs text-gray-500 mt-1';
+                municipioSelect.disabled = true;
+            }
+        });
+
+        // Deshabilitar municipio inicialmente
+        municipioSelect.disabled = true;
+
+        // Validación y formateo de documentos
+        const tipoDocSelect = document.querySelector('select[name="receptor_tipo_documento"]');
+        const numDocInput = document.querySelector('input[name="receptor_num_documento"]');
+        const helpText = numDocInput.nextElementSibling;
+
+        tipoDocSelect.addEventListener('change', function() {
+            const tipo = this.value;
+            numDocInput.value = '';
+
+            switch(tipo) {
+                case '13': // DUI - Persona natural sin IVA
+                    numDocInput.placeholder = 'Ej: 12345678-9 o 123456789';
+                    helpText.textContent = 'DUI: 9 dígitos (formato: ########-#) - Solo para personas naturales sin IVA';
+                    helpText.className = 'text-xs text-blue-600 mt-1 font-medium';
+                    break;
+                case '36': // NIT - Contribuyente IVA
+                    numDocInput.placeholder = 'Ej: 06142302881449';
+                    helpText.textContent = 'NIT: 14 dígitos sin guiones - Para contribuyentes inscritos en IVA';
+                    helpText.className = 'text-xs text-blue-600 mt-1 font-medium';
+                    break;
+                case '02': // Carnet de residente
+                    numDocInput.placeholder = 'Número de carnet de residente';
+                    helpText.textContent = 'Ingrese el número de carnet de residente';
+                    helpText.className = 'text-xs text-gray-500 mt-1';
+                    break;
+                case '03': // Pasaporte
+                    numDocInput.placeholder = 'Número de pasaporte';
+                    helpText.textContent = 'Ingrese el número de pasaporte';
+                    helpText.className = 'text-xs text-gray-500 mt-1';
+                    break;
+                case '37': // Otro
+                    numDocInput.placeholder = 'Otro documento de identificación';
+                    helpText.textContent = 'Ingrese el número de documento';
+                    helpText.className = 'text-xs text-gray-500 mt-1';
+                    break;
+                default:
+                    numDocInput.placeholder = 'Seleccione primero el tipo de documento';
+                    helpText.textContent = 'Seleccione el tipo de documento';
+                    helpText.className = 'text-xs text-gray-500 mt-1';
+            }
+        });
+
+        // Formateo en tiempo real
+        numDocInput.addEventListener('input', function() {
+            const tipo = tipoDocSelect.value;
+            let valor = this.value.replace(/[^0-9]/g, ''); // Solo números
+
+            if (tipo === '13') { // DUI
+                if (valor.length > 9) {
+                    valor = valor.substring(0, 9);
+                }
+                // Mostrar formato visual mientras escribe
+                if (valor.length >= 8) {
+                    this.value = valor.substring(0, 8) + '-' + valor.substring(8);
+                } else {
+                    this.value = valor;
+                }
+
+                // Validación visual
+                if (valor.length === 9) {
+                    helpText.textContent = '✓ DUI válido';
+                    helpText.className = 'text-xs text-green-600 mt-1 font-medium';
+                } else if (valor.length > 0) {
+                    helpText.textContent = `Faltan ${9 - valor.length} dígitos`;
+                    helpText.className = 'text-xs text-orange-600 mt-1 font-medium';
+                } else {
+                    helpText.textContent = 'DUI: 9 dígitos (puede incluir o no el guión)';
+                    helpText.className = 'text-xs text-blue-600 mt-1 font-medium';
+                }
+            } else if (tipo === '36') { // NIT
+                if (valor.length > 14) {
+                    valor = valor.substring(0, 14);
+                }
+                this.value = valor;
+
+                // Validación visual
+                if (valor.length === 14) {
+                    helpText.textContent = '✓ NIT válido';
+                    helpText.className = 'text-xs text-green-600 mt-1 font-medium';
+                } else if (valor.length > 0) {
+                    helpText.textContent = `Faltan ${14 - valor.length} dígitos`;
+                    helpText.className = 'text-xs text-orange-600 mt-1 font-medium';
+                } else {
+                    helpText.textContent = 'NIT: 14 dígitos (puede incluir o no guiones)';
+                    helpText.className = 'text-xs text-blue-600 mt-1 font-medium';
+                }
+            }
+        });
+
+        // Validación antes de enviar
+        document.getElementById('facturaForm').addEventListener('submit', function(e) {
+            const tipo = tipoDocSelect.value;
+            const numDoc = numDocInput.value.replace(/[^0-9]/g, '');
+
+            if (tipo === '13' && numDoc.length !== 9) {
+                e.preventDefault();
+                alert('El DUI debe tener exactamente 9 dígitos.\n\nActual: ' + numDoc.length + ' dígitos\nRequerido: 9 dígitos');
+                numDocInput.focus();
+                return false;
+            }
+
+            if (tipo === '36' && numDoc.length !== 14) {
+                e.preventDefault();
+                alert('El NIT debe tener exactamente 14 dígitos.\n\nActual: ' + numDoc.length + ' dígitos\nRequerido: 14 dígitos');
+                numDocInput.focus();
+                return false;
+            }
+        });
     </script>
 </body>
 </html>

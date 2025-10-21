@@ -45,7 +45,7 @@ class FacturaController extends Controller
             'receptor_desc_actividad' => 'required|string|min:5|max:150',
             'receptor_departamento' => 'required|string|size:2',
             'receptor_municipio' => 'required|string|size:2',
-            'receptor_distrito' => 'nullable|string|size:2',
+            'receptor_distrito' => 'required|string|size:2',
             'receptor_complemento' => 'required|string',
             'receptor_telefono' => 'nullable|string|max:20',
             'receptor_correo' => 'nullable|email',
@@ -214,44 +214,81 @@ class FacturaController extends Controller
                     'jwt_primeros_30' => substr($jwtString, 0, 30),
                 ]);
 
-                // Enviar al Ministerio de Hacienda
+                // Enviar al Ministerio de Hacienda con política de reintentos
                 $resultadoMH = $this->mhApiService->enviarDTE($jwtString, [
                     'ambiente' => config('dte.ambiente'),
                     'id_envio' => $factura->id,
                     'version' => 2,
                     'tipo_dte' => '01',
+                    'codigo_generacion' => $factura->codigo_generacion, // Necesario para consultar estado
                 ]);
 
                 if ($resultadoMH['success']) {
                     // Actualizar con respuesta del MH
                     $factura->update([
                         'estado' => 'enviado_mh',
+                        'intentos_envio' => $resultadoMH['intentos'] ?? 1,
                         'respuesta_mh' => json_encode([
                             'firma' => 'Documento firmado exitosamente',
                             'envio_mh' => $resultadoMH['data'] ?? $resultadoMH['response'],
+                            'intentos' => $resultadoMH['intentos'] ?? 1,
+                            'recibido_en_consulta' => $resultadoMH['recibido_en_consulta'] ?? false,
                             'timestamp' => now()->toDateTimeString(),
                         ]),
                     ]);
 
                     DB::commit();
 
+                    $mensaje = 'Factura generada, firmada y enviada al Ministerio de Hacienda exitosamente';
+                    if (($resultadoMH['intentos'] ?? 1) > 1) {
+                        $mensaje .= ' (después de ' . $resultadoMH['intentos'] . ' intentos)';
+                    }
+
                     return redirect()->route('facturas.show', $factura->id)
-                        ->with('success', 'Factura generada, firmada y enviada al Ministerio de Hacienda exitosamente');
+                        ->with('success', $mensaje);
                 } else {
                     // Aunque el MH falle, la factura está firmada
+                    $detalleError = [
+                        'firma' => 'Documento firmado exitosamente',
+                        'error_mh' => $resultadoMH['message'],
+                        'intentos' => $resultadoMH['intentos'] ?? 1,
+                        'timestamp' => now()->toDateTimeString(),
+                    ];
+
+                    // Agregar información adicional del error si existe
+                    if (isset($resultadoMH['ultimo_error'])) {
+                        $detalleError['ultimo_error'] = $resultadoMH['ultimo_error'];
+                    }
+
+                    if (isset($resultadoMH['response'])) {
+                        $detalleError['respuesta_mh'] = $resultadoMH['response'];
+                    }
+
+                    if (isset($resultadoMH['data'])) {
+                        $detalleError['data_mh'] = $resultadoMH['data'];
+                    }
+
                     $factura->update([
                         'estado' => 'firmado_sin_enviar',
-                        'respuesta_mh' => json_encode([
-                            'firma' => 'Documento firmado exitosamente',
-                            'error_mh' => $resultadoMH['message'],
-                            'timestamp' => now()->toDateTimeString(),
-                        ]),
+                        'intentos_envio' => $resultadoMH['intentos'] ?? 1,
+                        'respuesta_mh' => json_encode($detalleError),
                     ]);
 
                     DB::commit();
 
+                    // Construir mensaje de error detallado para el usuario
+                    $mensajeError = 'Factura firmada pero no se pudo enviar al MH después de ' .
+                                    ($resultadoMH['intentos'] ?? 1) . ' intentos.';
+
+                    // Agregar el motivo del error si está disponible
+                    if (isset($resultadoMH['ultimo_error'])) {
+                        $mensajeError .= ' Motivo: ' . $resultadoMH['ultimo_error'];
+                    } else {
+                        $mensajeError .= ' ' . $resultadoMH['message'];
+                    }
+
                     return redirect()->route('facturas.show', $factura->id)
-                        ->with('warning', 'Factura firmada pero no se pudo enviar al MH: ' . $resultadoMH['message']);
+                        ->with('warning', $mensajeError);
                 }
 
             } else {
@@ -293,5 +330,37 @@ class FacturaController extends Controller
     {
         $facturas = Factura::orderBy('created_at', 'desc')->paginate(20);
         return view('facturas.index', compact('facturas'));
+    }
+
+    /**
+     * Eliminar factura (solo permitido para facturas no enviadas o rechazadas)
+     */
+    public function destroy(Factura $factura)
+    {
+        // Verificar que la factura NO esté en estado enviado_mh (exitosamente enviada)
+        if ($factura->estado === 'enviado_mh') {
+            return back()->with('error', 'No se puede eliminar una factura que fue enviada exitosamente al Ministerio de Hacienda.');
+        }
+
+        try {
+            // Obtener información para el mensaje
+            $numeroControl = $factura->numero_control;
+            $estado = $factura->estado;
+
+            // Eliminar la factura (los items se eliminan automáticamente por cascade)
+            $factura->delete();
+
+            Log::info('Factura eliminada', [
+                'factura_id' => $factura->id,
+                'numero_control' => $numeroControl,
+                'estado' => $estado,
+            ]);
+
+            return redirect()->route('facturas.index')
+                ->with('success', 'Factura ' . $numeroControl . ' eliminada exitosamente.');
+        } catch (\Exception $e) {
+            Log::error('Error al eliminar factura: ' . $e->getMessage());
+            return back()->with('error', 'Error al eliminar la factura: ' . $e->getMessage());
+        }
     }
 }

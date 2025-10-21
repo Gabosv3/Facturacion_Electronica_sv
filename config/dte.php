@@ -51,7 +51,16 @@ return [
     */
     'mh_auth_url' => env('MH_AUTH_URL', 'https://apitest.dtes.mh.gob.sv/seguridad/auth'),
     'mh_recepcion_url' => env('MH_RECEPCION_URL', 'https://apitest.dtes.mh.gob.sv/fesv/recepciondte'),
+    'mh_consulta_url' => env('MH_CONSULTA_URL', 'https://apitest.dtes.mh.gob.sv/fesv/recepcion/consultadte'),
     'mh_user' => env('MH_USER', '06142302881449'),
     'mh_password' => env('MH_PASSWORD', ''),
     'user_agent' => env('DTE_USER_AGENT', 'SistemaFacturacion/1.0'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Política de Reintentos según MH
+    |--------------------------------------------------------------------------
+    */
+    'timeout_envio' => env('DTE_TIMEOUT_ENVIO', 8), // 8 segundos según política MH
+    'max_reintentos' => env('DTE_MAX_REINTENTOS', 2), // Máximo 2 reintentos
 ];

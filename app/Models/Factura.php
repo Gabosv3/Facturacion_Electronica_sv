@@ -34,6 +34,7 @@ class Factura extends Model
         'condicion_operacion',
         'dte_json',
         'estado',
+        'intentos_envio',
         'respuesta_mh',
     ];
 
