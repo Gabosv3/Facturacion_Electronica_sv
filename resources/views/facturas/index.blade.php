@@ -13,9 +13,16 @@
             <div class="bg-white rounded-lg shadow-lg p-6">
                 <div class="flex justify-between items-center mb-6">
                     <h1 class="text-3xl font-bold text-gray-800">Facturas Electrónicas</h1>
-                    <a href="{{ route('facturas.create') }}" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg">
-                        + Nueva Factura
-                    </a>
+                    <div class="flex gap-3">
+                        <a href="{{ route('facturas.create') }}" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg flex items-center gap-2">
+                            <span>📄</span>
+                            <span>Nueva Factura (DTE-01)</span>
+                        </a>
+                        <a href="{{ route('facturas.create_ccf') }}" class="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-lg flex items-center gap-2">
+                            <span>📋</span>
+                            <span>Nuevo CCF (DTE-03)</span>
+                        </a>
+                    </div>
                 </div>
 
                 @if($facturas->count() > 0)
@@ -23,6 +30,7 @@
                         <table class="w-full">
                             <thead class="bg-gray-50">
                                 <tr>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">Tipo</th>
                                     <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">Número Control</th>
                                     <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">Fecha</th>
                                     <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">Cliente</th>
@@ -34,6 +42,15 @@
                             <tbody class="divide-y divide-gray-200">
                                 @foreach($facturas as $factura)
                                 <tr class="hover:bg-gray-50">
+                                    <td class="px-4 py-3 text-sm">
+                                        @if($factura->tipo_dte == '01')
+                                            <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded">DTE-01</span>
+                                        @elseif($factura->tipo_dte == '03')
+                                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded">CCF-03</span>
+                                        @else
+                                            <span class="px-2 py-1 bg-gray-100 text-gray-800 text-xs font-semibold rounded">DTE-{{ $factura->tipo_dte }}</span>
+                                        @endif
+                                    </td>
                                     <td class="px-4 py-3 text-sm text-gray-700">{{ $factura->numero_control }}</td>
                                     <td class="px-4 py-3 text-sm text-gray-700">{{ $factura->fecha_emision->format('d/m/Y') }}</td>
                                     <td class="px-4 py-3 text-sm text-gray-700">{{ $factura->receptor_nombre }}</td>

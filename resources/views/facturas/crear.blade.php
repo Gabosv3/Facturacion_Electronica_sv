@@ -28,6 +28,7 @@
 
                 <form action="{{ route('facturas.store') }}" method="POST" id="facturaForm">
                     @csrf
+                    <input type="hidden" name="tipo_dte" value="01">
 
                     <!-- Datos del Receptor -->
                     <div class="mb-8">

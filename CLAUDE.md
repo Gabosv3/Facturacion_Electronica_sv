@@ -6,6 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a Laravel 10 application for generating and managing electronic invoices (DTE - Documentos Tributarios Electrónicos) according to El Salvador's Ministerio de Hacienda (MH) specifications. The system generates invoices, signs them via a local API, and submits them to the government's tax authority API.
 
+**Supported DTE Types:**
+- **DTE-01**: Factura (Consumer Invoice) - Version 2
+- **DTE-03**: Comprobante de Crédito Fiscal (CCF - Tax Credit Certificate) - Version 3
+
 ## Development Commands
 
 ### Initial Setup
@@ -220,10 +224,27 @@ The `facturas.intentos_envio` field stores the number of attempts made. The `res
 
 ### Routes Structure
 
-- `/facturas` - List all invoices
-- `/facturas/crear` - Invoice creation form
+- `/facturas` - List all invoices (both DTE-01 and DTE-03)
+- `/facturas/crear` - Invoice creation form (DTE-01)
+- `/facturas/crear-ccf` - CCF creation form (DTE-03)
 - `/facturas/{id}` - Invoice details
 - `/admin/tokens` - Token management interface
+
+### DTE-03 (CCF) vs DTE-01 (Factura) Key Differences
+
+| Feature | DTE-01 (Factura) | DTE-03 (CCF) |
+|---------|------------------|--------------|
+| **JSON Version** | 2 | 3 |
+| **Receptor Document Type** | NIT, DUI, Passport, etc. | **Only NIT (code 36)** |
+| **Receptor NRC** | Optional | **Required** |
+| **Receptor Economic Activity Code** | Optional | **Required** |
+| **Purpose** | General sales | Sales to IVA-registered taxpayers (tax credit) |
+| **IVA Treatment** | Standard | Deductible tax credit for buyer |
+
+**Implementation Notes:**
+- The system automatically uses `version: 3` for DTE-03 and `version: 2` for DTE-01 (see DTEService.php:250)
+- Validation rules change dynamically based on `tipo_dte` (see FacturaController.php:57-58)
+- Each DTE type has independent numbering (correlativo) managed per `tipo_dte`
 
 ### Environment Variables Required
 

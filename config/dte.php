@@ -25,8 +25,8 @@ return [
         'nombre_comercial' => env('DTE_EMISOR_NOMBRE_COMERCIAL', 'Taller González'),
         'cod_actividad' => env('DTE_EMISOR_COD_ACTIVIDAD', '33120'),
         'desc_actividad' => env('DTE_EMISOR_DESC_ACTIVIDAD', 'VENTA AL POR MAYOR DE PRODUCTOS ALIMENTICIOS'),
-        'cod_estable' => env('DTE_EMISOR_COD_ESTABLE', null),
-        'cod_punto_venta' => env('DTE_EMISOR_COD_PUNTO_VENTA', null),
+        'cod_estable' => env('DTE_EMISOR_COD_ESTABLE', '0000'),
+        'cod_punto_venta' => env('DTE_EMISOR_COD_PUNTO_VENTA', '0000'),
         'direccion' => [
             'departamento' => env('DTE_EMISOR_DEPARTAMENTO', '06'),
             'municipio' => env('DTE_EMISOR_MUNICIPIO', '23'),

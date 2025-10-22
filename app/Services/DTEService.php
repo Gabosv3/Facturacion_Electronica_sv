@@ -226,9 +226,25 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
     }
 
     /**
-     * Construir JSON completo del DTE
+     * Construir JSON según tipo de DTE
      */
     public function construirDteJson(array $datos, bool $precioIncluyeIva = true): array
+    {
+        $tipoDte = $datos['tipo_dte'] ?? '01';
+
+        // Si es CCF (DTE-03), usar método específico
+        if ($tipoDte === '03') {
+            return $this->construirDteCCF($datos, $precioIncluyeIva);
+        }
+
+        // Para DTE-01 (Factura) usar el método original
+        return $this->construirDteFactura($datos, $precioIncluyeIva);
+    }
+
+    /**
+     * Construir JSON para DTE-01 (Factura)
+     */
+    private function construirDteFactura(array $datos, bool $precioIncluyeIva = true): array
     {
         $numeroControl = $this->generarNumeroControl($datos['tipo_dte'] ?? '01');
         $codigoGeneracion = $this->generarCodigoGeneracion();
@@ -244,15 +260,21 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
             $datos['receptor']['num_documento']
         );
 
+        // Determinar versión según tipo de DTE
+        // DTE-01 (Factura) = versión 2
+        // DTE-03 (CCF) = versión 3
+        $tipoDte = $datos['tipo_dte'] ?? '01';
+        $version = $tipoDte === '03' ? 3 : 2;
+
         return [
             'nit' => config('dte.nit'),
             'activo' => true,
             'passwordPri' => config('dte.password_pri'),
             'dteJson' => [
                 'identificacion' => [
-                    'version' => 2,
+                    'version' => $version,
                     'ambiente' => config('dte.ambiente', '00'),
-                    'tipoDte' => $datos['tipo_dte'] ?? '01',
+                    'tipoDte' => $tipoDte,
                     'numeroControl' => $numeroControl,
                     'codigoGeneracion' => $codigoGeneracion,
                     'tipoModelo' => 1,
@@ -351,6 +373,157 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
                 ],
                 'otrosDocumentos' => null,
                 'apendice' => null,
+            ]
+        ];
+    }
+
+    /**
+     * Construir JSON para DTE-03 (Comprobante de Crédito Fiscal - CCF)
+     * El esquema del CCF es diferente al DTE-01
+     */
+    private function construirDteCCF(array $datos, bool $precioIncluyeIva = true): array
+    {
+        $numeroControl = $this->generarNumeroControl('03');
+        $codigoGeneracion = $this->generarCodigoGeneracion();
+        $fechaEmision = now()->format('Y-m-d');
+        $horaEmision = now()->format('H:i:s');
+
+        $calculos = $this->calcularTotalesItems($datos['items'], $precioIncluyeIva);
+        $totalLetras = $this->numeroALetras($calculos['totales']['total_pagar']);
+
+        // Para CCF solo se usa NIT (sin formateo especial)
+        $numDocumentoFormateado = $this->formatearNumeroDocumento('36', $datos['receptor']['num_documento']);
+
+        // Calcular IVA (13% en lugar de 11.5% que usa el sistema actual)
+        $totalIva = round($calculos['totales']['total_gravada'] * 0.13, 2);
+        $totalPagar = $calculos['totales']['total_gravada'] + $totalIva;
+
+        return [
+            'nit' => config('dte.nit'),
+            'activo' => true,
+            'passwordPri' => config('dte.password_pri'),
+            'dteJson' => [
+                'identificacion' => [
+                    'version' => 3,  // CCF usa versión 3
+                    'ambiente' => config('dte.ambiente', '00'),
+                    'tipoDte' => '03',
+                    'numeroControl' => $numeroControl,
+                    'codigoGeneracion' => $codigoGeneracion,
+                    'tipoModelo' => 1,
+                    'tipoOperacion' => 1,
+                    'fecEmi' => $fechaEmision,
+                    'horEmi' => $horaEmision,
+                    'tipoMoneda' => 'USD',
+                    'tipoContingencia' => null,
+                    'motivoContin' => null,
+                ],
+                'documentoRelacionado' => null,
+                'emisor' => [
+                    'nit' => config('dte.emisor.nit'),
+                    'nrc' => config('dte.emisor.nrc'),
+                    'nombre' => config('dte.emisor.nombre'),
+                    'nombreComercial' => config('dte.emisor.nombre_comercial'),
+                    'codActividad' => config('dte.emisor.cod_actividad'),
+                    'descActividad' => config('dte.emisor.desc_actividad'),
+                    'tipoEstablecimiento' => '01', // Requerido para CCF
+                    'codEstable' => config('dte.emisor.cod_estable'),
+                    'codPuntoVenta' => config('dte.emisor.cod_punto_venta'),
+                    'codEstableMH' => config('dte.emisor.cod_estable') ?? null,
+                    'codPuntoVentaMH' => config('dte.emisor.cod_punto_venta') ?? null,
+                    'direccion' => [
+                        'departamento' => config('dte.emisor.direccion.departamento'),
+                        'municipio' => config('dte.emisor.direccion.municipio'),
+                        // NO incluir distrito en CCF
+                        'complemento' => config('dte.emisor.direccion.complemento'),
+                    ],
+                    'telefono' => config('dte.emisor.telefono'),
+                    'correo' => config('dte.emisor.correo'),
+                ],
+                'receptor' => [
+                    'nit' => $numDocumentoFormateado,  // En CCF se usa 'nit' en lugar de 'numDocumento'
+                    'nrc' => $datos['receptor']['nrc'],  // Obligatorio en CCF
+                    'nombre' => $datos['receptor']['nombre'],
+                    'nombreComercial' => $datos['receptor']['nombre'],  // Requerido en CCF
+                    'codActividad' => $datos['receptor']['cod_actividad'],  // Obligatorio en CCF
+                    'descActividad' => !empty($datos['receptor']['desc_actividad']) && strlen($datos['receptor']['desc_actividad']) >= 5
+                        ? $datos['receptor']['desc_actividad']
+                        : 'ACTIVIDADES NO ESPECIFICADAS',
+                    'direccion' => [
+                        'departamento' => $datos['receptor']['departamento'],
+                        'municipio' => $datos['receptor']['municipio'],
+                        // NO incluir distrito en CCF
+                        'complemento' => $datos['receptor']['complemento'],
+                    ],
+                    'telefono' => $datos['receptor']['telefono'] ?? null,
+                    'correo' => $datos['receptor']['correo'] ?? null,
+                ],
+                'ventaTercero' => null,
+                'cuerpoDocumento' => array_map(function ($item, $index) {
+                    $ivaItem = round(floatval($item['venta_gravada']) * 0.13, 2);
+
+                    return [
+                        'numItem' => $index + 1,
+                        'tipoItem' => 2,  // Para CCF es tipo 2 (bienes) o 3 (servicios), no 1
+                        'numeroDocumento' => null,
+                        'cantidad' => floatval($item['cantidad']),
+                        'codigo' => $item['codigo'],
+                        'codTributo' => null,  // NO se usa array en CCF, va null
+                        'uniMedida' => (int) ($item['uni_medida'] ?? 59),
+                        'descripcion' => $item['descripcion'],
+                        'precioUni' => floatval($item['precio_unitario']),
+                        'montoDescu' => floatval($item['monto_descuento'] ?? 0),
+                        'ventaNoSuj' => 0.0,
+                        'ventaExenta' => 0.0,
+                        'ventaGravada' => floatval($item['venta_gravada']),
+                        'tributos' => ['20'],  // En CCF es array simple de strings, no objetos
+                        'psv' => 0.0,
+                        'noGravado' => 0.0,
+                        // NO incluir ivaItem en CCF
+                    ];
+                }, $calculos['items'], array_keys($calculos['items'])),
+                'resumen' => [
+                    'totalNoSuj' => 0.0,
+                    'totalExenta' => 0.0,
+                    'totalGravada' => floatval($calculos['totales']['total_gravada']),
+                    'subTotalVentas' => floatval($calculos['totales']['total_gravada']),
+                    'descuNoSuj' => 0.0,
+                    'descuExenta' => 0.0,
+                    'descuGravada' => floatval($calculos['totales']['total_descuento']),
+                    'porcentajeDescuento' => 0.0,
+                    'totalDescu' => floatval($calculos['totales']['total_descuento']),
+                    'tributos' => [  // En CCF el IVA total va en tributos
+                        [
+                            'codigo' => '20',
+                            'descripcion' => 'IVA',
+                            'valor' => $totalIva,
+                        ]
+                    ],
+                    'subTotal' => floatval($calculos['totales']['total_gravada']),
+                    'totalIva' => $totalIva,  // Guardamos para BD (aunque no se envía al MH en este campo)
+                    'ivaRete1' => 0.0,  // Requerido en CCF
+                    'ivaPerci1' => 0.0,  // Requerido en CCF
+                    'reteRenta' => 0.0,  // Requerido en CCF
+                    'montoTotalOperacion' => $totalPagar,
+                    'totalNoGravado' => 0.0,
+                    'saldoFavor' => 0.0,
+                    'totalPagar' => $totalPagar,
+                    'totalLetras' => $totalLetras,
+                    'condicionOperacion' => (int) ($datos['condicion_operacion'] ?? 1),
+                    'numPagoElectronico' => '1',
+                    'pagos' => [
+                        [
+                            'codigo' => $datos['forma_pago'] ?? '01',
+                            'montoPago' => $totalPagar,
+                            'referencia' => $datos['referencia_pago'] ?? null,
+                            'plazo' => null,
+                            'periodo' => null,
+                        ]
+                    ],
+                    // NO incluir observaciones en resumen de CCF
+                ],
+                'extension' => null,  // Campo requerido en CCF (puede ser null)
+                'apendice' => null,
+                'otrosDocumentos' => null,  // Requerido en CCF (puede ser null según algunos casos)
             ]
         ];
     }

@@ -22,7 +22,7 @@ class FacturaController extends Controller
     }
 
     /**
-     * Mostrar formulario de facturación
+     * Mostrar formulario de facturación (DTE-01)
      */
     public function create()
     {
@@ -30,18 +30,32 @@ class FacturaController extends Controller
     }
 
     /**
-     * Guardar y firmar factura
+     * Mostrar formulario de Comprobante de Crédito Fiscal (DTE-03)
+     */
+    public function createCCF()
+    {
+        return view('facturas.crear_ccf');
+    }
+
+    /**
+     * Guardar y firmar factura (DTE-01 o DTE-03)
      */
     public function store(Request $request)
     {
-        // Validar datos
-        $validated = $request->validate([
+        // Determinar tipo de DTE
+        $tipoDte = $request->input('tipo_dte', '01');
+
+        // Validaciones base
+        $rules = [
+            // Tipo DTE
+            'tipo_dte' => 'required|string|in:01,03',
+
             // Receptor
             'receptor_tipo_documento' => 'required|string|size:2',
             'receptor_num_documento' => 'required|string|max:20',
             'receptor_nombre' => 'required|string|max:255',
-            'receptor_nrc' => 'nullable|string|max:20',
-            'receptor_cod_actividad' => 'nullable|string|max:10',
+            'receptor_nrc' => $tipoDte === '03' ? 'required|string|max:20' : 'nullable|string|max:20',
+            'receptor_cod_actividad' => $tipoDte === '03' ? 'required|string|max:10' : 'nullable|string|max:10',
             'receptor_desc_actividad' => 'required|string|min:5|max:150',
             'receptor_departamento' => 'required|string|size:2',
             'receptor_municipio' => 'required|string|size:2',
@@ -49,7 +63,7 @@ class FacturaController extends Controller
             'receptor_complemento' => 'required|string',
             'receptor_telefono' => 'nullable|string|max:20',
             'receptor_correo' => 'nullable|email',
-            
+
             // Items
             'items' => 'required|array|min:1',
             'items.*.codigo' => 'required|string|max:50',
@@ -58,14 +72,22 @@ class FacturaController extends Controller
             'items.*.precio_unitario' => 'required|numeric|min:0',
             'items.*.monto_descuento' => 'nullable|numeric|min:0',
             'items.*.uni_medida' => 'nullable|integer',
-            
+
             // Otros
             'condicion_operacion' => 'required|integer|in:1,2,3',
             'forma_pago' => 'required|string|size:2',
             'referencia_pago' => 'nullable|string',
             'observaciones' => 'nullable|string',
             'precio_incluye_iva' => 'nullable|boolean',
-        ]);
+        ];
+
+        // Validación especial para CCF (DTE-03): solo acepta NIT
+        if ($tipoDte === '03') {
+            $rules['receptor_tipo_documento'] .= '|in:36'; // Solo NIT para CCF
+        }
+
+        // Validar datos
+        $validated = $request->validate($rules);
 
         // Asegurar que los campos opcionales tengan valores por defecto
         $validated = array_merge([
@@ -83,7 +105,7 @@ class FacturaController extends Controller
 
             // Preparar datos para el DTE
             $datosFactura = [
-                'tipo_dte' => '01',
+                'tipo_dte' => $validated['tipo_dte'],
            'receptor' => [
     'tipo_documento' => $validated['receptor_tipo_documento'],
     'num_documento' => $validated['receptor_num_documento'],
@@ -107,12 +129,17 @@ class FacturaController extends Controller
 
             // Generar DTE completo
             $dteJson = $this->dteService->construirDteJson($datosFactura, $validated['precio_incluye_iva']);
-            
+
+            // Obtener totalIva (está en diferentes lugares según el tipo de DTE)
+            $totalIva = $validated['tipo_dte'] === '03'
+                ? ($dteJson['dteJson']['resumen']['totalIva'] ?? 0)  // CCF: guardado para BD
+                : $dteJson['dteJson']['resumen']['totalIva'];         // Factura: está directo
+
             // Guardar factura en BD
             $factura = Factura::create([
                 'numero_control' => $dteJson['dteJson']['identificacion']['numeroControl'],
                 'codigo_generacion' => $dteJson['dteJson']['identificacion']['codigoGeneracion'],
-                'tipo_dte' => '01',
+                'tipo_dte' => $validated['tipo_dte'],
                 'fecha_emision' => $dteJson['dteJson']['identificacion']['fecEmi'],
                 'hora_emision' => $dteJson['dteJson']['identificacion']['horEmi'],
                 'receptor_tipo_documento' => $validated['receptor_tipo_documento'],
@@ -128,7 +155,7 @@ class FacturaController extends Controller
                 'total_no_sujeto' => $dteJson['dteJson']['resumen']['totalNoSuj'],
                 'total_descuento' => $dteJson['dteJson']['resumen']['totalDescu'],
                 'sub_total' => $dteJson['dteJson']['resumen']['subTotal'],
-                'total_iva' => $dteJson['dteJson']['resumen']['totalIva'],
+                'total_iva' => $totalIva,
                 'total_pagar' => $dteJson['dteJson']['resumen']['totalPagar'],
                 'total_letras' => $dteJson['dteJson']['resumen']['totalLetras'],
                 'condicion_operacion' => $validated['condicion_operacion'],
@@ -138,6 +165,11 @@ class FacturaController extends Controller
 
             // Guardar items
             foreach ($dteJson['dteJson']['cuerpoDocumento'] as $item) {
+                // Calcular IVA para guardar en BD (en CCF no viene en ivaItem)
+                $ivaItem = $validated['tipo_dte'] === '03'
+                    ? round($item['ventaGravada'] * 0.13, 2)
+                    : $item['ivaItem'];
+
                 $factura->items()->create([
                     'num_item' => $item['numItem'],
                     'codigo' => $item['codigo'],
@@ -149,19 +181,27 @@ class FacturaController extends Controller
                     'venta_gravada' => $item['ventaGravada'],
                     'venta_exenta' => $item['ventaExenta'],
                     'venta_no_sujeta' => $item['ventaNoSuj'],
-                    'iva_item' => $item['ivaItem'],
+                    'iva_item' => $ivaItem,
                 ]);
+            }
+
+            // Si es CCF, limpiar campos que no deben ir al MH
+            $dteParaFirmar = $dteJson;
+            if ($validated['tipo_dte'] === '03') {
+                // Remover totalIva del resumen (solo va en tributos para CCF)
+                unset($dteParaFirmar['dteJson']['resumen']['totalIva']);
             }
 
             // Enviar a firmar al API local
             $apiUrl = config('dte.api_url');
-            
+
             Log::info('🔐 Enviando DTE a firmar', [
                 'url' => $apiUrl . '/firmardocumento/',
                 'factura_id' => $factura->id,
+                'tipo_dte' => $validated['tipo_dte'],
             ]);
-            
-            $response = Http::timeout(30)->post($apiUrl . '/firmardocumento/', $dteJson);
+
+            $response = Http::timeout(30)->post($apiUrl . '/firmardocumento/', $dteParaFirmar);
 
             Log::info('📨 Respuesta de API de firma', [
                 'status' => $response->status(),
@@ -214,12 +254,16 @@ class FacturaController extends Controller
                     'jwt_primeros_30' => substr($jwtString, 0, 30),
                 ]);
 
+                // Determinar versión según tipo de DTE (igual que en DTEService)
+                // DTE-01 = versión 2, DTE-03 = versión 3
+                $versionDte = $validated['tipo_dte'] === '03' ? 3 : 2;
+
                 // Enviar al Ministerio de Hacienda con política de reintentos
                 $resultadoMH = $this->mhApiService->enviarDTE($jwtString, [
                     'ambiente' => config('dte.ambiente'),
                     'id_envio' => $factura->id,
-                    'version' => 2,
-                    'tipo_dte' => '01',
+                    'version' => $versionDte,
+                    'tipo_dte' => $validated['tipo_dte'],
                     'codigo_generacion' => $factura->codigo_generacion, // Necesario para consultar estado
                 ]);
 

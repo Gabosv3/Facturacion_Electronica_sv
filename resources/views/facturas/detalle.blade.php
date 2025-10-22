@@ -20,7 +20,13 @@
                 <div class="border-b pb-6 mb-6">
                     <div class="flex justify-between items-start">
                         <div>
-                            <h1 class="text-3xl font-bold text-gray-800">FACTURA ELECTRÓNICA</h1>
+                            @if($factura->tipo_dte == '03')
+                                <h1 class="text-3xl font-bold text-green-800">COMPROBANTE DE CRÉDITO FISCAL</h1>
+                                <p class="text-sm text-green-600 font-semibold mt-1">DTE-03 (CCF)</p>
+                            @else
+                                <h1 class="text-3xl font-bold text-gray-800">FACTURA ELECTRÓNICA</h1>
+                                <p class="text-sm text-blue-600 font-semibold mt-1">DTE-01</p>
+                            @endif
                             <p class="text-gray-600 mt-2">{{ config('dte.emisor.nombre_comercial') }}</p>
                             <p class="text-sm text-gray-500">NIT: {{ config('dte.emisor.nit') }}</p>
                             <p class="text-sm text-gray-500">NRC: {{ config('dte.emisor.nrc') }}</p>
@@ -46,8 +52,16 @@
                 <!-- Información de la factura -->
                 <div class="grid grid-cols-2 gap-6 mb-6">
                     <div>
-                        <h3 class="text-sm font-semibold text-gray-600 mb-2">Datos de la Factura</h3>
+                        <h3 class="text-sm font-semibold text-gray-600 mb-2">Datos del Documento</h3>
                         <div class="space-y-1">
+                            <p class="text-sm">
+                                <span class="font-medium">Tipo:</span>
+                                @if($factura->tipo_dte == '03')
+                                    <span class="inline-block px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded">CCF (DTE-03)</span>
+                                @else
+                                    <span class="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded">Factura (DTE-01)</span>
+                                @endif
+                            </p>
                             <p class="text-sm"><span class="font-medium">Número Control:</span> {{ $factura->numero_control }}</p>
                             <p class="text-sm"><span class="font-medium">Código Generación:</span> {{ $factura->codigo_generacion }}</p>
                             <p class="text-sm"><span class="font-medium">Fecha:</span> {{ $factura->fecha_emision->format('d/m/Y') }}</p>
