@@ -130,7 +130,9 @@ php artisan cache:clear               # Clear application cache
 
 ### Important Notes
 
-- **IVA Calculation**: The system uses 11.5% IVA rate. Formula: `ventaGravada * 0.115` (see DTEService:71)
+- **IVA Calculation**: The system uses different IVA rates per document type:
+  - DTE-01 (Factura): 11.5% - Formula: `ventaGravada * 0.115`
+  - DTE-03 (CCF): 13% - Formula: `ventaGravada * 0.13`
 - **Document Numbering**: Control numbers auto-increment per document type, extracting last correlative from database
 - **Token Renewal**: Tokens expire in ~24h; system auto-renews at 23h 50min to prevent gaps
 - **SSL Verification**: Disabled in non-production environments (see MHApiService:62, 186)
