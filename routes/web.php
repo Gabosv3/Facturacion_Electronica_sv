@@ -23,3 +23,17 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/tokens', [TokenMHController::class, 'index'])->name('tokens.index');
     Route::post('/tokens/renovar', [TokenMHController::class, 'renovar'])->name('tokens.renovar');
 });
+
+// Rutas de contingencias
+use App\Http\Controllers\ContingenciaController;
+
+Route::prefix('contingencias')->name('contingencias.')->group(function () {
+    Route::get('/', [ContingenciaController::class, 'index'])->name('index');
+    Route::get('/crear', [ContingenciaController::class, 'create'])->name('create');
+    Route::post('/guardar', [ContingenciaController::class, 'store'])->name('store');
+    Route::get('/{evento}', [ContingenciaController::class, 'show'])->name('show');
+    Route::get('/{evento}/debug', [ContingenciaController::class, 'debug'])->name('debug');
+    Route::post('/{evento}/cerrar', [ContingenciaController::class, 'cerrar'])->name('cerrar');
+    Route::post('/{evento}/procesar', [ContingenciaController::class, 'procesar'])->name('procesar');
+    Route::post('/{evento}/consultar-lote', [ContingenciaController::class, 'consultarLote'])->name('consultar-lote');
+});

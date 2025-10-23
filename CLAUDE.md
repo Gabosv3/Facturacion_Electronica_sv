@@ -43,7 +43,22 @@ vendor/bin/phpunit                     # Direct PHPUnit execution
 ```bash
 php artisan mh:renovar-token          # Renew MH authentication token
 php artisan mh:diagnosticar-token     # Diagnose token issues
+php artisan mh:verificar-nit {nit}    # Verify NIT format for CCF receptor
 ```
+
+### Contingency Mode (Eventos de Fuerza Mayor)
+```bash
+php artisan contingencia:procesar     # Process pending contingency events
+                                      # - Send contingency event to MH
+                                      # - Send batch of DTEs
+                                      # - Query batch processing status
+```
+
+**Custom Artisan Commands:**
+- `RenovarTokenMH` (`app/Console/Commands/RenovarTokenMH.php`) - Manually renew the MH authentication token
+- `DiagnosticarTokenMH` (`app/Console/Commands/DiagnosticarTokenMH.php`) - Check token status and diagnose issues
+- `VerificarNIT` (`app/Console/Commands/VerificarNIT.php`) - Verify NIT format and show test data suggestions
+- `ProcesarContingencias` (`app/Console/Commands/ProcesarContingencias.php`) - Process contingency events and batches
 
 ### Code Quality
 ```bash
@@ -109,6 +124,10 @@ php artisan cache:clear               # Clear application cache
 - API endpoints for local signing service and MH APIs
 - Environment setting (`00` = testing, `01` = production)
 
+**Frontend Catalogs** (`public/js/`)
+- `catalogo-municipios.js` - Consolidated municipalities (CAT-13) loaded dynamically in forms
+- `catalogo-distritos.js` - Districts catalog (CAT-12) for reference only, not loaded dynamically
+
 ### Important Notes
 
 - **IVA Calculation**: The system uses 11.5% IVA rate. Formula: `ventaGravada * 0.115` (see DTEService:71)
@@ -157,6 +176,7 @@ The system implements the **updated** official CAT-13 catalog with El Salvador's
 ⚠️ **CRITICAL**: The MH has NOT updated the CAT-12 district catalog to match the new consolidated municipalities (CAT-13). The district codes still correspond to the OLD 262 municipalities structure, not the new 47 consolidated municipalities.
 
 **Current Implementation:**
+- **Location**: `public/js/catalogo-distritos.js` (reference catalog, not dynamically loaded)
 - **Manual input field** for district code (2 digits)
 - **Default value**: `03`
 - **Format**: 2-digit code (e.g., `01`, `02`, `03`)
@@ -216,11 +236,79 @@ The `facturas.intentos_envio` field stores the number of attempts made. The `res
 - `recibido_en_consulta`: Whether DTE was found via status query
 - Full MH response data
 
+### Contingency Mode System (Sistema de Contingencias)
+
+The system implements the official MH contingency process for force majeure events that prevent real-time DTE submission.
+
+**Contingency Types (CAT-024):**
+1. Power supply failure at issuer location
+2. Issuer's emission system failure
+3. Internet service failure
+4. MH services failure
+5. Other force majeure events
+
+**Contingency Workflow:**
+
+**Phase 1: During Contingency**
+1. Create contingency event via `/contingencias/crear` or manually in database
+2. System automatically detects active contingency in `FacturaController`
+3. New invoices are signed locally but marked as `firmado_contingencia` (not sent to MH)
+4. DTEs are associated with the active contingency event
+5. Maximum 100 DTEs per batch (MH limit)
+
+**Phase 2: After Connection is Restored**
+1. Close the contingency event (changes status from `activo` to `cerrado`)
+2. Run `php artisan contingencia:procesar` or use web interface
+3. System sends:
+   - **Step 1**: Contingency event to MH (`/fesv/contingencia`)
+   - **Step 2**: Batch of signed DTEs (`/fesv/recepcionlote`)
+   - **Step 3**: Query batch status (`/fesv/consultarlote`)
+4. MH processes batch in 2-3 minutes (100 DTEs average)
+5. System marks event as `procesado` when complete
+
+**Key Services:**
+- `ContingenciaService` (`app/Services/ContingenciaService.php`) - Business logic for contingencies
+- `MHApiService` methods:
+  - `enviarEventoContingencia()` - Send contingency event
+  - `enviarLote()` - Send batch of DTEs
+  - `consultarLote()` - Query batch processing status
+
+**Controllers:**
+- `ContingenciaController` (`app/Http/Controllers/ContingenciaController.php`) - Web interface management
+- `FacturaController` - Auto-detects active contingency and marks invoices accordingly
+
+**Important Notes:**
+- Only ONE contingency event can be active at a time
+- Contingency mode available 24/7/365 (no time restrictions unlike normal batches)
+- Test environment: Max 300 batches, Production: Max 400 batches
+- DTEs must be signed BEFORE sending in batch
+- Complete workflow documented in `GUIA_CONTINGENCIA.md`
+
+**Environment Variables:**
+```bash
+MH_CONTINGENCIA_URL=https://apitest.dtes.mh.gob.sv/fesv/contingencia
+MH_RECEPCION_LOTE_URL=https://apitest.dtes.mh.gob.sv/fesv/recepcionlote
+MH_CONSULTA_LOTE_URL=https://apitest.dtes.mh.gob.sv/fesv/consultarlote
+```
+
 ### Database Schema
 
 **facturas table**: Stores invoice headers with totals, receptor info, and MH response
+- New fields: `en_contingencia` (boolean), `evento_contingencia_id` (FK), `estado_lote` (string)
+
 **factura_items table**: Line items with pricing, quantities, and tax calculations
+
 **tokens_mh table**: Active MH authentication tokens with expiration tracking
+
+**eventos_contingencia table**: Contingency events for force majeure situations
+- `codigo_evento`: UUID for the contingency event
+- `tipo_contingencia`: Type 1-5 according to MH catalog CAT-024
+- `motivo_contingencia`: Description of the contingency reason
+- `fecha_hora_inicio` / `fecha_hora_fin`: Event time range
+- `cantidad_dte`: Number of DTEs issued during contingency
+- `estado`: activo, cerrado, enviado, procesado
+- `codigo_lote`: Batch code returned by MH
+- `detalle_lote`: Processing details from MH
 
 ### Routes Structure
 
@@ -229,6 +317,9 @@ The `facturas.intentos_envio` field stores the number of attempts made. The `res
 - `/facturas/crear-ccf` - CCF creation form (DTE-03)
 - `/facturas/{id}` - Invoice details
 - `/admin/tokens` - Token management interface
+- `/contingencias` - Contingency events management
+- `/contingencias/crear` - Create new contingency event
+- `/contingencias/{id}` - Contingency event details and processing
 
 ### DTE-03 (CCF) vs DTE-01 (Factura) Key Differences
 
@@ -246,12 +337,57 @@ The `facturas.intentos_envio` field stores the number of attempts made. The `res
 - Validation rules change dynamically based on `tipo_dte` (see FacturaController.php:57-58)
 - Each DTE type has independent numbering (correlativo) managed per `tipo_dte`
 
+**Critical CCF Validation:**
+- ⚠️ **Receptor NIT CANNOT be the same as Emisor NIT** - MH will reject with error "[receptor.nit] VALOR NO ES PERMITIDO"
+- The MH validates that the receptor NIT exists in their database and is registered for IVA
+- For testing, see `DATOS_PRUEBA_CCF.md` for sample NITs or use command `php artisan mh:verificar-nit {nit}`
+
 ### Environment Variables Required
 
-Key `.env` variables (see `.env.example` and `config/dte.php`):
-- `DTE_NIT`, `DTE_PASSWORD_PRI` - Signing credentials
-- `DTE_AMBIENTE` - Environment (00=test, 01=production)
-- `DTE_API_URL` - Local signing API endpoint
-- `MH_AUTH_URL`, `MH_RECEPCION_URL` - MH API endpoints
-- `MH_USER`, `MH_PASSWORD` - MH authentication credentials
-- `DTE_EMISOR_*` - Complete issuer business information
+**IMPORTANT**: The `.env.example` file only contains standard Laravel variables. You must manually add all DTE/MH configuration variables below.
+
+Key `.env` variables (see `config/dte.php` for defaults):
+
+**DTE Configuration:**
+```bash
+DTE_NIT=06142302881449
+DTE_PASSWORD_PRI=your_private_key_password
+DTE_AMBIENTE=00                           # 00=test, 01=production
+DTE_ESTABLECIMIENTO=S001
+DTE_PUNTO_VENTA=P001
+DTE_API_URL=http://127.0.0.1:8113        # Local signing API
+DTE_USER_AGENT=SistemaFacturacion/1.0
+```
+
+**MH API Configuration:**
+```bash
+MH_AUTH_URL=https://apitest.dtes.mh.gob.sv/seguridad/auth
+MH_RECEPCION_URL=https://apitest.dtes.mh.gob.sv/fesv/recepciondte
+MH_CONSULTA_URL=https://apitest.dtes.mh.gob.sv/fesv/recepcion/consultadte
+MH_USER=06142302881449
+MH_PASSWORD=your_mh_password
+```
+
+**Retry Policy Configuration:**
+```bash
+DTE_TIMEOUT_ENVIO=8                      # Seconds (per MH policy)
+DTE_MAX_REINTENTOS=2                     # Maximum retries
+```
+
+**Emisor (Issuer) Configuration:**
+```bash
+DTE_EMISOR_NIT=06142302881449
+DTE_EMISOR_NRC=3391583
+DTE_EMISOR_NOMBRE=Your Business Name
+DTE_EMISOR_NOMBRE_COMERCIAL=Your Commercial Name
+DTE_EMISOR_COD_ACTIVIDAD=33120
+DTE_EMISOR_DESC_ACTIVIDAD=VENTA AL POR MAYOR DE PRODUCTOS ALIMENTICIOS
+DTE_EMISOR_COD_ESTABLE=0000
+DTE_EMISOR_COD_PUNTO_VENTA=0000
+DTE_EMISOR_DEPARTAMENTO=06
+DTE_EMISOR_MUNICIPIO=23
+DTE_EMISOR_DISTRITO=03
+DTE_EMISOR_COMPLEMENTO=Colonia Centro
+DTE_EMISOR_TELEFONO=64404895
+DTE_EMISOR_CORREO=email@example.com
+```

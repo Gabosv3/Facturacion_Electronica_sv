@@ -221,6 +221,16 @@ class MHApiService
 
         $codigoGeneracion = $metadata['codigo_generacion'] ?? null;
 
+        // 🔍 LOG: Ver payload completo antes de enviar al MH
+        Log::info('📤 PAYLOAD COMPLETO ANTES DE ENVIAR AL MH', [
+            'ambiente' => $payload['ambiente'],
+            'idEnvio' => $payload['idEnvio'],
+            'version' => $payload['version'],
+            'tipoDte' => $payload['tipoDte'],
+            'documento_jwt_length' => strlen($payload['documento']),
+            'documento_jwt_primeros_100' => substr($payload['documento'], 0, 100),
+        ]);
+
         // Intentar enviar con reintentos (máximo 2 reintentos = 3 intentos totales)
         $intentos = 0;
         $maxIntentos = $this->maxReintentos + 1; // 2 reintentos + 1 intento inicial = 3
@@ -459,5 +469,237 @@ class MHApiService
     {
         $token = $this->generarNuevoToken();
         return $token !== null;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Métodos para Contingencia
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Enviar evento de contingencia al MH
+     */
+    public function enviarEventoContingencia(array $eventoJson, string $eventoFirmado): array
+    {
+        try {
+            $token = $this->obtenerToken();
+
+            if (!$token) {
+                return [
+                    'success' => false,
+                    'message' => 'No se pudo obtener token del Ministerio de Hacienda',
+                ];
+            }
+
+            $contingenciaUrl = config('dte.mh_contingencia_url');
+
+            Log::info('📤 Enviando evento de contingencia al MH', [
+                'url' => $contingenciaUrl,
+                'codigo_evento' => $eventoJson['dteJson']['identificacion']['codigoGeneracion'],
+                'json_completo' => json_encode($eventoJson, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE),
+                'jwt_firmado_length' => strlen($eventoFirmado),
+            ]);
+
+            // Según documentación MH: enviar nit y documento (JWT firmado)
+            $payload = [
+                'nit' => config('dte.nit'),
+                'documento' => $eventoFirmado, // JWT firmado
+            ];
+
+            $response = Http::withHeaders([
+                'Content-Type' => 'application/json',
+                'Authorization' => 'Bearer ' . $token,
+                'User-Agent' => config('dte.user_agent', 'SistemaFacturacion/1.0'),
+            ])
+            ->withOptions([
+                'verify' => config('app.env') === 'production',
+            ])
+            ->timeout(30)
+            ->post($contingenciaUrl, $payload);
+
+            if ($response->successful()) {
+                $data = $response->json();
+
+                Log::info('✅ Evento de contingencia enviado exitosamente', [
+                    'response' => $data,
+                ]);
+
+                return [
+                    'success' => true,
+                    'message' => 'Evento de contingencia enviado exitosamente',
+                    'data' => $data,
+                ];
+            }
+
+            $error = $response->json();
+            Log::error('❌ Error al enviar evento de contingencia', [
+                'status' => $response->status(),
+                'error' => $error,
+            ]);
+
+            return [
+                'success' => false,
+                'message' => 'Error al enviar evento de contingencia: ' . json_encode($error),
+                'data' => $error,
+            ];
+        } catch (\Exception $e) {
+            Log::error('❌ Excepción al enviar evento de contingencia', [
+                'exception' => $e->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'message' => 'Error al enviar evento de contingencia: ' . $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Enviar lote de DTEs al MH
+     */
+    public function enviarLote(array $loteJson): array
+    {
+        try {
+            $token = $this->obtenerToken();
+
+            if (!$token) {
+                return [
+                    'success' => false,
+                    'message' => 'No se pudo obtener token del Ministerio de Hacienda',
+                ];
+            }
+
+            $loteUrl = config('dte.mh_recepcion_lote_url');
+
+            Log::info('📦 Enviando lote de DTEs al MH', [
+                'url' => $loteUrl,
+                'cantidad_dtes' => count($loteJson['documento']['listadoDte'] ?? []),
+                'codigo_lote' => $loteJson['documento']['codigoLote'] ?? 'N/A',
+            ]);
+
+            $response = Http::withHeaders([
+                'Content-Type' => 'application/json',
+                'Authorization' => 'Bearer ' . $token,
+                'User-Agent' => config('dte.user_agent', 'SistemaFacturacion/1.0'),
+            ])
+            ->withOptions([
+                'verify' => config('app.env') === 'production',
+            ])
+            ->timeout(60) // Mayor timeout para lotes
+            ->post($loteUrl, $loteJson);
+
+            if ($response->successful()) {
+                $data = $response->json();
+
+                Log::info('✅ Lote enviado exitosamente', [
+                    'response' => $data,
+                    'estado' => $data['estado'] ?? 'N/A',
+                    'codigo_lote' => $data['codigoLote'] ?? 'N/A',
+                ]);
+
+                return [
+                    'success' => true,
+                    'message' => 'Lote enviado exitosamente',
+                    'data' => $data,
+                    'codigo_lote' => $data['codigoLote'] ?? null,
+                ];
+            }
+
+            $error = $response->json();
+            Log::error('❌ Error al enviar lote', [
+                'status' => $response->status(),
+                'error' => $error,
+            ]);
+
+            return [
+                'success' => false,
+                'message' => 'Error al enviar lote: ' . json_encode($error),
+                'data' => $error,
+            ];
+        } catch (\Exception $e) {
+            Log::error('❌ Excepción al enviar lote', [
+                'exception' => $e->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'message' => 'Error al enviar lote: ' . $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Consultar estado de un lote
+     */
+    public function consultarLote(string $codigoLote): array
+    {
+        try {
+            $token = $this->obtenerToken();
+
+            if (!$token) {
+                return [
+                    'success' => false,
+                    'message' => 'No se pudo obtener token del Ministerio de Hacienda',
+                ];
+            }
+
+            $consultaLoteUrl = config('dte.mh_consulta_lote_url');
+
+            Log::info('🔍 Consultando estado de lote', [
+                'url' => $consultaLoteUrl,
+                'codigo_lote' => $codigoLote,
+            ]);
+
+            $response = Http::withHeaders([
+                'Content-Type' => 'application/json',
+                'Authorization' => 'Bearer ' . $token,
+                'User-Agent' => config('dte.user_agent', 'SistemaFacturacion/1.0'),
+            ])
+            ->withOptions([
+                'verify' => config('app.env') === 'production',
+            ])
+            ->timeout(30)
+            ->post($consultaLoteUrl, [
+                'codigo' => $codigoLote,
+            ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+
+                Log::info('✅ Estado de lote consultado', [
+                    'codigo_lote' => $codigoLote,
+                    'estado' => $data['estado'] ?? 'N/A',
+                ]);
+
+                return [
+                    'success' => true,
+                    'message' => 'Lote consultado exitosamente',
+                    'data' => $data,
+                    'estado' => $data['estado'] ?? null,
+                ];
+            }
+
+            $error = $response->json();
+            Log::error('❌ Error al consultar lote', [
+                'status' => $response->status(),
+                'error' => $error,
+            ]);
+
+            return [
+                'success' => false,
+                'message' => 'Error al consultar lote: ' . json_encode($error),
+                'data' => $error,
+            ];
+        } catch (\Exception $e) {
+            Log::error('❌ Excepción al consultar lote', [
+                'exception' => $e->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'message' => 'Error al consultar lote: ' . $e->getMessage(),
+            ];
+        }
     }
 }

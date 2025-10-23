@@ -9,16 +9,22 @@ use Illuminate\Support\Facades\Log;
 use App\Models\Factura;
 use App\Services\DTEService;
 use App\Services\MHApiService;
+use App\Services\ContingenciaService;
 
 class FacturaController extends Controller
 {
     protected $dteService;
     protected $mhApiService;
+    protected $contingenciaService;
 
-    public function __construct(DTEService $dteService, MHApiService $mhApiService)
-    {
+    public function __construct(
+        DTEService $dteService,
+        MHApiService $mhApiService,
+        ContingenciaService $contingenciaService
+    ) {
         $this->dteService = $dteService;
         $this->mhApiService = $mhApiService;
+        $this->contingenciaService = $contingenciaService;
     }
 
     /**
@@ -130,6 +136,15 @@ class FacturaController extends Controller
             // Generar DTE completo
             $dteJson = $this->dteService->construirDteJson($datosFactura, $validated['precio_incluye_iva']);
 
+            // 🔍 LOG: Ver DTE JSON completo generado
+            Log::info('📋 DTE JSON COMPLETO GENERADO', [
+                'tipo_dte' => $validated['tipo_dte'],
+                'dte_completo' => json_encode($dteJson, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE),
+                'receptor_completo' => $dteJson['dteJson']['receptor'],
+                'receptor_nit_enviado' => $dteJson['dteJson']['receptor']['nit'] ?? $dteJson['dteJson']['receptor']['numDocumento'] ?? 'NO ENCONTRADO',
+                'tipo_documento_receptor' => $dteJson['dteJson']['receptor']['tipoDocumento'] ?? 'NO ENCONTRADO',
+            ]);
+
             // Obtener totalIva (está en diferentes lugares según el tipo de DTE)
             $totalIva = $validated['tipo_dte'] === '03'
                 ? ($dteJson['dteJson']['resumen']['totalIva'] ?? 0)  // CCF: guardado para BD
@@ -235,7 +250,38 @@ class FacturaController extends Controller
                     'inicia_con' => substr($dteFirmado, 0, 20),
                 ]);
 
-                // Guardar estado inicial como firmado
+                // Verificar si hay un evento de contingencia activo
+                $eventoActivo = $this->contingenciaService->getEventoActivo();
+
+                if ($eventoActivo) {
+                    // MODO CONTINGENCIA: No enviar al MH, solo firmar y guardar
+                    Log::warning('🚨 MODO CONTINGENCIA ACTIVO', [
+                        'evento_id' => $eventoActivo->id,
+                        'codigo_evento' => $eventoActivo->codigo_evento,
+                        'tipo_contingencia' => $eventoActivo->tipo_contingencia,
+                    ]);
+
+                    $factura->update([
+                        'estado' => 'firmado_contingencia',
+                        'respuesta_mh' => json_encode([
+                            'firma' => 'Documento firmado exitosamente',
+                            'jwt_firmado' => $dteFirmado, // Guardar JWT completo para envío posterior
+                            'jwt_preview' => substr($dteFirmado, 0, 100) . '...',
+                            'modo_contingencia' => true,
+                            'timestamp' => now()->toDateTimeString(),
+                        ]),
+                    ]);
+
+                    // Marcar factura como parte del evento de contingencia
+                    $this->contingenciaService->marcarFacturaEnContingencia($factura, $eventoActivo);
+
+                    DB::commit();
+
+                    return redirect()->route('facturas.show', $factura->id)
+                        ->with('warning', '⚠️ Factura generada en MODO CONTINGENCIA. El DTE se enviará al MH cuando se restablezca la conexión.');
+                }
+
+                // MODO NORMAL: Enviar al MH inmediatamente
                 $factura->update([
                     'estado' => 'firmado',
                     'respuesta_mh' => json_encode([
@@ -247,7 +293,7 @@ class FacturaController extends Controller
 
                 // IMPORTANTE: Asegurar que el JWT se pase como string, no como array
                 $jwtString = is_string($dteFirmado) ? $dteFirmado : json_encode($dteFirmado);
-                
+
                 Log::info('🚀 Preparando envío al MH', [
                     'jwt_es_string' => is_string($jwtString),
                     'jwt_length' => strlen($jwtString),

@@ -9,6 +9,8 @@
     <script src="{{ asset('js/catalogo-municipios.js') }}"></script>
 </head>
 <body class="bg-gray-100">
+    @include('components.navbar')
+
     <div class="container mx-auto px-4 py-8">
         <div class="max-w-5xl mx-auto">
             <div class="bg-white rounded-lg shadow-lg p-6">

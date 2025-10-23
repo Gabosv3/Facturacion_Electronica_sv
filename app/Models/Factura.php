@@ -36,6 +36,10 @@ class Factura extends Model
         'estado',
         'intentos_envio',
         'respuesta_mh',
+        // Campos de contingencia
+        'en_contingencia',
+        'evento_contingencia_id',
+        'estado_lote',
     ];
 
     protected $casts = [
@@ -48,10 +52,19 @@ class Factura extends Model
         'sub_total' => 'decimal:2',
         'total_iva' => 'decimal:2',
         'total_pagar' => 'decimal:2',
+        'en_contingencia' => 'boolean',
     ];
 
     public function items()
     {
         return $this->hasMany(FacturaItem::class);
+    }
+
+    /**
+     * Relación con evento de contingencia
+     */
+    public function eventoContingencia()
+    {
+        return $this->belongsTo(EventoContingencia::class, 'evento_contingencia_id');
     }
 }

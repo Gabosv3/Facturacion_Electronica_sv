@@ -7,12 +7,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100">
+    @include('components.navbar')
+
     <div class="container mx-auto px-4 py-8">
         <div class="max-w-4xl mx-auto">
-            <div class="mb-4">
-                <a href="{{ route('facturas.index') }}" class="text-blue-600 hover:text-blue-800 font-medium">
-                    ← Volver a Facturas
-                </a>
             </div>
 
             <div class="bg-white rounded-lg shadow-lg p-8">

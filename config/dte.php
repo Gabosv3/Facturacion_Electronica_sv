@@ -63,4 +63,22 @@ return [
     */
     'timeout_envio' => env('DTE_TIMEOUT_ENVIO', 8), // 8 segundos según política MH
     'max_reintentos' => env('DTE_MAX_REINTENTOS', 2), // Máximo 2 reintentos
+
+    /*
+    |--------------------------------------------------------------------------
+    | URLs de Contingencia y Lotes
+    |--------------------------------------------------------------------------
+    */
+    'mh_contingencia_url' => env('MH_CONTINGENCIA_URL', 'https://apitest.dtes.mh.gob.sv/fesv/contingencia'),
+    'mh_recepcion_lote_url' => env('MH_RECEPCION_LOTE_URL', 'https://apitest.dtes.mh.gob.sv/fesv/recepcionlote'),
+    'mh_consulta_lote_url' => env('MH_CONSULTA_LOTE_URL', 'https://apitest.dtes.mh.gob.sv/fesv/consultarlote'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Configuración de Lotes
+    |--------------------------------------------------------------------------
+    */
+    'max_dte_por_lote' => 100, // Máximo 100 DTEs por lote según MH
+    'max_lotes_pruebas' => 300, // Máximo 300 lotes en ambiente de pruebas
+    'max_lotes_produccion' => 400, // Máximo 400 lotes en ambiente productivo
 ];

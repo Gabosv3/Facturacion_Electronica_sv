@@ -1,0 +1,22 @@
+# ========================================
+# VARIABLES DE ENTORNO PARA CONTINGENCIA
+# ========================================
+# Agrega estas variables a tu archivo .env
+
+# URLs de Contingencia (Ambiente de Pruebas)
+MH_CONTINGENCIA_URL=https://apitest.dtes.mh.gob.sv/fesv/contingencia
+MH_RECEPCION_LOTE_URL=https://apitest.dtes.mh.gob.sv/fesv/recepcionlote
+MH_CONSULTA_LOTE_URL=https://apitest.dtes.mh.gob.sv/fesv/consultarlote
+
+# URLs de Contingencia (Ambiente de Producción)
+# Descomenta estas líneas cuando estés en producción y comenta las de prueba
+# MH_CONTINGENCIA_URL=https://api.dtes.mh.gob.sv/fesv/contingencia
+# MH_RECEPCION_LOTE_URL=https://api.dtes.mh.gob.sv/fesv/recepcionlote
+# MH_CONSULTA_LOTE_URL=https://api.dtes.mh.gob.sv/fesv/consultarlote
+
+# ========================================
+# NOTA IMPORTANTE
+# ========================================
+# Después de agregar estas variables, ejecuta:
+# php artisan config:clear
+# php artisan cache:clear

@@ -8,21 +8,13 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body class="bg-gray-100">
+    @include('components.navbar')
+
     <div class="container mx-auto px-4 py-8">
         <div class="max-w-7xl mx-auto">
             <div class="bg-white rounded-lg shadow-lg p-6">
                 <div class="flex justify-between items-center mb-6">
                     <h1 class="text-3xl font-bold text-gray-800">Facturas Electrónicas</h1>
-                    <div class="flex gap-3">
-                        <a href="{{ route('facturas.create') }}" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg flex items-center gap-2">
-                            <span>📄</span>
-                            <span>Nueva Factura (DTE-01)</span>
-                        </a>
-                        <a href="{{ route('facturas.create_ccf') }}" class="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-lg flex items-center gap-2">
-                            <span>📋</span>
-                            <span>Nuevo CCF (DTE-03)</span>
-                        </a>
-                    </div>
                 </div>
 
                 @if($facturas->count() > 0)
