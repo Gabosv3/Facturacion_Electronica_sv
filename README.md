@@ -49,206 +49,40 @@ Este sistema permite a empresas y negocios en El Salvador cumplir con las regula
 - **CAT-022**: Tipos de documentos de identificación
 - **CAT-024**: Tipos de contingencia
 
-## Requisitos del Sistema
-
-- PHP >= 8.1
-- Composer
-- MySQL/MariaDB
-- Servidor web (Apache/Nginx) o `php artisan serve`
-- API local de firma digital en funcionamiento
-- Credenciales del Ministerio de Hacienda
-
-## Instalación
-
-### 1. Clonar el repositorio e instalar dependencias
-
-```bash
-composer install
-```
-
-### 2. Configurar variables de entorno
-
-```bash
-cp .env.example .env
-php artisan key:generate
-```
-
-**IMPORTANTE**: Debes agregar manualmente las siguientes variables al archivo `.env`:
-
-#### Configuración DTE
-```bash
-DTE_NIT=06142302881449
-DTE_PASSWORD_PRI=tu_password_clave_privada
-DTE_AMBIENTE=00                           # 00=pruebas, 01=producción
-DTE_ESTABLECIMIENTO=S001
-DTE_PUNTO_VENTA=P001
-DTE_API_URL=http://127.0.0.1:8113        # URL de API de firma local
-DTE_USER_AGENT=SistemaFacturacion/1.0
-```
-
-#### Configuración API del MH
-```bash
-MH_AUTH_URL=https://apitest.dtes.mh.gob.sv/seguridad/auth
-MH_RECEPCION_URL=https://apitest.dtes.mh.gob.sv/fesv/recepciondte
-MH_CONSULTA_URL=https://apitest.dtes.mh.gob.sv/fesv/recepcion/consultadte
-MH_USER=06142302881449
-MH_PASSWORD=tu_password_mh
-```
-
-#### Política de Reintentos
-```bash
-DTE_TIMEOUT_ENVIO=8                      # Segundos (según política MH)
-DTE_MAX_REINTENTOS=2                     # Reintentos máximos
-```
-
-#### Configuración del Emisor
-```bash
-DTE_EMISOR_NIT=06142302881449
-DTE_EMISOR_NRC=3391583
-DTE_EMISOR_NOMBRE=Nombre de tu Empresa
-DTE_EMISOR_NOMBRE_COMERCIAL=Nombre Comercial
-DTE_EMISOR_COD_ACTIVIDAD=33120
-DTE_EMISOR_DESC_ACTIVIDAD=VENTA AL POR MAYOR DE PRODUCTOS ALIMENTICIOS
-DTE_EMISOR_COD_ESTABLE=0000
-DTE_EMISOR_COD_PUNTO_VENTA=0000
-DTE_EMISOR_DEPARTAMENTO=06
-DTE_EMISOR_MUNICIPIO=23
-DTE_EMISOR_DISTRITO=03
-DTE_EMISOR_COMPLEMENTO=Colonia Centro
-DTE_EMISOR_TELEFONO=64404895
-DTE_EMISOR_CORREO=email@example.com
-```
-
-#### URLs de Contingencia
-```bash
-MH_CONTINGENCIA_URL=https://apitest.dtes.mh.gob.sv/fesv/contingencia
-MH_RECEPCION_LOTE_URL=https://apitest.dtes.mh.gob.sv/fesv/recepcionlote
-MH_CONSULTA_LOTE_URL=https://apitest.dtes.mh.gob.sv/fesv/consultarlote
-```
-
-### 3. Configurar base de datos
-
-Edita el `.env` con tus credenciales de base de datos:
-
-```bash
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=factura_electronica
-DB_USERNAME=tu_usuario
-DB_PASSWORD=tu_password
-```
-
-### 4. Ejecutar migraciones
-
-```bash
-php artisan migrate
-```
-
-### 5. Iniciar el servidor
-
-```bash
-php artisan serve
-```
-
-El sistema estará disponible en `http://localhost:8000`
-
-## Comandos Artisan Personalizados
-
-### Gestión de Tokens MH
-
-```bash
-# Renovar token del MH manualmente
-php artisan mh:renovar-token
-
-# Diagnosticar problemas con el token
-php artisan mh:diagnosticar-token
-
-# Verificar formato de NIT para CCF
-php artisan mh:verificar-nit {nit}
-```
-
-### Modo de Contingencia
-
-```bash
-# Procesar eventos de contingencia pendientes
-php artisan contingencia:procesar
-
-# Procesar un evento específico
-php artisan contingencia:procesar --evento_id=1
-```
-
-## Uso del Sistema
-
-### Crear una Factura (DTE-01)
-
-1. Acceder a `/facturas/crear`
-2. Llenar los datos del receptor (acepta NIT, DUI, pasaporte, etc.)
-3. Agregar los ítems de la factura
-4. El sistema automáticamente:
-   - Genera el JSON del DTE
-   - Firma el documento
-   - Envía al MH
-   - Actualiza el estado
-
-### Crear un Comprobante de Crédito Fiscal (DTE-03)
-
-1. Acceder a `/facturas/crear-ccf`
-2. Llenar los datos del receptor (**solo acepta NIT**)
-3. Ingresar NRC y código de actividad económica (requeridos)
-4. Agregar los ítems
-5. El sistema procesa igual que DTE-01 pero con validaciones específicas de CCF
-
-**Nota importante para CCF**: El NIT del receptor NO puede ser el mismo que el del emisor. El MH validará que el NIT existe y está registrado para IVA.
-
-### Activar Modo de Contingencia
-
-1. Acceder a `/contingencias/crear`
-2. Seleccionar el tipo de contingencia (1-5)
-3. Describir el motivo
-4. Mientras la contingencia esté activa:
-   - Las facturas se firman localmente
-   - Se marcan como `firmado_contingencia`
-   - NO se envían al MH en tiempo real
-5. Cuando se restablezca la conexión:
-   - Cerrar el evento de contingencia
-   - Procesar el lote (envía todas las facturas pendientes)
-   - El MH procesa el lote en 2-3 minutos
-
 ## Arquitectura del Sistema
 
 ### Servicios Principales
 
 **DTEService** (`app/Services/DTEService.php`)
 - Genera códigos únicos de documentos (UUID v4)
-- Genera números de control
-- Calcula totales e IVA
+- Genera números de control con formato `DTE-{tipo}-{establecimiento}{puntoVenta}-{correlativo}`
+- Calcula totales e IVA según tipo de documento
 - Construye estructura JSON según especificaciones del MH
 
 **MHApiService** (`app/Services/MHApiService.php`)
-- Gestiona autenticación con el MH
-- Implementa política de reintentos oficial
-- Envía documentos firmados
-- Consulta estado de DTEs
+- Gestiona autenticación con el MH (tokens con renovación automática cada 24h)
+- Implementa política de reintentos oficial del MH
+- Envía documentos firmados y consulta estado
+- Maneja comunicación con todos los endpoints del MH
 
 **ContingenciaService** (`app/Services/ContingenciaService.php`)
-- Gestiona eventos de contingencia
-- Construye lotes de DTEs
-- Procesa envíos diferidos
+- Gestiona eventos de contingencia por fuerza mayor
+- Construye lotes de DTEs para envío diferido
+- Procesa envíos cuando se restablece la conexión
 
 ### Modelos Principales
 
-- **Factura**: Cabecera de facturas con todos los datos del DTE
-- **FacturaItem**: Ítems de línea con precios e IVA
-- **TokenMH**: Tokens de autenticación del MH
-- **EventoContingencia**: Eventos de fuerza mayor
+- **Factura**: Cabecera de facturas con todos los datos del DTE, estados y respuestas del MH
+- **FacturaItem**: Ítems de línea con precios, cantidades e IVA
+- **TokenMH**: Tokens de autenticación del MH con validación de expiración
+- **EventoContingencia**: Eventos de fuerza mayor con lotes de DTEs asociados
 
 ### Flujo de Procesamiento
 
 ```
 Usuario crea factura
     ↓
-DTEService genera JSON
+DTEService genera JSON del DTE
     ↓
 Se guarda en base de datos
     ↓
@@ -256,44 +90,70 @@ Se envía a API de firma local
     ↓
 Se recibe documento firmado (JWT)
     ↓
-MHApiService envía al MH (con reintentos)
+MHApiService envía al MH (con política de reintentos)
     ↓
 Se actualiza estado según respuesta MH
     ↓
 Estados finales: enviado_mh | firmado_sin_enviar | rechazado
 ```
 
-## Pruebas
+### Flujo de Contingencia
 
-```bash
-# Ejecutar todas las pruebas
-php artisan test
-
-# Ejecutar una prueba específica
-php artisan test --filter=NombreDeLaPrueba
+```
+Evento de fuerza mayor detectado
+    ↓
+Se crea evento de contingencia
+    ↓
+Facturas se firman localmente (no se envían al MH)
+    ↓
+Se marcan como firmado_contingencia
+    ↓
+Se asocian con el evento de contingencia
+    ↓
+Cuando se restablece la conexión:
+    ↓
+Se envía evento de contingencia al MH
+    ↓
+Se envía lote con todas las facturas pendientes
+    ↓
+Se consulta estado del lote
+    ↓
+MH procesa el lote (2-3 minutos)
 ```
 
-## Formato de Código
+## Funcionalidades del Sistema
 
-```bash
-# Formatear código con Laravel Pint
-vendor/bin/pint
-```
+### Creación de Facturas (DTE-01)
+- Interfaz web para ingreso de datos del receptor
+- Soporte para múltiples tipos de documentos (NIT, DUI, pasaporte, etc.)
+- Agregar ítems con cálculo automático de totales
+- Generación, firma y envío automático al MH
 
-## Documentación Adicional
+### Creación de Comprobantes de Crédito Fiscal (DTE-03)
+- Validación estricta: solo acepta NIT como documento del receptor
+- Campos requeridos: NRC y código de actividad económica del receptor
+- Validación de que el NIT del receptor existe en la base del MH
+- IVA del 13% (deducible como crédito fiscal)
 
-- `CLAUDE.md`: Guía técnica completa para desarrollo
-- `GUIA_CONTINGENCIA.md`: Documentación detallada del modo de contingencia (si existe)
-- `DATOS_PRUEBA_CCF.md`: Datos de prueba para CCF (si existe)
+### Gestión de Tokens MH
+- Renovación automática de tokens antes de expiración
+- Comandos artisan para renovación manual y diagnóstico
+- Almacenamiento seguro en base de datos
 
-## Notas Importantes
+### Sistema de Contingencia
+- Activación manual de eventos de contingencia
+- Detección automática de contingencia activa al crear facturas
+- Procesamiento de lotes vía comando artisan o interfaz web
+- Seguimiento de estado de lotes enviados
+
+## Notas Técnicas Importantes
 
 ### IVA por Tipo de Documento
 - **DTE-01**: IVA del 11.5%
 - **DTE-03**: IVA del 13%
 
 ### Formato de Documentos de Identificación
-- **DUI**: 9 dígitos sin guión (ej: `012345678`)
+- **DUI**: 9 dígitos sin guión al enviar al MH (ej: `012345678`)
 - **NIT**: 14 dígitos sin guiones (ej: `06142302881449`)
 
 ### Catálogos Municipios vs Distritos
@@ -304,24 +164,25 @@ vendor/bin/pint
 ### Política de Reintentos del MH
 - Timeout de 8 segundos por intento
 - Máximo 2 reintentos (3 intentos totales)
-- Consulta de estado entre reintentos
+- Consulta de estado entre reintentos si hay timeout
 - Espera de 1 segundo entre reintentos
+- Registro de todos los intentos en base de datos
+
+### Validaciones CCF Importantes
+- El NIT del receptor NO puede ser el mismo que el del emisor
+- El MH valida que el NIT existe y está registrado para IVA
+- Los campos NRC y código de actividad económica son obligatorios
 
 ## Tecnologías Utilizadas
 
-- **Laravel 10**: Framework PHP
-- **Guzzle HTTP**: Cliente HTTP para comunicación con MH
-- **MySQL/MariaDB**: Base de datos
-- **Bootstrap**: Frontend (si aplica)
-- **API de Firma Digital**: Servicio externo para firma de documentos
+- **Laravel 10**: Framework PHP para el backend
+- **Guzzle HTTP**: Cliente HTTP para comunicación con APIs del MH
+- **MySQL/MariaDB**: Base de datos relacional
+- **API de Firma Digital**: Servicio local para firma de documentos con certificados digitales
 
-## Soporte
+## Documentación Adicional
 
-Para reportar problemas o solicitar funcionalidades, por favor crea un issue en el repositorio del proyecto.
-
-## Licencia
-
-Este proyecto es software propietario. Todos los derechos reservados.
+- `CLAUDE.md`: Guía técnica completa para desarrollo y arquitectura detallada
 
 ---
 
