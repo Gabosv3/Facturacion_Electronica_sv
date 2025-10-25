@@ -28,6 +28,7 @@
                                     <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">Cliente</th>
                                     <th class="px-4 py-3 text-right text-sm font-semibold text-gray-600">Total</th>
                                     <th class="px-4 py-3 text-center text-sm font-semibold text-gray-600">Estado</th>
+                                    <th class="px-4 py-3 text-center text-sm font-semibold text-gray-600">Nota Crédito</th>
                                     <th class="px-4 py-3 text-center text-sm font-semibold text-gray-600">Acciones</th>
                                 </tr>
                             </thead>
@@ -39,6 +40,8 @@
                                             <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded">DTE-01</span>
                                         @elseif($factura->tipo_dte == '03')
                                             <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded">CCF-03</span>
+                                        @elseif($factura->tipo_dte == '05')
+                                            <span class="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-semibold rounded">NC-05</span>
                                         @else
                                             <span class="px-2 py-1 bg-gray-100 text-gray-800 text-xs font-semibold rounded">DTE-{{ $factura->tipo_dte }}</span>
                                         @endif
@@ -60,6 +63,21 @@
                                             <span class="px-3 py-1 bg-red-100 text-red-800 text-xs font-semibold rounded-full">Rechazado</span>
                                         @else
                                             <span class="px-3 py-1 bg-gray-100 text-gray-800 text-xs font-semibold rounded-full">Pendiente</span>
+                                        @endif
+                                    </td>
+                                    <td class="px-4 py-3 text-center">
+                                        @if($factura->nota_credito_estado)
+                                            @if($factura->nota_credito_estado == 'anulacion')
+                                                <span class="px-2 py-1 bg-red-100 text-red-800 text-xs font-semibold rounded-full">Anulado</span>
+                                            @elseif($factura->nota_credito_estado == 'ajuste_precio')
+                                                <span class="px-2 py-1 bg-orange-100 text-orange-800 text-xs font-semibold rounded-full">Ajuste</span>
+                                            @elseif($factura->nota_credito_estado == 'devolucion')
+                                                <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full">Devolución</span>
+                                            @else
+                                                <span class="px-2 py-1 bg-gray-100 text-gray-800 text-xs font-semibold rounded-full">{{ ucfirst($factura->nota_credito_estado) }}</span>
+                                            @endif
+                                        @else
+                                            <span class="text-gray-400 text-xs">-</span>
                                         @endif
                                     </td>
                                     <td class="px-4 py-3 text-center">

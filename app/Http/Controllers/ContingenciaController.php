@@ -274,6 +274,32 @@ class ContingenciaController extends Controller
                             'estado_lote' => 'PROCESADO',
                         ]);
 
+                        // Si es una nota de crédito (DTE-05), actualizar el estado del documento relacionado
+                        if ($factura->tipo_dte === '05' && $factura->documento_relacionado_id) {
+                            $facturaRelacionada = Factura::find($factura->documento_relacionado_id);
+                            if ($facturaRelacionada) {
+                                // Mapear tipo_documento a estado legible
+                                $estadoNotaCredito = match($factura->tipo_documento) {
+                                    '1' => 'anulacion',
+                                    '2' => 'ajuste_precio',
+                                    '3' => 'devolucion',
+                                    default => 'nota_credito',
+                                };
+
+                                $facturaRelacionada->update([
+                                    'nota_credito_estado' => $estadoNotaCredito,
+                                    'nota_credito_id' => $factura->id,
+                                ]);
+
+                                Log::info('📝 Estado de documento relacionado actualizado (contingencia)', [
+                                    'factura_relacionada_id' => $facturaRelacionada->id,
+                                    'numero_control' => $facturaRelacionada->numero_control,
+                                    'nota_credito_estado' => $estadoNotaCredito,
+                                    'nota_credito_id' => $factura->id,
+                                ]);
+                            }
+                        }
+
                         Log::info('✅ DTE de contingencia enviado y aceptado', [
                             'factura_id' => $factura->id,
                             'numero_control' => $factura->numero_control,

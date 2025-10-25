@@ -10,6 +10,7 @@ Este sistema permite a empresas y negocios en El Salvador cumplir con las regula
 
 - **DTE-01**: Factura (Consumidor Final) - Versión 2
 - **DTE-03**: Comprobante de Crédito Fiscal (CCF) - Versión 3
+- **DTE-05**: Nota de Crédito - Versión 3
 
 ## Características Principales
 
@@ -151,6 +152,7 @@ MH procesa el lote (2-3 minutos)
 ### IVA por Tipo de Documento
 - **DTE-01**: IVA del 11.5%
 - **DTE-03**: IVA del 13%
+- **DTE-05**: **Siempre IVA del 13%** (independientemente del tipo de documento relacionado)
 
 ### Formato de Documentos de Identificación
 - **DUI**: 9 dígitos sin guión al enviar al MH (ej: `012345678`)
@@ -168,10 +170,18 @@ MH procesa el lote (2-3 minutos)
 - Espera de 1 segundo entre reintentos
 - Registro de todos los intentos en base de datos
 
-### Validaciones CCF Importantes
+### Validaciones Importantes por Tipo de DTE
+
+**DTE-03 (CCF):**
 - El NIT del receptor NO puede ser el mismo que el del emisor
 - El MH valida que el NIT existe y está registrado para IVA
 - Los campos NRC y código de actividad económica son obligatorios
+
+**DTE-05 (Nota de Crédito):**
+- Solo se puede crear para facturas con receptor NIT (no DUI)
+- Debe referenciar un DTE-01 o DTE-03 que fue enviado exitosamente al MH
+- Los precios deben tratarse siempre como montos base (sin IVA incluido)
+- La estructura JSON es completamente diferente a DTE-01 y DTE-03
 
 ## Tecnologías Utilizadas
 

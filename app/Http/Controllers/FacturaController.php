@@ -44,6 +44,23 @@ class FacturaController extends Controller
     }
 
     /**
+     * Mostrar formulario de Nota de Crédito (DTE-05)
+     */
+    public function createNotaCredito()
+    {
+        // Obtener facturas emitidas (DTE-01 y DTE-03) para relacionar
+        // IMPORTANTE: DTE-05 requiere NIT, por lo tanto excluimos facturas con DUI (tipo_documento = 13)
+        $facturasDisponibles = Factura::with('items') // Cargar items de cada factura
+            ->whereIn('tipo_dte', ['01', '03'])
+            ->where('estado', 'enviado_mh')
+            ->where('receptor_tipo_documento', '!=', '13') // Excluir DUI
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return view('facturas.crear_nota_credito', compact('facturasDisponibles'));
+    }
+
+    /**
      * Guardar y firmar factura (DTE-01 o DTE-03)
      */
     public function store(Request $request)
@@ -54,7 +71,7 @@ class FacturaController extends Controller
         // Validaciones base
         $rules = [
             // Tipo DTE
-            'tipo_dte' => 'required|string|in:01,03',
+            'tipo_dte' => 'required|string|in:01,03,05',
 
             // Receptor
             'receptor_tipo_documento' => 'required|string|size:2',
@@ -87,6 +104,13 @@ class FacturaController extends Controller
             'precio_incluye_iva' => 'nullable|boolean',
         ];
 
+        // Validaciones específicas para Nota de Crédito (DTE-05)
+        if ($tipoDte === '05') {
+            $rules['documento_relacionado_id'] = 'required|exists:facturas,id';
+            $rules['tipo_documento'] = 'required|string|in:1,2,3'; // CAT-026: 1=Anulación, 2=Ajuste Precio, 3=Devolución
+            $rules['precio_incluye_iva'] = 'nullable|boolean'; // Checkbox para indicar si precio incluye IVA
+        }
+
         // Validación especial para CCF (DTE-03): solo acepta NIT
         if ($tipoDte === '03') {
             $rules['receptor_tipo_documento'] .= '|in:36'; // Solo NIT para CCF
@@ -108,6 +132,25 @@ class FacturaController extends Controller
 
         try {
             DB::beginTransaction();
+
+            // 🔍 LOG: Ver cuántos items llegaron del formulario
+            Log::info('📦 Items recibidos del formulario', [
+                'cantidad_items' => count($validated['items'] ?? []),
+                'items' => $validated['items'] ?? [],
+            ]);
+
+            // Si es DTE-05, obtener información del documento relacionado
+            $documentoRelacionado = null;
+            if ($tipoDte === '05') {
+                $facturaRelacionada = Factura::findOrFail($validated['documento_relacionado_id']);
+                $documentoRelacionado = [
+                    'tipo_dte' => $facturaRelacionada->tipo_dte,
+                    'tipo_documento' => $validated['tipo_documento'],
+                    'numero_control' => $facturaRelacionada->numero_control,
+                    'codigo_generacion' => $facturaRelacionada->codigo_generacion,
+                    'fecha_emision' => $facturaRelacionada->fecha_emision,
+                ];
+            }
 
             // Preparar datos para el DTE
             $datosFactura = [
@@ -133,12 +176,31 @@ class FacturaController extends Controller
                 'observaciones' => $validated['observaciones'],
             ];
 
+            // Agregar documento relacionado si es DTE-05
+            if ($documentoRelacionado) {
+                $datosFactura['documento_relacionado'] = $documentoRelacionado;
+            }
+
             // Generar DTE completo
-            $dteJson = $this->dteService->construirDteJson($datosFactura, $validated['precio_incluye_iva']);
+            // Para DTE-05, usar el valor del checkbox precio_incluye_iva
+            $precioIncluyeIva = ($validated['tipo_dte'] === '05')
+                ? (bool) ($validated['precio_incluye_iva'] ?? false)
+                : (bool) ($validated['precio_incluye_iva'] ?? false);
+
+            // 🔍 LOG: Ver valor del checkbox
+            Log::info('💰 Valor del checkbox precio_incluye_iva', [
+                'tipo_dte' => $validated['tipo_dte'],
+                'precio_incluye_iva_raw' => $validated['precio_incluye_iva'] ?? 'NO PRESENTE',
+                'precio_incluye_iva_bool' => $precioIncluyeIva,
+            ]);
+
+            $dteJson = $this->dteService->construirDteJson($datosFactura, $precioIncluyeIva);
 
             // 🔍 LOG: Ver DTE JSON completo generado
             Log::info('📋 DTE JSON COMPLETO GENERADO', [
                 'tipo_dte' => $validated['tipo_dte'],
+                'cuerpoDocumento_count' => count($dteJson['dteJson']['cuerpoDocumento'] ?? []),
+                'cuerpoDocumento' => $dteJson['dteJson']['cuerpoDocumento'] ?? [],
                 'dte_completo' => json_encode($dteJson, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE),
                 'receptor_completo' => $dteJson['dteJson']['receptor'],
                 'receptor_nit_enviado' => $dteJson['dteJson']['receptor']['nit'] ?? $dteJson['dteJson']['receptor']['numDocumento'] ?? 'NO ENCONTRADO',
@@ -146,12 +208,19 @@ class FacturaController extends Controller
             ]);
 
             // Obtener totalIva (está en diferentes lugares según el tipo de DTE)
-            $totalIva = $validated['tipo_dte'] === '03'
-                ? ($dteJson['dteJson']['resumen']['totalIva'] ?? 0)  // CCF: guardado para BD
-                : $dteJson['dteJson']['resumen']['totalIva'];         // Factura: está directo
+            // DTE-05 no tiene totalIva en resumen, hay que calcularlo
+            if ($validated['tipo_dte'] === '05') {
+                // Para DTE-05, SIEMPRE usar IVA del 13% según validación del MH
+                // (Independientemente del tipo de documento relacionado)
+                $totalIva = round($dteJson['dteJson']['resumen']['totalGravada'] * 0.13, 2);
+            } elseif ($validated['tipo_dte'] === '03') {
+                $totalIva = $dteJson['dteJson']['resumen']['totalIva'] ?? 0;  // CCF: guardado para BD
+            } else {
+                $totalIva = $dteJson['dteJson']['resumen']['totalIva'];  // Factura: está directo
+            }
 
             // Guardar factura en BD
-            $factura = Factura::create([
+            $datosFacturaDB = [
                 'numero_control' => $dteJson['dteJson']['identificacion']['numeroControl'],
                 'codigo_generacion' => $dteJson['dteJson']['identificacion']['codigoGeneracion'],
                 'tipo_dte' => $validated['tipo_dte'],
@@ -171,19 +240,35 @@ class FacturaController extends Controller
                 'total_descuento' => $dteJson['dteJson']['resumen']['totalDescu'],
                 'sub_total' => $dteJson['dteJson']['resumen']['subTotal'],
                 'total_iva' => $totalIva,
-                'total_pagar' => $dteJson['dteJson']['resumen']['totalPagar'],
+                'total_pagar' => $dteJson['dteJson']['resumen']['montoTotalOperacion'] ?? $dteJson['dteJson']['resumen']['totalPagar'] ?? 0,
                 'total_letras' => $dteJson['dteJson']['resumen']['totalLetras'],
                 'condicion_operacion' => $validated['condicion_operacion'],
                 'dte_json' => $dteJson,
                 'estado' => 'pendiente',
-            ]);
+            ];
+
+            // Agregar campos de documento relacionado si es DTE-05
+            if ($tipoDte === '05' && $documentoRelacionado) {
+                $datosFacturaDB['documento_relacionado_id'] = $validated['documento_relacionado_id'];  // ID para relación FK
+                $datosFacturaDB['documento_relacionado_tipo_dte'] = $documentoRelacionado['tipo_dte'];
+                $datosFacturaDB['documento_relacionado_numero_control'] = $documentoRelacionado['numero_control'];
+                $datosFacturaDB['documento_relacionado_codigo_generacion'] = $documentoRelacionado['codigo_generacion'];
+                $datosFacturaDB['documento_relacionado_fecha_emision'] = $documentoRelacionado['fecha_emision'];
+                $datosFacturaDB['tipo_documento'] = $documentoRelacionado['tipo_documento'];
+            }
+
+            $factura = Factura::create($datosFacturaDB);
 
             // Guardar items
             foreach ($dteJson['dteJson']['cuerpoDocumento'] as $item) {
-                // Calcular IVA para guardar en BD (en CCF no viene en ivaItem)
-                $ivaItem = $validated['tipo_dte'] === '03'
-                    ? round($item['ventaGravada'] * 0.13, 2)
-                    : $item['ivaItem'];
+                // Calcular IVA para guardar en BD
+                // CCF (DTE-03) y Nota de Crédito (DTE-05) no tienen ivaItem en cuerpoDocumento
+                if ($validated['tipo_dte'] === '03' || $validated['tipo_dte'] === '05') {
+                    // DTE-03 y DTE-05 SIEMPRE usan 13% según validación del MH
+                    $ivaItem = round($item['ventaGravada'] * 0.13, 2);
+                } else {
+                    $ivaItem = $item['ivaItem'];
+                }
 
                 $factura->items()->create([
                     'num_item' => $item['numItem'],
@@ -194,8 +279,8 @@ class FacturaController extends Controller
                     'precio_unitario' => $item['precioUni'],
                     'monto_descuento' => $item['montoDescu'],
                     'venta_gravada' => $item['ventaGravada'],
-                    'venta_exenta' => $item['ventaExenta'],
-                    'venta_no_sujeta' => $item['ventaNoSuj'],
+                    'venta_exenta' => $item['ventaExenta'] ?? 0,
+                    'venta_no_sujeta' => $item['ventaNoSuj'] ?? 0,
                     'iva_item' => $ivaItem,
                 ]);
             }
@@ -228,6 +313,19 @@ class FacturaController extends Controller
             if ($response->successful()) {
                 $responseData = $response->json();
                 $dteFirmado = $responseData['body'] ?? null;
+
+                // 🔍 DECODIFICAR JWT PARA VER QUÉ CONTIENE
+                if ($dteFirmado) {
+                    $jwtParts = explode('.', $dteFirmado);
+                    if (count($jwtParts) >= 2) {
+                        $payload = json_decode(base64_decode(str_replace(['-', '_'], ['+', '/'], $jwtParts[1])), true);
+                        Log::info('🔓 JWT DECODIFICADO - Contenido del documento firmado', [
+                            'cuerpoDocumento_en_jwt' => $payload['cuerpoDocumento'] ?? 'NO EXISTE',
+                            'cuerpoDocumento_count' => count($payload['cuerpoDocumento'] ?? []),
+                            'payload_completo' => json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE),
+                        ]);
+                    }
+                }
 
                 Log::info('✅ Extrayendo JWT firmado', [
                     'response_data_keys' => array_keys($responseData),
@@ -301,8 +399,12 @@ class FacturaController extends Controller
                 ]);
 
                 // Determinar versión según tipo de DTE (igual que en DTEService)
-                // DTE-01 = versión 2, DTE-03 = versión 3
-                $versionDte = $validated['tipo_dte'] === '03' ? 3 : 2;
+                // DTE-01 = versión 2, DTE-03 = versión 3, DTE-05 = versión 3
+                $versionDte = match($validated['tipo_dte']) {
+                    '03' => 3,
+                    '05' => 3,
+                    default => 2,
+                };
 
                 // Enviar al Ministerio de Hacienda con política de reintentos
                 $resultadoMH = $this->mhApiService->enviarDTE($jwtString, [
@@ -326,6 +428,32 @@ class FacturaController extends Controller
                             'timestamp' => now()->toDateTimeString(),
                         ]),
                     ]);
+
+                    // Si es una nota de crédito (DTE-05), actualizar el estado del documento relacionado
+                    if ($tipoDte === '05' && isset($validated['documento_relacionado_id'])) {
+                        $facturaRelacionada = Factura::find($validated['documento_relacionado_id']);
+                        if ($facturaRelacionada) {
+                            // Mapear tipo_documento a estado legible
+                            $estadoNotaCredito = match($validated['tipo_documento']) {
+                                '1' => 'anulacion',
+                                '2' => 'ajuste_precio',
+                                '3' => 'devolucion',
+                                default => 'nota_credito',
+                            };
+
+                            $facturaRelacionada->update([
+                                'nota_credito_estado' => $estadoNotaCredito,
+                                'nota_credito_id' => $factura->id,
+                            ]);
+
+                            Log::info('📝 Estado de documento relacionado actualizado', [
+                                'factura_relacionada_id' => $facturaRelacionada->id,
+                                'numero_control' => $facturaRelacionada->numero_control,
+                                'nota_credito_estado' => $estadoNotaCredito,
+                                'nota_credito_id' => $factura->id,
+                            ]);
+                        }
+                    }
 
                     DB::commit();
 

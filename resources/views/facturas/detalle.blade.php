@@ -21,6 +21,9 @@
                             @if($factura->tipo_dte == '03')
                                 <h1 class="text-3xl font-bold text-green-800">COMPROBANTE DE CRÉDITO FISCAL</h1>
                                 <p class="text-sm text-green-600 font-semibold mt-1">DTE-03 (CCF)</p>
+                            @elseif($factura->tipo_dte == '05')
+                                <h1 class="text-3xl font-bold text-purple-800">NOTA DE CRÉDITO</h1>
+                                <p class="text-sm text-purple-600 font-semibold mt-1">DTE-05</p>
                             @else
                                 <h1 class="text-3xl font-bold text-gray-800">FACTURA ELECTRÓNICA</h1>
                                 <p class="text-sm text-blue-600 font-semibold mt-1">DTE-01</p>
@@ -56,6 +59,8 @@
                                 <span class="font-medium">Tipo:</span>
                                 @if($factura->tipo_dte == '03')
                                     <span class="inline-block px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded">CCF (DTE-03)</span>
+                                @elseif($factura->tipo_dte == '05')
+                                    <span class="inline-block px-2 py-1 bg-purple-100 text-purple-800 text-xs font-semibold rounded">Nota de Crédito (DTE-05)</span>
                                 @else
                                     <span class="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded">Factura (DTE-01)</span>
                                 @endif
@@ -91,6 +96,117 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Estado de Nota de Crédito (si aplica) -->
+                @if($factura->nota_credito_estado)
+                    <div class="mb-6 p-4 border-2 rounded-lg
+                        @if($factura->nota_credito_estado == 'anulacion')
+                            border-red-300 bg-red-50
+                        @elseif($factura->nota_credito_estado == 'ajuste_precio')
+                            border-orange-300 bg-orange-50
+                        @elseif($factura->nota_credito_estado == 'devolucion')
+                            border-blue-300 bg-blue-50
+                        @else
+                            border-gray-300 bg-gray-50
+                        @endif
+                    ">
+                        <div class="flex items-center gap-3">
+                            <svg class="w-6 h-6
+                                @if($factura->nota_credito_estado == 'anulacion')
+                                    text-red-600
+                                @elseif($factura->nota_credito_estado == 'ajuste_precio')
+                                    text-orange-600
+                                @elseif($factura->nota_credito_estado == 'devolucion')
+                                    text-blue-600
+                                @else
+                                    text-gray-600
+                                @endif
+                            " fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <div class="flex-1">
+                                <p class="font-semibold
+                                    @if($factura->nota_credito_estado == 'anulacion')
+                                        text-red-800
+                                    @elseif($factura->nota_credito_estado == 'ajuste_precio')
+                                        text-orange-800
+                                    @elseif($factura->nota_credito_estado == 'devolucion')
+                                        text-blue-800
+                                    @else
+                                        text-gray-800
+                                    @endif
+                                ">
+                                    @if($factura->nota_credito_estado == 'anulacion')
+                                        Este documento ha sido ANULADO mediante Nota de Crédito
+                                    @elseif($factura->nota_credito_estado == 'ajuste_precio')
+                                        Este documento tiene un AJUSTE DE PRECIO mediante Nota de Crédito
+                                    @elseif($factura->nota_credito_estado == 'devolucion')
+                                        Este documento tiene una DEVOLUCIÓN mediante Nota de Crédito
+                                    @else
+                                        Este documento tiene una Nota de Crédito asociada
+                                    @endif
+                                </p>
+                                @if($factura->nota_credito_id)
+                                    @php
+                                        $notaCredito = \App\Models\Factura::find($factura->nota_credito_id);
+                                    @endphp
+                                    @if($notaCredito)
+                                        <p class="text-sm mt-1
+                                            @if($factura->nota_credito_estado == 'anulacion')
+                                                text-red-700
+                                            @elseif($factura->nota_credito_estado == 'ajuste_precio')
+                                                text-orange-700
+                                            @elseif($factura->nota_credito_estado == 'devolucion')
+                                                text-blue-700
+                                            @else
+                                                text-gray-700
+                                            @endif
+                                        ">
+                                            Nota de Crédito: <a href="{{ route('facturas.show', $notaCredito) }}" class="underline font-medium hover:opacity-80">{{ $notaCredito->numero_control }}</a>
+                                            <span class="text-xs">({{ $notaCredito->fecha_emision->format('d/m/Y') }})</span>
+                                        </p>
+                                    @endif
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
+                <!-- Documento Relacionado (solo para Nota de Crédito) -->
+                @if($factura->tipo_dte == '05' && $factura->documento_relacionado_numero_control)
+                    <div class="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6">
+                        <h3 class="text-sm font-semibold text-purple-800 mb-3">📄 Documento Relacionado</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-sm"><span class="font-medium text-gray-700">Tipo de Documento:</span>
+                                    @if($factura->documento_relacionado_tipo_dte == '01')
+                                        <span class="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded ml-1">Factura (DTE-01)</span>
+                                    @elseif($factura->documento_relacionado_tipo_dte == '03')
+                                        <span class="inline-block px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded ml-1">CCF (DTE-03)</span>
+                                    @endif
+                                </p>
+                                <p class="text-sm mt-1"><span class="font-medium text-gray-700">Número Control:</span> {{ $factura->documento_relacionado_numero_control }}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm"><span class="font-medium text-gray-700">Código Generación:</span> {{ $factura->documento_relacionado_codigo_generacion }}</p>
+                                <p class="text-sm mt-1"><span class="font-medium text-gray-700">Fecha Emisión:</span> {{ \Carbon\Carbon::parse($factura->documento_relacionado_fecha_emision)->format('d/m/Y') }}</p>
+                            </div>
+                        </div>
+                        @if($factura->tipo_documento)
+                            <div class="mt-3 pt-3 border-t border-purple-200">
+                                <p class="text-sm"><span class="font-medium text-gray-700">Motivo:</span>
+                                    @if($factura->tipo_documento == '1')
+                                        <span class="text-purple-700">Anulación - Documento emitido por error</span>
+                                    @elseif($factura->tipo_documento == '2')
+                                        <span class="text-purple-700">Ajuste de Precio - Corrección de monto</span>
+                                    @elseif($factura->tipo_documento == '3')
+                                        <span class="text-purple-700">Devolución - Cliente devuelve productos</span>
+                                    @endif
+                                </p>
+                            </div>
+                        @endif
+                    </div>
+                @endif
 
                 <!-- Items -->
                 <div class="mb-6">
@@ -141,7 +257,13 @@
                                 </div>
                                 @endif
                                 <div class="flex justify-between">
-                                    <span class="text-gray-600">IVA (13%):</span>
+                                    <span class="text-gray-600">IVA
+                                        @if($factura->tipo_dte === '03' || $factura->tipo_dte === '05')
+                                            (13%)
+                                        @else
+                                            (11.5%)
+                                        @endif:
+                                    </span>
                                     <span class="font-semibold">${{ number_format($factura->total_iva, 2) }}</span>
                                 </div>
                                 <div class="flex justify-between text-xl font-bold text-blue-600 border-t pt-2">
@@ -164,6 +286,20 @@
                     <button onclick="descargarJSON()" class="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-2 rounded-lg">
                         📥 Descargar JSON
                     </button>
+                    <button onclick="toggleJSON()" class="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-6 py-2 rounded-lg">
+                        👁️ Ver JSON
+                    </button>
+                </div>
+
+                <!-- JSON Viewer (oculto por defecto) -->
+                <div id="jsonViewer" style="display: none;" class="mt-6 bg-gray-900 text-green-400 p-6 rounded-lg overflow-auto max-h-96 font-mono text-xs">
+                    <div class="flex justify-between items-center mb-3 text-white">
+                        <h4 class="font-semibold">JSON enviado al Ministerio de Hacienda:</h4>
+                        <button onclick="copiarJSON()" class="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-xs">
+                            📋 Copiar
+                        </button>
+                    </div>
+                    <pre id="jsonContent">{{ json_encode($factura->dte_json['dteJson'] ?? [], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) }}</pre>
                 </div>
 
                 <!-- Respuesta del Ministerio (si existe) -->
@@ -252,6 +388,24 @@
             linkElement.setAttribute('href', dataUri);
             linkElement.setAttribute('download', exportFileDefaultName);
             linkElement.click();
+        }
+
+        function toggleJSON() {
+            const viewer = document.getElementById('jsonViewer');
+            if (viewer.style.display === 'none') {
+                viewer.style.display = 'block';
+            } else {
+                viewer.style.display = 'none';
+            }
+        }
+
+        function copiarJSON() {
+            const jsonContent = document.getElementById('jsonContent').textContent;
+            navigator.clipboard.writeText(jsonContent).then(() => {
+                alert('JSON copiado al portapapeles');
+            }).catch(err => {
+                console.error('Error al copiar:', err);
+            });
         }
 
         // Estilos para impresión

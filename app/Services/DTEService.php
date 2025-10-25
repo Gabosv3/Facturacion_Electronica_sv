@@ -53,53 +53,134 @@ class DTEService
      */
 public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true): array
 {
-    $totalGravada = 0;
-    $totalExenta = 0;
-    $totalNoSujeto = 0;
-    $totalDescuento = 0;
-    $totalIva = 0;
+    // Por defecto usa 11.5% (DTE-01)
+    return $this->calcularTotalesItemsConTasa($items, 0.115, $precioIncluyeIva);
+}
 
-    foreach ($items as &$item) {
-        $cantidad = (float) $item['cantidad'];
-        $precioUni = (float) $item['precio_unitario'];
-        $montoDescu = (float) ($item['monto_descuento'] ?? 0);
+    /**
+     * Calcular totales para DTE-05 con opción de extraer IVA del precio
+     */
+    private function calcularTotalesNotaCredito(array $items, float $tasaIva, bool $precioIncluyeIva): array
+    {
+        $totalGravada = 0;
+        $totalExenta = 0;
+        $totalNoSujeto = 0;
+        $totalDescuento = 0;
+        $totalIva = 0;
 
-        // Total sin IVA (base gravada)
-        $ventaGravada = round(($cantidad * $precioUni) - $montoDescu, 2);
-        
-        // IVA = ventaGravada * 0.115
-        $ivaItem = round($ventaGravada * 0.115, 2);
+        foreach ($items as &$item) {
+            $cantidad = (float) $item['cantidad'];
+            $precioUniIngresado = (float) $item['precio_unitario'];
+            $montoDescu = (float) ($item['monto_descuento'] ?? 0);
 
-        $item['venta_gravada'] = $ventaGravada;
-        $item['venta_exenta'] = 0;
-        $item['venta_no_sujeta'] = 0;
-        $item['iva_item'] = $ivaItem;
+            if ($precioIncluyeIva) {
+                // Si el precio incluye IVA, extraer el precio unitario SIN IVA
+                // Fórmula: precioSinIva = precioConIva / (1 + tasaIva)
+                $precioUniSinIva = round($precioUniIngresado / (1 + $tasaIva), 2);
 
-        $totalGravada += $ventaGravada;
-        $totalDescuento += $montoDescu;
-        $totalIva += $ivaItem;
+                // Calcular venta gravada usando el precio sin IVA
+                $ventaGravada = round(($cantidad * $precioUniSinIva) - $montoDescu, 2);
+
+                // El precio unitario para el JSON debe ser SIN IVA
+                $item['precio_unitario'] = $precioUniSinIva;
+                $item['precio_incluye_iva'] = true;
+
+                \Log::info('💰 Item con precio incluye IVA', [
+                    'precio_ingresado_con_iva' => $precioUniIngresado,
+                    'precio_sin_iva_calculado' => $precioUniSinIva,
+                    'cantidad' => $cantidad,
+                    'venta_gravada' => $ventaGravada,
+                ]);
+            } else {
+                // Si el precio NO incluye IVA, usar directamente
+                $ventaGravada = round(($cantidad * $precioUniIngresado) - $montoDescu, 2);
+                $item['precio_unitario'] = $precioUniIngresado;
+                $item['precio_incluye_iva'] = false;
+            }
+
+            $ivaItem = round($ventaGravada * $tasaIva, 2);
+
+            $item['venta_gravada'] = $ventaGravada;
+            $item['venta_exenta'] = 0;
+            $item['venta_no_sujeta'] = 0;
+            $item['iva_item'] = $ivaItem;
+
+            $totalGravada += $ventaGravada;
+            $totalDescuento += $montoDescu;
+            $totalIva += $ivaItem;
+        }
+
+        $subTotal = round($totalGravada + $totalExenta + $totalNoSujeto, 2);
+        $totalPagar = round($subTotal, 2);
+
+        return [
+            'items' => $items,
+            'totales' => [
+                'total_gravada' => round($totalGravada, 2),
+                'total_exenta' => round($totalExenta, 2),
+                'total_no_sujeto' => round($totalNoSujeto, 2),
+                'sub_total_ventas' => round($subTotal, 2),
+                'total_descuento' => round($totalDescuento, 2),
+                'sub_total' => round($subTotal, 2),
+                'total_iva' => round($totalIva, 2),
+                'monto_total_operacion' => $totalPagar,
+                'total_pagar' => $totalPagar,
+            ]
+        ];
     }
 
-    $subTotal = round($totalGravada + $totalExenta + $totalNoSujeto, 2);
+    /**
+     * Calcular totales de items con tasa de IVA personalizada
+     * Usado para DTE-03 (13%) y DTE-05 (heredado del documento relacionado)
+     */
+    public function calcularTotalesItemsConTasa(array $items, float $tasaIva, bool $precioIncluyeIva = true): array
+    {
+        $totalGravada = 0;
+        $totalExenta = 0;
+        $totalNoSujeto = 0;
+        $totalDescuento = 0;
+        $totalIva = 0;
 
-    // Monto total de operación = subtotal (sin IVA)
-    $totalPagar = round($subTotal, 2);
+        foreach ($items as &$item) {
+            $cantidad = (float) $item['cantidad'];
+            $precioUni = (float) $item['precio_unitario'];
+            $montoDescu = (float) ($item['monto_descuento'] ?? 0);
 
-    return [
-        'items' => $items,
-        'totales' => [
-            'total_gravada' => round($totalGravada, 2),
-            'total_exenta' => round($totalExenta, 2),
-            'total_no_sujeto' => round($totalNoSujeto, 2),
-            'sub_total_ventas' => round($subTotal, 2),
-            'total_descuento' => round($totalDescuento, 2),
-            'sub_total' => round($subTotal, 2),
-            'total_iva' => round($totalIva, 2),
-            'monto_total_operacion' => $totalPagar,
-            'total_pagar' => $totalPagar,
-        ]
-    ];
-}
+            // SIEMPRE calcular como precio SIN IVA incluido
+            // (el comportamiento anterior correcto para DTE-01 y DTE-03)
+            $ventaGravada = round(($cantidad * $precioUni) - $montoDescu, 2);
+            $ivaItem = round($ventaGravada * $tasaIva, 2);
+
+            $item['venta_gravada'] = $ventaGravada;
+            $item['venta_exenta'] = 0;
+            $item['venta_no_sujeta'] = 0;
+            $item['iva_item'] = $ivaItem;
+
+            $totalGravada += $ventaGravada;
+            $totalDescuento += $montoDescu;
+            $totalIva += $ivaItem;
+        }
+
+        $subTotal = round($totalGravada + $totalExenta + $totalNoSujeto, 2);
+
+        // Monto total de operación = subtotal (sin IVA)
+        $totalPagar = round($subTotal, 2);
+
+        return [
+            'items' => $items,
+            'totales' => [
+                'total_gravada' => round($totalGravada, 2),
+                'total_exenta' => round($totalExenta, 2),
+                'total_no_sujeto' => round($totalNoSujeto, 2),
+                'sub_total_ventas' => round($subTotal, 2),
+                'total_descuento' => round($totalDescuento, 2),
+                'sub_total' => round($subTotal, 2),
+                'total_iva' => round($totalIva, 2),
+                'monto_total_operacion' => $totalPagar,
+                'total_pagar' => $totalPagar,
+            ]
+        ];
+    }
 
     /**
      * Convertir número a letras
@@ -204,13 +285,38 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
                 // Limpiar el número (quitar espacios, guiones, etc.)
                 $numero = preg_replace('/[^0-9]/', '', $numeroDocumento);
 
+                // Detectar si el NIT está duplicado (28-30 dígitos)
+                // Esto puede ocurrir si el NIT se guardó incorrectamente en la BD
+                if (strlen($numero) >= 28 && strlen($numero) <= 30) {
+                    // Verificar si la primera mitad es igual a la segunda mitad
+                    $mitad = intval(strlen($numero) / 2);
+                    $primeraParte = substr($numero, 0, $mitad);
+                    $segundaParte = substr($numero, $mitad);
+
+                    if ($primeraParte === $segundaParte || strpos($numero, $primeraParte) === 0) {
+                        // El NIT está duplicado, tomar solo la primera parte
+                        \Log::warning('⚠️ NIT duplicado detectado y corregido', [
+                            'nit_duplicado' => $numero,
+                            'nit_corregido' => $primeraParte,
+                        ]);
+                        $numero = $primeraParte;
+                    }
+                }
+
                 // NO formatear NIT - enviarlo sin guiones (solo números)
                 // El NIT debe tener 14 dígitos
                 if (strlen($numero) < 14) {
                     $numero = str_pad($numero, 14, '0', STR_PAD_LEFT);
+                } elseif (strlen($numero) > 14) {
+                    // Si aún tiene más de 14 dígitos, tomar solo los primeros 14
+                    \Log::warning('⚠️ NIT con más de 14 dígitos, truncando', [
+                        'nit_original' => $numero,
+                        'nit_truncado' => substr($numero, 0, 14),
+                    ]);
+                    $numero = substr($numero, 0, 14);
                 }
-                // Solo enviar los primeros 14 dígitos
-                return substr($numero, 0, 14);
+
+                return $numero;
 
             case '02': // Carnet de Residente
             case '03': // Pasaporte
@@ -235,6 +341,11 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
         // Si es CCF (DTE-03), usar método específico
         if ($tipoDte === '03') {
             return $this->construirDteCCF($datos, $precioIncluyeIva);
+        }
+
+        // Si es Nota de Crédito (DTE-05), usar método específico
+        if ($tipoDte === '05') {
+            return $this->construirDteNotaCredito($datos, $precioIncluyeIva);
         }
 
         // Para DTE-01 (Factura) usar el método original
@@ -524,6 +635,224 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
                 'extension' => null,  // Campo requerido en CCF (puede ser null)
                 'apendice' => null,
                 'otrosDocumentos' => null,  // Requerido en CCF (puede ser null según algunos casos)
+            ]
+        ];
+    }
+
+    /**
+     * Construir JSON para DTE-05 (Nota de Crédito)
+     * La nota de crédito se usa para anular o ajustar facturas o CCF emitidos previamente
+     * IMPORTANTE: DTE-05 tiene un esquema JSON completamente diferente a DTE-01 y DTE-03
+     */
+    private function construirDteNotaCredito(array $datos, bool $precioIncluyeIva = true): array
+    {
+        $numeroControl = $this->generarNumeroControl('05');
+        $codigoGeneracion = $this->generarCodigoGeneracion();
+        $fechaEmision = now()->format('Y-m-d');
+        $horaEmision = now()->format('H:i:s');
+
+        // IMPORTANTE: DTE-05 SIEMPRE usa IVA del 13% independientemente del documento relacionado
+        // Esto es diferente a lo que se esperaría lógicamente, pero es lo que el MH requiere
+        $tipoDocRelacionado = $datos['documento_relacionado']['tipo_dte'] ?? '01';
+        $tasaIva = 0.13;  // SIEMPRE 13% para DTE-05
+
+        \Log::info('🧮 DTEService - Determinando tasa IVA para DTE-05', [
+            'documento_relacionado_completo' => $datos['documento_relacionado'] ?? 'NO EXISTE',
+            'tipo_doc_relacionado_extraido' => $tipoDocRelacionado,
+            'tasa_iva_seleccionada' => $tasaIva,
+            'porcentaje_iva' => ($tasaIva * 100) . '%',
+            'nota' => 'DTE-05 SIEMPRE usa 13% según validación MH',
+        ]);
+
+        // Calcular totales usando el método específico para notas de crédito
+        // que permite extraer IVA del precio cuando está incluido
+        $calculos = $this->calcularTotalesNotaCredito($datos['items'], $tasaIva, $precioIncluyeIva);
+
+        // Calcular totales finales - recalcular IVA explícitamente para asegurar precisión
+        // (igual que en DTE-03, evita problemas de redondeo acumulativo)
+        $totalIva = round($calculos['totales']['total_gravada'] * $tasaIva, 2);
+
+        // IMPORTANTE: En DTE-05 el montoTotalOperacion SÍ incluye el IVA (igual que facturas)
+        // Aunque es una nota de crédito, el MH valida que el total incluya IVA
+        $totalPagar = $calculos['totales']['total_gravada'] + $totalIva;
+        $totalLetras = $this->numeroALetras($totalPagar);
+
+        // Determinar versión (DTE-05 = versión 3 según especificaciones MH)
+        $version = 3;
+
+        // Formatear fecha de emisión del documento relacionado (debe ser yyyy-MM-dd, no timestamp)
+        $fechaEmisionDocRelacionado = $datos['documento_relacionado']['fecha_emision'];
+        if ($fechaEmisionDocRelacionado instanceof \DateTime || $fechaEmisionDocRelacionado instanceof \Carbon\Carbon) {
+            $fechaEmisionDocRelacionado = $fechaEmisionDocRelacionado->format('Y-m-d');
+        } elseif (is_string($fechaEmisionDocRelacionado) && strlen($fechaEmisionDocRelacionado) > 10) {
+            // Si es un timestamp string, convertir a solo fecha
+            $fechaEmisionDocRelacionado = substr($fechaEmisionDocRelacionado, 0, 10);
+        }
+
+        // Determinar tipo de documento relacionado según CAT-025 (no CAT-026)
+        // CAT-025: 03=Factura, 05=Nota de Crédito, 06=Nota de Débito, etc.
+        $tipoDocumentoRelacionado = $tipoDocRelacionado === '01' ? '03' : '05';
+
+        return [
+            'nit' => config('dte.nit'),
+            'activo' => true,
+            'passwordPri' => config('dte.password_pri'),
+            'dteJson' => [
+                'identificacion' => [
+                    'version' => $version,
+                    'ambiente' => config('dte.ambiente', '00'),
+                    'tipoDte' => '05',
+                    'numeroControl' => $numeroControl,
+                    'codigoGeneracion' => $codigoGeneracion,
+                    'tipoModelo' => 1,
+                    'tipoOperacion' => 1,
+                    'fecEmi' => $fechaEmision,
+                    'horEmi' => $horaEmision,
+                    'tipoMoneda' => 'USD',
+                    'tipoContingencia' => null,
+                    'motivoContin' => null,
+                ],
+                'documentoRelacionado' => [
+                    [
+                        'tipoDocumento' => $tipoDocumentoRelacionado, // CAT-025: 03=Factura, 05=CCF
+                        'tipoGeneracion' => 1, // 1=Generado electrónicamente
+                        'numeroDocumento' => $datos['documento_relacionado']['numero_control'],
+                        'fechaEmision' => $fechaEmisionDocRelacionado,
+                    ]
+                ],
+                'emisor' => [
+                    'nit' => config('dte.emisor.nit'),
+                    'nrc' => config('dte.emisor.nrc'),
+                    'nombre' => config('dte.emisor.nombre'),
+                    'codActividad' => config('dte.emisor.cod_actividad'),
+                    'descActividad' => config('dte.emisor.desc_actividad'),
+                    'nombreComercial' => config('dte.emisor.nombre_comercial'),
+                    'tipoEstablecimiento' => '01', // 01=Casa Matriz, 02=Sucursal, 04=Punto de Venta
+                    'direccion' => [
+                        'departamento' => config('dte.emisor.direccion.departamento'),
+                        'municipio' => config('dte.emisor.direccion.municipio'),
+                        'complemento' => config('dte.emisor.direccion.complemento'),
+                    ],
+                    'telefono' => config('dte.emisor.telefono'),
+                    'correo' => config('dte.emisor.correo'),
+                ],
+                'receptor' => [
+                    'nit' => $this->formatearNumeroDocumento($datos['receptor']['tipo_documento'], $datos['receptor']['num_documento']),
+                    'nrc' => $datos['receptor']['nrc'] ?? null,
+                    'nombre' => $datos['receptor']['nombre'],
+                    'codActividad' => $datos['receptor']['cod_actividad'] ?? null,
+                    'descActividad' => !empty($datos['receptor']['desc_actividad']) && strlen($datos['receptor']['desc_actividad']) >= 5
+                        ? $datos['receptor']['desc_actividad']
+                        : 'ACTIVIDADES NO ESPECIFICADAS',
+                    'nombreComercial' => $datos['receptor']['nombre'], // Requerido por esquema
+                    'direccion' => [
+                        'departamento' => $datos['receptor']['departamento'],
+                        'municipio' => $datos['receptor']['municipio'],
+                        'complemento' => $datos['receptor']['complemento'],
+                    ],
+                    'telefono' => $datos['receptor']['telefono'] ?? null,
+                    'correo' => $datos['receptor']['correo'] ?? null,
+                ],
+                'ventaTercero' => null,
+                'cuerpoDocumento' => (function() use ($datos, $calculos, $tasaIva) {
+                    $numeroDocRelacionado = $datos['documento_relacionado']['numero_control'] ?? '';
+                    $items = [];
+                    $numItem = 1;
+
+                    // 🔍 LOG: Ver cuántos items vienen de calcularTotalesItems
+                    \Log::info('🔍 DTEService - Items recibidos en construirDteNotaCredito', [
+                        'cantidad_items_en_calculos' => count($calculos['items'] ?? []),
+                        'items_raw' => $calculos['items'] ?? [],
+                        'tasa_iva_usada' => $tasaIva,
+                    ]);
+
+                    foreach ($calculos['items'] as $item) {
+                        // El precio unitario ya viene procesado (sin IVA si estaba incluido)
+                        $precioUnitarioFinal = floatval($item['precio_unitario']);
+
+                        // Si el precio incluía IVA, agregarlo a la descripción
+                        $descripcion = $item['descripcion'];
+                        if (!empty($item['precio_incluye_iva']) && $item['precio_incluye_iva'] === true) {
+                            $descripcion .= ' (precio incluye IVA)';
+                        }
+
+                        $itemData = [
+                            'numItem' => $numItem,
+                            'tipoItem' => 2,  // DTE-05 usa tipoItem=2 igual que version 3
+                            'numeroDocumento' => $numeroDocRelacionado, // REQUERIDO por MH
+                            'cantidad' => floatval($item['cantidad']),
+                            'codigo' => $item['codigo'],
+                            'codTributo' => null,  // Requerido por MH
+                            'uniMedida' => (int) ($item['uni_medida'] ?? 59),
+                            'descripcion' => $descripcion,
+                            'precioUni' => $precioUnitarioFinal,  // Precio sin IVA
+                            'montoDescu' => floatval($item['monto_descuento'] ?? 0),
+                            'ventaNoSuj' => 0.0,  // Requerido por MH
+                            'ventaExenta' => 0.0,  // Requerido por MH
+                            'ventaGravada' => floatval($item['venta_gravada']),  // Base sin IVA
+                            'tributos' => ['20'],  // Array simple de códigos igual que CCF
+                            // psv y noGravado NO permitidos en DTE-05
+                        ];
+
+                        \Log::info('🔍 DTEService - Agregando item #' . $numItem, [
+                            'itemData' => $itemData,
+                            'precio_incluye_iva' => $item['precio_incluye_iva'] ?? false,
+                            'precio_unitario_json' => $precioUnitarioFinal,
+                            'venta_gravada' => $item['venta_gravada'],
+                            'validacion_mh' => [
+                                'formula' => 'ventaGravada = (cantidad * precioUni) - descuento',
+                                'calculo' => ($itemData['cantidad'] * $itemData['precioUni']) - $itemData['montoDescu'],
+                                'debe_ser_igual_a' => $itemData['ventaGravada'],
+                                'coincide' => abs((($itemData['cantidad'] * $itemData['precioUni']) - $itemData['montoDescu']) - $itemData['ventaGravada']) < 0.01,
+                            ],
+                        ]);
+
+                        $items[] = $itemData;
+                        $numItem++;
+                    }
+
+                    // 🔍 LOG: Ver array final de items
+                    \Log::info('🔍 DTEService - Array final de cuerpoDocumento', [
+                        'cantidad_items_final' => count($items),
+                        'items_final' => $items,
+                        'items_json' => json_encode($items, JSON_PRETTY_PRINT),
+                    ]);
+
+                    return $items;
+                })(),
+                'resumen' => [
+                    'totalNoSuj' => floatval($calculos['totales']['total_no_sujeto']),
+                    'totalExenta' => floatval($calculos['totales']['total_exenta']),
+                    'totalGravada' => floatval($calculos['totales']['total_gravada']),
+                    'subTotalVentas' => floatval($calculos['totales']['sub_total_ventas']),
+                    'descuNoSuj' => 0.0,
+                    'descuExenta' => 0.0,
+                    'descuGravada' => floatval($calculos['totales']['total_descuento']),
+                    'totalDescu' => floatval($calculos['totales']['total_descuento']),
+                    'tributos' => [  // REQUERIDO por esquema DTE-05 (igual que CCF)
+                        [
+                            'codigo' => '20',
+                            'descripcion' => 'IVA',
+                            'valor' => $totalIva,
+                        ]
+                    ],
+                    'subTotal' => floatval($calculos['totales']['total_gravada']),  // Igual que totalGravada (sin IVA)
+                    'ivaRete1' => 0.0,
+                    'ivaPerci1' => 0.0, // REQUERIDO por esquema DTE-05
+                    'reteRenta' => 0.0, // REQUERIDO por esquema DTE-05
+                    'montoTotalOperacion' => $totalPagar,
+                    // totalPagar NO permitido en DTE-05 según esquema MH
+                    'totalLetras' => $totalLetras,
+                    'condicionOperacion' => (int) ($datos['condicion_operacion'] ?? 1),
+                ],
+                'extension' => [ // REQUERIDO por esquema DTE-05
+                    'nombEntrega' => null,
+                    'docuEntrega' => null,
+                    'nombRecibe' => null,
+                    'docuRecibe' => null,
+                    'observaciones' => $datos['observaciones'] ?? null,
+                ],
+                'apendice' => null,
             ]
         ];
     }

@@ -40,6 +40,16 @@ class Factura extends Model
         'en_contingencia',
         'evento_contingencia_id',
         'estado_lote',
+        // Campos de DTE-05 (Nota de Crédito)
+        'documento_relacionado_id',
+        'documento_relacionado_tipo_dte',
+        'documento_relacionado_numero_control',
+        'documento_relacionado_codigo_generacion',
+        'documento_relacionado_fecha_emision',
+        'tipo_documento',
+        // Estado de nota de crédito
+        'nota_credito_estado',
+        'nota_credito_id',
     ];
 
     protected $casts = [
@@ -66,5 +76,33 @@ class Factura extends Model
     public function eventoContingencia()
     {
         return $this->belongsTo(EventoContingencia::class, 'evento_contingencia_id');
+    }
+
+    /**
+     * Relación con el documento relacionado (para DTE-05)
+     * Una nota de crédito pertenece a un documento original
+     */
+    public function documentoRelacionado()
+    {
+        return $this->belongsTo(Factura::class, 'documento_relacionado_id');
+    }
+
+    /**
+     * Relación con la nota de crédito asociada
+     * Un documento puede tener una nota de crédito
+     */
+    public function notaCredito()
+    {
+        return $this->belongsTo(Factura::class, 'nota_credito_id');
+    }
+
+    /**
+     * Relación con las notas de crédito que referencian este documento
+     * Un documento puede tener múltiples notas de crédito
+     */
+    public function notasCredito()
+    {
+        return $this->hasMany(Factura::class, 'documento_relacionado_id')
+            ->where('tipo_dte', '05');
     }
 }

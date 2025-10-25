@@ -9,6 +9,7 @@ This is a Laravel 10 application for generating and managing electronic invoices
 **Supported DTE Types:**
 - **DTE-01**: Factura (Consumer Invoice) - Version 2
 - **DTE-03**: Comprobante de Crédito Fiscal (CCF - Tax Credit Certificate) - Version 3
+- **DTE-05**: Nota de Crédito (Credit Note) - Version 3
 
 ## Development Commands
 
@@ -133,6 +134,7 @@ php artisan cache:clear               # Clear application cache
 - **IVA Calculation**: The system uses different IVA rates per document type:
   - DTE-01 (Factura): 11.5% - Formula: `ventaGravada * 0.115`
   - DTE-03 (CCF): 13% - Formula: `ventaGravada * 0.13`
+  - DTE-05 (Nota de Crédito): Inherits rate from related document (11.5% if DTE-01, 13% if DTE-03)
 - **Document Numbering**: Control numbers auto-increment per document type, extracting last correlative from database
 - **Token Renewal**: Tokens expire in ~24h; system auto-renews at 23h 50min to prevent gaps
 - **SSL Verification**: Disabled in non-production environments (see MHApiService:62, 186)
@@ -314,35 +316,135 @@ MH_CONSULTA_LOTE_URL=https://apitest.dtes.mh.gob.sv/fesv/consultarlote
 
 ### Routes Structure
 
-- `/facturas` - List all invoices (both DTE-01 and DTE-03)
+- `/facturas` - List all invoices (DTE-01, DTE-03, and DTE-05)
 - `/facturas/crear` - Invoice creation form (DTE-01)
 - `/facturas/crear-ccf` - CCF creation form (DTE-03)
+- `/facturas/crear-nota-credito` - Credit Note creation form (DTE-05)
 - `/facturas/{id}` - Invoice details
 - `/admin/tokens` - Token management interface
 - `/contingencias` - Contingency events management
 - `/contingencias/crear` - Create new contingency event
 - `/contingencias/{id}` - Contingency event details and processing
 
-### DTE-03 (CCF) vs DTE-01 (Factura) Key Differences
+### DTE Types Comparison
 
-| Feature | DTE-01 (Factura) | DTE-03 (CCF) |
-|---------|------------------|--------------|
-| **JSON Version** | 2 | 3 |
-| **Receptor Document Type** | NIT, DUI, Passport, etc. | **Only NIT (code 36)** |
-| **Receptor NRC** | Optional | **Required** |
-| **Receptor Economic Activity Code** | Optional | **Required** |
-| **Purpose** | General sales | Sales to IVA-registered taxpayers (tax credit) |
-| **IVA Treatment** | Standard | Deductible tax credit for buyer |
+| Feature | DTE-01 (Factura) | DTE-03 (CCF) | DTE-05 (Nota de Crédito) |
+|---------|------------------|--------------|--------------------------|
+| **JSON Version** | 2 | 3 | 3 |
+| **Receptor Document Type** | NIT, DUI, Passport, etc. | **Only NIT (code 36)** | Uses same as related document |
+| **Receptor NRC** | Optional | **Required** | Copied from related document |
+| **Receptor Economic Activity Code** | Optional | **Required** | Copied from related document |
+| **Purpose** | General sales | Sales to IVA-registered taxpayers | Cancel/adjust DTE-01 or DTE-03 |
+| **IVA Rate** | 11.5% | 13% | **Always 13%** (regardless of related doc) |
+| **Requires Related Document** | No | No | **Yes (required)** |
 
 **Implementation Notes:**
-- The system automatically uses `version: 3` for DTE-03 and `version: 2` for DTE-01 (see DTEService.php:250)
-- Validation rules change dynamically based on `tipo_dte` (see FacturaController.php:57-58)
+- The system automatically uses `version: 3` for DTE-03 and DTE-05, and `version: 2` for DTE-01 (see DTEService.php)
+- Validation rules change dynamically based on `tipo_dte` (see FacturaController.php:71)
 - Each DTE type has independent numbering (correlativo) managed per `tipo_dte`
 
-**Critical CCF Validation:**
-- ⚠️ **Receptor NIT CANNOT be the same as Emisor NIT** - MH will reject with error "[receptor.nit] VALOR NO ES PERMITIDO"
-- The MH validates that the receptor NIT exists in their database and is registered for IVA
+**Critical Validations:**
+- ⚠️ **DTE-03 (CCF)**: Receptor NIT CANNOT be the same as Emisor NIT - MH will reject with error "[receptor.nit] VALOR NO ES PERMITIDO"
+- ⚠️ **DTE-05 (Nota de Crédito)**: Must reference a valid DTE-01 or DTE-03 that was successfully sent to MH
+- ⚠️ **All types**: The MH validates that NITs exist in their database (even in test environment)
 - For testing, see `DATOS_PRUEBA_CCF.md` for sample NITs or use command `php artisan mh:verificar-nit {nit}`
+
+### DTE-05 (Nota de Crédito) - Credit Notes
+
+**Purpose**: Credit Notes are used to cancel or adjust previously issued DTE-01 (Factura) or DTE-03 (CCF) documents.
+
+**Use Cases:**
+1. **Cancellation** (tipo_documento: 1) - Document issued in error
+2. **Price Adjustment** (tipo_documento: 2) - Correction of amounts
+3. **Returns** (tipo_documento: 3) - Customer returns products
+
+**Key Schema Differences from DTE-01/DTE-03:**
+
+The DTE-05 JSON schema is **completely different** from DTE-01 and DTE-03:
+
+**Fields REQUIRED in DTE-05:**
+- `documentoRelacionado` - Reference to the original DTE (tipo, numeroDocumento, fechaEmision)
+- `extension` - With fields: nombEntrega, docuEntrega, nombRecibe, docuRecibe, observaciones
+- `resumen.ivaPerci1` - IVA perceived (usually 0.0)
+- `resumen.reteRenta` - Income tax retention (usually 0.0)
+- `resumen.tributos` - Array with IVA object structure (codigo, descripcion, valor)
+- `receptor.nit` - Uses NIT directly (not tipoDocumento/numDocumento)
+- `receptor.nombreComercial` - Required
+- `emisor.tipoEstablecimiento` - '01' = Casa Matriz, '02' = Sucursal, '04' = Punto de Venta
+- `cuerpoDocumento[].numeroDocumento` - Number of related document
+- `cuerpoDocumento[].tipoItem` - Must be 2 (for version 3)
+- `cuerpoDocumento[].codTributo` - Tax code (null for non-taxed items)
+- `cuerpoDocumento[].ventaNoSuj` - Non-subject sales (usually 0.0)
+- `cuerpoDocumento[].ventaExenta` - Exempt sales (usually 0.0)
+- `cuerpoDocumento[].tributos` - Simple array of tax codes (e.g., ['20'] for IVA)
+
+**Fields NOT PERMITTED in DTE-05:**
+- `receptor.tipoDocumento` / `receptor.numDocumento` (uses only `nit`)
+- `receptor.direccion.distrito` / `emisor.direccion.distrito`
+- `emisor.codEstable` / `emisor.codPuntoVenta`
+- `resumen.totalIva`, `resumen.totalPagar`, `resumen.pagos`, `resumen.numPagoElectronico`
+- `resumen.porcentajeDescuento`, `resumen.observaciones`, `resumen.totalNoGravado`, `resumen.saldoFavor`
+- `cuerpoDocumento[].ivaItem`, `cuerpoDocumento[].psv`, `cuerpoDocumento[].noGravado`
+- `otrosDocumentos`
+
+**Document Related Type (CAT-025):**
+- `03` = Factura (when canceling/adjusting DTE-01)
+- `05` = Comprobante de Crédito Fiscal (when canceling/adjusting DTE-03)
+
+**Implementation:**
+- Auto-fills receptor data from the related document
+- **CRITICAL**: DTE-05 ALWAYS uses 13% IVA rate, regardless of the related document type
+  - Even if the related document is DTE-01 (11.5%), the credit note must use 13%
+  - This is a MH requirement validated during submission
+  - Enforced in `DTEService.php:561` with `$tasaIva = 0.13`
+- Validates that the related document exists and was successfully sent to MH
+- Observaciones moved from resumen to extension.observaciones
+- **CRITICAL**: Always uses `precioIncluyeIva = false` to ensure correct IVA calculations
+  - Credit note prices are copied from the original invoice which already has base amounts (venta gravada) separate from IVA
+  - This is enforced in `FacturaController.php:185`
+- `montoTotalOperacion` includes IVA (same as regular invoices): `totalGravada + IVA`
+
+**Important Limitation:**
+- ⚠️ **Credit Notes can ONLY be issued for invoices with NIT (not DUI)**
+- The system filters out invoices with `receptor_tipo_documento = '13'` (DUI) from the available list
+- This is because DTE-05 requires `receptor.nit` field and MH validates that the NIT exists in their database
+- DUIs (9 digits) are not valid NITs (14 digits) and will be rejected by MH with error "[receptor.nit] NIT CONTRIBUYENTE NO EXISTE"
+- Solution: Create new invoices using NIT (code 36) as document type for receptors who need credit notes
+
+**Migration:**
+Run `php artisan migrate` to add DTE-05 support fields:
+- `documento_relacionado_tipo_dte`
+- `documento_relacionado_numero_control`
+- `documento_relacionado_codigo_generacion`
+- `documento_relacionado_fecha_emision`
+- `tipo_documento` (1=Anulación, 2=Ajuste, 3=Devolución)
+
+**Common DTE-05 Errors and Solutions:**
+
+1. **`[cuerpoDocumento.item.1] DEBE PROPORCIONAR UN VALOR`**
+   - Cause: Missing required fields in item structure
+   - Solution: Ensure `tipoItem`, `codTributo`, `ventaNoSuj`, `ventaExenta`, `tributos` are all present
+
+2. **`Campo totalPagar no esta permitido en #/resumen`**
+   - Cause: DTE-05 does not use `totalPagar` field (unlike DTE-01/DTE-03)
+   - Solution: Use only `montoTotalOperacion` in resumen
+
+3. **`Campo noGravado no esta permitido`, `Campo psv no esta permitido`**
+   - Cause: These fields exist in DTE-03 but not in DTE-05
+   - Solution: Remove `psv` and `noGravado` from cuerpoDocumento items
+
+4. **`[resumen.tributos] FALTAN DATOS PARA VALIDAR INFORMACION`**
+   - Cause: Missing `tributos` array in resumen
+   - Solution: Add tributos array with IVA object: `[{codigo: '20', descripcion: 'IVA', valor: totalIva}]`
+
+5. **`[resumen.tributos.codigo.20] CALCULO INCORRECTO`**
+   - Cause: Using `precioIncluyeIva = true` when it should be `false`
+   - Solution: DTE-05 must always use `precioIncluyeIva = false` because prices come from the original invoice
+   - Implementation: See `FacturaController.php:185`
+
+6. **`[receptor.nit] NIT CONTRIBUYENTE NO EXISTE`**
+   - Cause: Trying to create credit note for invoice with DUI instead of NIT
+   - Solution: Only create credit notes for invoices where receptor has NIT (code 36)
 
 ### Environment Variables Required
 

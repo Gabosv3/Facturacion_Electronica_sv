@@ -21,6 +21,9 @@
                 <a href="{{ route('facturas.create_ccf') }}" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-sm">
                     + CCF
                 </a>
+                <a href="{{ route('facturas.create_nota_credito') }}" class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded text-sm">
+                    + Nota Crédito
+                </a>
             </div>
         </div>
     </div>
