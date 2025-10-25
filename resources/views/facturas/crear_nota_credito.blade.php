@@ -85,12 +85,28 @@
                                                     data-direccion="{{ $factura->receptor_direccion }}"
                                                     data-telefono="{{ $factura->receptor_telefono }}"
                                                     data-correo="{{ $factura->receptor_correo }}"
-                                                    data-items="{{ htmlspecialchars(json_encode($factura->items), ENT_QUOTES, 'UTF-8') }}">
+                                                    data-items="{{ htmlspecialchars(json_encode($factura->items), ENT_QUOTES, 'UTF-8') }}"
+                                                    data-nota-credito-estado="{{ $factura->nota_credito_estado }}"
+                                                    data-nota-credito-numero="{{ $factura->notaCredito ? $factura->notaCredito->numero_control : '' }}"
+                                                    data-nota-credito-fecha="{{ $factura->notaCredito ? $factura->notaCredito->fecha_emision->format('d/m/Y') : '' }}">
                                                 {{ $factura->tipo_dte === '01' ? 'FACTURA' : 'CCF' }} -
                                                 {{ $factura->numero_control }} -
                                                 {{ $factura->receptor_nombre }} -
                                                 ${{ number_format($factura->total_pagar, 2) }} -
                                                 {{ $factura->fecha_emision }}
+                                                @if($factura->nota_credito_estado)
+                                                    - [⚠️
+                                                    @if($factura->nota_credito_estado == 'anulacion')
+                                                        ANULADO
+                                                    @elseif($factura->nota_credito_estado == 'ajuste_precio')
+                                                        AJUSTE
+                                                    @elseif($factura->nota_credito_estado == 'devolucion')
+                                                        DEVOLUCIÓN
+                                                    @else
+                                                        CON NC
+                                                    @endif
+                                                    ]
+                                                @endif
                                             </option>
                                         @endforeach
                                     </select>
@@ -98,6 +114,32 @@
                                         Solo se muestran facturas con NIT enviadas exitosamente al MH.
                                         Total disponibles: {{ $facturasDisponibles->count() }}
                                     </p>
+
+                                    <!-- Alerta cuando se selecciona un documento con nota de crédito existente -->
+                                    <div id="alertaNotaCreditoExistente" class="hidden mt-4 p-4 border-2 rounded-lg">
+                                        <div class="flex items-start gap-3">
+                                            <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                            </svg>
+                                            <div class="flex-1">
+                                                <p class="font-bold text-lg mb-2">⚠️ Este documento ya tiene una Nota de Crédito</p>
+                                                <div id="detalleNotaCreditoExistente" class="text-sm space-y-1">
+                                                    <!-- Se llenará con JavaScript -->
+                                                </div>
+                                                <div class="mt-3 p-3 bg-white bg-opacity-50 rounded">
+                                                    <p class="text-sm font-semibold">💡 ¿Puedes crear otra Nota de Crédito?</p>
+                                                    <p class="text-xs mt-1">
+                                                        Técnicamente sí, el sistema te lo permite. Sin embargo, debes verificar:
+                                                    </p>
+                                                    <ul class="text-xs mt-1 ml-4 list-disc space-y-1">
+                                                        <li>Si el documento fue <strong>anulado</strong>, generalmente no se debe emitir otra NC</li>
+                                                        <li>Si fue un <strong>ajuste o devolución parcial</strong>, podrías necesitar otra NC para ajustes adicionales</li>
+                                                        <li>Consulta con tu contador o las políticas de tu empresa</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 @endif
                             </div>
 
@@ -335,6 +377,55 @@
                 } catch (e) {
                     console.error('Error parsing items:', e);
                     currentFacturaItems = [];
+                }
+
+                // ⚠️ VERIFICAR SI TIENE NOTA DE CRÉDITO EXISTENTE
+                const notaCreditoEstado = selectedOption.dataset.notaCreditoEstado;
+                const alertaDiv = document.getElementById('alertaNotaCreditoExistente');
+                const detalleDiv = document.getElementById('detalleNotaCreditoExistente');
+
+                if (notaCreditoEstado) {
+                    // Determinar color según tipo
+                    let colorClasses = '';
+                    let tipoTexto = '';
+                    let iconoTexto = '';
+
+                    if (notaCreditoEstado === 'anulacion') {
+                        colorClasses = 'border-red-400 bg-red-50 text-red-800';
+                        tipoTexto = 'ANULADO';
+                        iconoTexto = '🚫';
+                    } else if (notaCreditoEstado === 'ajuste_precio') {
+                        colorClasses = 'border-orange-400 bg-orange-50 text-orange-800';
+                        tipoTexto = 'AJUSTE DE PRECIO';
+                        iconoTexto = '💰';
+                    } else if (notaCreditoEstado === 'devolucion') {
+                        colorClasses = 'border-blue-400 bg-blue-50 text-blue-800';
+                        tipoTexto = 'DEVOLUCIÓN';
+                        iconoTexto = '📦';
+                    } else {
+                        colorClasses = 'border-gray-400 bg-gray-50 text-gray-800';
+                        tipoTexto = 'NOTA DE CRÉDITO';
+                        iconoTexto = '⚠️';
+                    }
+
+                    // Aplicar clases de color
+                    alertaDiv.className = `mt-4 p-4 border-2 rounded-lg ${colorClasses}`;
+
+                    // Llenar detalles
+                    const notaCreditoNumero = selectedOption.dataset.notaCreditoNumero;
+                    const notaCreditoFecha = selectedOption.dataset.notaCreditoFecha;
+
+                    detalleDiv.innerHTML = `
+                        <p class="font-semibold">${iconoTexto} Estado: <span class="uppercase">${tipoTexto}</span></p>
+                        <p class="mt-1">📄 Nota de Crédito existente: <strong>${notaCreditoNumero || 'N/A'}</strong></p>
+                        <p>📅 Fecha de emisión: <strong>${notaCreditoFecha || 'N/A'}</strong></p>
+                    `;
+
+                    // Mostrar alerta
+                    alertaDiv.classList.remove('hidden');
+                } else {
+                    // Ocultar alerta si no tiene nota de crédito
+                    alertaDiv.classList.add('hidden');
                 }
             }
         });

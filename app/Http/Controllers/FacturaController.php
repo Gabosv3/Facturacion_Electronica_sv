@@ -50,7 +50,7 @@ class FacturaController extends Controller
     {
         // Obtener facturas emitidas (DTE-01 y DTE-03) para relacionar
         // IMPORTANTE: DTE-05 requiere NIT, por lo tanto excluimos facturas con DUI (tipo_documento = 13)
-        $facturasDisponibles = Factura::with('items') // Cargar items de cada factura
+        $facturasDisponibles = Factura::with(['items', 'notaCredito']) // Cargar items y nota de crédito asociada
             ->whereIn('tipo_dte', ['01', '03'])
             ->where('estado', 'enviado_mh')
             ->where('receptor_tipo_documento', '!=', '13') // Excluir DUI
