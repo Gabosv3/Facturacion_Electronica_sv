@@ -473,6 +473,214 @@ class MHApiService
 
     /*
     |--------------------------------------------------------------------------
+    | Métodos Públicos de Consulta según especificaciones MH
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Consulta de DTE según especificaciones del Ministerio de Hacienda
+     * POST https://apitest.dtes.mh.gob.sv/fesv/recepcion/consultadte/
+     *
+     * @param string $nitEmisor NIT del emisor sin guiones
+     * @param string $tdte Tipo de DTE (01, 03, 05, etc.)
+     * @param string $codigoGeneracion Código de generación del documento
+     * @return array
+     */
+    public function consultarDTE(string $nitEmisor, string $tdte, string $codigoGeneracion): array
+    {
+        try {
+            $token = $this->obtenerToken();
+
+            if (!$token) {
+                return [
+                    'success' => false,
+                    'message' => 'No se pudo obtener token del Ministerio de Hacienda',
+                ];
+            }
+
+            $consultaDteUrl = config('dte.mh_consulta_dte_url');
+
+            Log::info('🔍 Consultando DTE en MH', [
+                'url' => $consultaDteUrl,
+                'nitEmisor' => $nitEmisor,
+                'tdte' => $tdte,
+                'codigoGeneracion' => $codigoGeneracion,
+            ]);
+
+            // Construir el payload
+            $payload = [
+                'nitEmisor' => $nitEmisor,
+                'tdte' => $tdte,
+                'codigoGeneracion' => $codigoGeneracion,
+            ];
+
+            Log::info('📤 Payload enviado a MH para consulta DTE', [
+                'payload' => $payload,
+                'headers' => [
+                    'Authorization' => 'Bearer ' . substr($token, 0, 20) . '...',
+                    'User-Agent' => config('dte.user_agent', 'SistemaFacturacion/1.0'),
+                ],
+            ]);
+
+            $response = Http::withHeaders([
+                'Content-Type' => 'application/json',
+                'Authorization' => 'Bearer ' . $token, // IMPORTANTE: Agregar "Bearer " al token
+                'User-Agent' => config('dte.user_agent', 'SistemaFacturacion/1.0'),
+            ])
+            ->withOptions([
+                'verify' => config('app.env') === 'production',
+            ])
+            ->timeout(30)
+            ->post($consultaDteUrl, $payload);
+
+            // Log de respuesta cruda
+            Log::info('📥 Respuesta cruda del MH', [
+                'status' => $response->status(),
+                'headers' => $response->headers(),
+                'body' => $response->body(),
+                'json' => $response->json(),
+            ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+
+                Log::info('✅ Consulta de DTE exitosa', [
+                    'response' => $data,
+                ]);
+
+                return [
+                    'success' => true,
+                    'message' => 'DTE consultado exitosamente',
+                    'data' => $data,
+                ];
+            }
+
+            // Intentar obtener JSON de error
+            $error = $response->json();
+            $errorBody = $response->body();
+
+            Log::error('❌ Error al consultar DTE', [
+                'status' => $response->status(),
+                'error_json' => $error,
+                'error_body' => $errorBody,
+                'headers' => $response->headers(),
+            ]);
+
+            return [
+                'success' => false,
+                'message' => 'Error al consultar DTE: ' . ($error['descripcionMsg'] ?? $error['mensaje'] ?? $errorBody),
+                'data' => $error,
+                'status' => $response->status(),
+                'raw_body' => $errorBody,
+            ];
+        } catch (\Exception $e) {
+            Log::error('❌ Excepción al consultar DTE', [
+                'exception' => $e->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'message' => 'Error al consultar DTE: ' . $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Consulta de Lote DTE según especificaciones del Ministerio de Hacienda
+     * GET https://apitest.dtes.mh.gob.sv/fesv/recepcion/consultadtelote/{codigoLote}
+     *
+     * @param string $codigoLote Código de lote asignado durante transmisión
+     * @return array
+     */
+    public function consultarDTELote(string $codigoLote): array
+    {
+        try {
+            $token = $this->obtenerToken();
+
+            if (!$token) {
+                return [
+                    'success' => false,
+                    'message' => 'No se pudo obtener token del Ministerio de Hacienda',
+                ];
+            }
+
+            $consultaDteLoteUrl = config('dte.mh_consulta_dte_lote_url') . '/' . $codigoLote;
+
+            Log::info('🔍 Consultando Lote DTE en MH', [
+                'url' => $consultaDteLoteUrl,
+                'codigoLote' => $codigoLote,
+                'headers' => [
+                    'Authorization' => 'Bearer ' . substr($token, 0, 20) . '...',
+                    'User-Agent' => config('dte.user_agent', 'SistemaFacturacion/1.0'),
+                ],
+            ]);
+
+            $response = Http::withHeaders([
+                'Content-Type' => 'application/json',
+                'Authorization' => 'Bearer ' . $token, // IMPORTANTE: Agregar "Bearer " al token
+                'User-Agent' => config('dte.user_agent', 'SistemaFacturacion/1.0'),
+            ])
+            ->withOptions([
+                'verify' => config('app.env') === 'production',
+            ])
+            ->timeout(30)
+            ->get($consultaDteLoteUrl); // GET según especificación MH
+
+            // Log de respuesta cruda
+            Log::info('📥 Respuesta cruda del MH (Lote)', [
+                'status' => $response->status(),
+                'headers' => $response->headers(),
+                'body' => $response->body(),
+                'json' => $response->json(),
+            ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+
+                Log::info('✅ Consulta de Lote DTE exitosa', [
+                    'codigoLote' => $codigoLote,
+                    'response' => $data,
+                ]);
+
+                return [
+                    'success' => true,
+                    'message' => 'Lote DTE consultado exitosamente',
+                    'data' => $data,
+                ];
+            }
+
+            // Intentar obtener JSON de error
+            $error = $response->json();
+            $errorBody = $response->body();
+
+            Log::error('❌ Error al consultar Lote DTE', [
+                'status' => $response->status(),
+                'error_json' => $error,
+                'error_body' => $errorBody,
+                'headers' => $response->headers(),
+            ]);
+
+            return [
+                'success' => false,
+                'message' => 'Error al consultar Lote DTE: ' . ($error['descripcionMsg'] ?? $error['mensaje'] ?? $errorBody),
+                'data' => $error,
+                'status' => $response->status(),
+                'raw_body' => $errorBody,
+            ];
+        } catch (\Exception $e) {
+            Log::error('❌ Excepción al consultar Lote DTE', [
+                'exception' => $e->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'message' => 'Error al consultar Lote DTE: ' . $e->getMessage(),
+            ];
+        }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
     | Métodos para Contingencia
     |--------------------------------------------------------------------------
     */

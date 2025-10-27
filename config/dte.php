@@ -75,6 +75,14 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | URLs de Consulta DTE
+    |--------------------------------------------------------------------------
+    */
+    'mh_consulta_dte_url' => env('MH_CONSULTA_DTE_URL', 'https://apitest.dtes.mh.gob.sv/fesv/recepcion/consultadte/'),
+    'mh_consulta_dte_lote_url' => env('MH_CONSULTA_DTE_LOTE_URL', 'https://apitest.dtes.mh.gob.sv/fesv/recepcion/consultadtelote'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Configuración de Lotes
     |--------------------------------------------------------------------------
     */

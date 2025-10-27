@@ -544,9 +544,53 @@ class FacturaController extends Controller
     /**
      * Listar facturas
      */
-    public function index()
+    public function index(Request $request)
     {
-        $facturas = Factura::orderBy('created_at', 'desc')->paginate(20);
+        $query = Factura::query();
+
+        // Búsqueda por texto (número de control, nombre de cliente, número de documento)
+        if ($request->filled('buscar')) {
+            $buscar = $request->input('buscar');
+            $query->where(function ($q) use ($buscar) {
+                $q->where('numero_control', 'LIKE', "%{$buscar}%")
+                  ->orWhere('receptor_nombre', 'LIKE', "%{$buscar}%")
+                  ->orWhere('receptor_num_documento', 'LIKE', "%{$buscar}%")
+                  ->orWhere('codigo_generacion', 'LIKE', "%{$buscar}%");
+            });
+        }
+
+        // Filtro por tipo de DTE
+        if ($request->filled('tipo_dte')) {
+            $query->where('tipo_dte', $request->input('tipo_dte'));
+        }
+
+        // Filtro por estado
+        if ($request->filled('estado')) {
+            $query->where('estado', $request->input('estado'));
+        }
+
+        // Filtro por rango de fechas específicas
+        if ($request->filled('fecha_desde')) {
+            $query->whereDate('fecha_emision', '>=', $request->input('fecha_desde'));
+        }
+
+        if ($request->filled('fecha_hasta')) {
+            $query->whereDate('fecha_emision', '<=', $request->input('fecha_hasta'));
+        }
+
+        // Filtro por mes y año
+        if ($request->filled('mes') && $request->filled('anio')) {
+            $mes = $request->input('mes');
+            $anio = $request->input('anio');
+            $query->whereMonth('fecha_emision', $mes)
+                  ->whereYear('fecha_emision', $anio);
+        } elseif ($request->filled('anio')) {
+            // Solo filtro por año si no hay mes seleccionado
+            $query->whereYear('fecha_emision', $request->input('anio'));
+        }
+
+        $facturas = $query->orderBy('created_at', 'desc')->paginate(20)->withQueryString();
+
         return view('facturas.index', compact('facturas'));
     }
 

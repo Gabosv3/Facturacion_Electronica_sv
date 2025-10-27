@@ -279,7 +279,10 @@
                 </div>
 
                 <!-- Botones de acción -->
-                <div class="flex gap-4 mt-8 pt-6 border-t">
+                <div class="flex flex-wrap gap-4 mt-8 pt-6 border-t">
+                    <a href="{{ route('facturas.index') }}" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold px-6 py-2 rounded-lg transition-colors">
+                        ← Volver al Listado
+                    </a>
                     <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg">
                         🖨️ Imprimir
                     </button>
@@ -289,6 +292,17 @@
                     <button onclick="toggleJSON()" class="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-6 py-2 rounded-lg">
                         👁️ Ver JSON
                     </button>
+
+                    @if($factura->estado === 'enviado_mh')
+                        <!-- Botón para consultar estado en MH -->
+                        <form action="{{ route('consultas.buscar') }}" method="POST" class="inline">
+                            @csrf
+                            <input type="hidden" name="factura_id" value="{{ $factura->id }}">
+                            <button type="submit" class="bg-orange-600 hover:bg-orange-700 text-white font-semibold px-6 py-2 rounded-lg transition-colors">
+                                🔍 Consultar en MH
+                            </button>
+                        </form>
+                    @endif
                 </div>
 
                 <!-- JSON Viewer (oculto por defecto) -->

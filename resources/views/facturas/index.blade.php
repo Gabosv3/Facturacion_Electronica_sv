@@ -17,6 +17,136 @@
                     <h1 class="text-3xl font-bold text-gray-800">Facturas Electrónicas</h1>
                 </div>
 
+                <!-- Formulario de Búsqueda y Filtros -->
+                <form method="GET" action="{{ route('facturas.index') }}" class="mb-6">
+                    <div class="bg-gray-50 p-4 rounded-lg space-y-4">
+                        <!-- Búsqueda por texto -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div class="lg:col-span-2">
+                                <label for="buscar" class="block text-sm font-medium text-gray-700 mb-1">Buscar</label>
+                                <input type="text"
+                                       id="buscar"
+                                       name="buscar"
+                                       value="{{ request('buscar') }}"
+                                       placeholder="Número de control, cliente, documento..."
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+
+                            <div>
+                                <label for="tipo_dte" class="block text-sm font-medium text-gray-700 mb-1">Tipo DTE</label>
+                                <select id="tipo_dte"
+                                        name="tipo_dte"
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="">Todos</option>
+                                    <option value="01" {{ request('tipo_dte') == '01' ? 'selected' : '' }}>DTE-01 (Factura)</option>
+                                    <option value="03" {{ request('tipo_dte') == '03' ? 'selected' : '' }}>DTE-03 (CCF)</option>
+                                    <option value="05" {{ request('tipo_dte') == '05' ? 'selected' : '' }}>DTE-05 (Nota Crédito)</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label for="estado" class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+                                <select id="estado"
+                                        name="estado"
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="">Todos</option>
+                                    <option value="enviado_mh" {{ request('estado') == 'enviado_mh' ? 'selected' : '' }}>Enviada MH</option>
+                                    <option value="firmado" {{ request('estado') == 'firmado' ? 'selected' : '' }}>Firmada</option>
+                                    <option value="firmado_sin_enviar" {{ request('estado') == 'firmado_sin_enviar' ? 'selected' : '' }}>Sin enviar</option>
+                                    <option value="firmado_contingencia" {{ request('estado') == 'firmado_contingencia' ? 'selected' : '' }}>Contingencia</option>
+                                    <option value="error_firma" {{ request('estado') == 'error_firma' ? 'selected' : '' }}>Error Firma</option>
+                                    <option value="rechazado" {{ request('estado') == 'rechazado' ? 'selected' : '' }}>Rechazado</option>
+                                    <option value="pendiente" {{ request('estado') == 'pendiente' ? 'selected' : '' }}>Pendiente</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Filtros de Fecha -->
+                        <div class="border-t border-gray-200 pt-4">
+                            <p class="text-sm font-medium text-gray-700 mb-3">Filtrar por Fecha</p>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                <!-- Rango de fechas -->
+                                <div>
+                                    <label for="fecha_desde" class="block text-xs font-medium text-gray-600 mb-1">Desde</label>
+                                    <input type="date"
+                                           id="fecha_desde"
+                                           name="fecha_desde"
+                                           value="{{ request('fecha_desde') }}"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+
+                                <div>
+                                    <label for="fecha_hasta" class="block text-xs font-medium text-gray-600 mb-1">Hasta</label>
+                                    <input type="date"
+                                           id="fecha_hasta"
+                                           name="fecha_hasta"
+                                           value="{{ request('fecha_hasta') }}"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+
+                                <!-- Mes y Año -->
+                                <div>
+                                    <label for="mes" class="block text-xs font-medium text-gray-600 mb-1">Mes</label>
+                                    <select id="mes"
+                                            name="mes"
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        <option value="">Todos</option>
+                                        <option value="1" {{ request('mes') == '1' ? 'selected' : '' }}>Enero</option>
+                                        <option value="2" {{ request('mes') == '2' ? 'selected' : '' }}>Febrero</option>
+                                        <option value="3" {{ request('mes') == '3' ? 'selected' : '' }}>Marzo</option>
+                                        <option value="4" {{ request('mes') == '4' ? 'selected' : '' }}>Abril</option>
+                                        <option value="5" {{ request('mes') == '5' ? 'selected' : '' }}>Mayo</option>
+                                        <option value="6" {{ request('mes') == '6' ? 'selected' : '' }}>Junio</option>
+                                        <option value="7" {{ request('mes') == '7' ? 'selected' : '' }}>Julio</option>
+                                        <option value="8" {{ request('mes') == '8' ? 'selected' : '' }}>Agosto</option>
+                                        <option value="9" {{ request('mes') == '9' ? 'selected' : '' }}>Septiembre</option>
+                                        <option value="10" {{ request('mes') == '10' ? 'selected' : '' }}>Octubre</option>
+                                        <option value="11" {{ request('mes') == '11' ? 'selected' : '' }}>Noviembre</option>
+                                        <option value="12" {{ request('mes') == '12' ? 'selected' : '' }}>Diciembre</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label for="anio" class="block text-xs font-medium text-gray-600 mb-1">Año</label>
+                                    <select id="anio"
+                                            name="anio"
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        <option value="">Todos</option>
+                                        @for($year = date('Y'); $year >= 2020; $year--)
+                                            <option value="{{ $year }}" {{ request('anio') == $year ? 'selected' : '' }}>{{ $year }}</option>
+                                        @endfor
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Botones de Acción -->
+                        <div class="flex items-center gap-3 pt-2">
+                            <button type="submit"
+                                    class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                                Buscar
+                            </button>
+
+                            <a href="{{ route('facturas.index') }}"
+                               class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg font-medium transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                                Limpiar Filtros
+                            </a>
+
+                            @if(request()->hasAny(['buscar', 'tipo_dte', 'estado', 'fecha_desde', 'fecha_hasta', 'mes', 'anio']))
+                                <span class="text-sm text-gray-600 ml-2">
+                                    <span class="font-semibold text-blue-600">{{ $facturas->total() }}</span> resultado(s) encontrado(s)
+                                </span>
+                            @endif
+                        </div>
+                    </div>
+                </form>
+
                 @if($facturas->count() > 0)
                     <div class="overflow-x-auto">
                         <table class="w-full">

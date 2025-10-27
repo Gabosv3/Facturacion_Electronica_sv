@@ -9,6 +9,9 @@
                     <a href="{{ route('facturas.index') }}" class="hover:text-gray-300 px-3 py-2 rounded {{ request()->routeIs('facturas.*') ? 'bg-gray-700' : '' }}">
                         Facturas
                     </a>
+                    <a href="{{ route('consultas.index') }}" class="hover:text-gray-300 px-3 py-2 rounded {{ request()->routeIs('consultas.*') ? 'bg-gray-700' : '' }}">
+                        🔍 Consultas MH
+                    </a>
                     <a href="{{ route('contingencias.index') }}" class="hover:text-gray-300 px-3 py-2 rounded {{ request()->routeIs('contingencias.*') ? 'bg-gray-700' : '' }}">
                         🚨 Contingencias
                     </a>

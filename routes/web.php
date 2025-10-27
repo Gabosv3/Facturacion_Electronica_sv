@@ -38,3 +38,14 @@ Route::prefix('contingencias')->name('contingencias.')->group(function () {
     Route::post('/{evento}/procesar', [ContingenciaController::class, 'procesar'])->name('procesar');
     Route::post('/{evento}/consultar-lote', [ContingenciaController::class, 'consultarLote'])->name('consultar-lote');
 });
+
+// Rutas de consultas DTE
+use App\Http\Controllers\ConsultaController;
+
+Route::prefix('consultas')->name('consultas.')->group(function () {
+    Route::get('/', [ConsultaController::class, 'index'])->name('index');
+    Route::post('/dte', [ConsultaController::class, 'consultarDTE'])->name('dte');
+    Route::post('/buscar', [ConsultaController::class, 'buscarYConsultar'])->name('buscar');
+    Route::post('/lote', [ConsultaController::class, 'consultarLote'])->name('lote');
+    Route::get('/rapida/{factura}', [ConsultaController::class, 'consultaRapida'])->name('rapida');
+});
