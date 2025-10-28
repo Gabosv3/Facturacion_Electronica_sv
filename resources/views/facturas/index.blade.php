@@ -41,6 +41,7 @@
                                     <option value="01" {{ request('tipo_dte') == '01' ? 'selected' : '' }}>DTE-01 (Factura)</option>
                                     <option value="03" {{ request('tipo_dte') == '03' ? 'selected' : '' }}>DTE-03 (CCF)</option>
                                     <option value="05" {{ request('tipo_dte') == '05' ? 'selected' : '' }}>DTE-05 (Nota Crédito)</option>
+                                    <option value="14" {{ request('tipo_dte') == '14' ? 'selected' : '' }}>DTE-14 (Sujeto Excluido)</option>
                                 </select>
                             </div>
 
@@ -172,6 +173,8 @@
                                             <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded">CCF-03</span>
                                         @elseif($factura->tipo_dte == '05')
                                             <span class="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-semibold rounded">NC-05</span>
+                                        @elseif($factura->tipo_dte == '14')
+                                            <span class="px-2 py-1 bg-orange-100 text-orange-800 text-xs font-semibold rounded">FSE-14</span>
                                         @else
                                             <span class="px-2 py-1 bg-gray-100 text-gray-800 text-xs font-semibold rounded">DTE-{{ $factura->tipo_dte }}</span>
                                         @endif

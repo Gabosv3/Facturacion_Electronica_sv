@@ -14,6 +14,7 @@ Route::prefix('facturas')->name('facturas.')->group(function () {
     Route::get('/crear', [FacturaController::class, 'create'])->name('create');
     Route::get('/crear-ccf', [FacturaController::class, 'createCCF'])->name('create_ccf');
     Route::get('/crear-nota-credito', [FacturaController::class, 'createNotaCredito'])->name('create_nota_credito');
+    Route::get('/crear-sujeto-excluido', [FacturaController::class, 'createSujetoExcluido'])->name('create_sujeto_excluido');
     Route::post('/guardar', [FacturaController::class, 'store'])->name('store');
     Route::get('/{factura}', [FacturaController::class, 'show'])->name('show');
     Route::delete('/{factura}', [FacturaController::class, 'destroy'])->name('destroy');

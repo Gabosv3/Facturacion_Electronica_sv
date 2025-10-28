@@ -61,7 +61,15 @@ class FacturaController extends Controller
     }
 
     /**
-     * Guardar y firmar factura (DTE-01 o DTE-03)
+     * Mostrar formulario crear Factura de Sujeto Excluido (DTE-14)
+     */
+    public function createSujetoExcluido()
+    {
+        return view('facturas.crear_sujeto_excluido');
+    }
+
+    /**
+     * Guardar y firmar factura (DTE-01, DTE-03, DTE-05, DTE-14)
      */
     public function store(Request $request)
     {
@@ -71,7 +79,7 @@ class FacturaController extends Controller
         // Validaciones base
         $rules = [
             // Tipo DTE
-            'tipo_dte' => 'required|string|in:01,03,05',
+            'tipo_dte' => 'required|string|in:01,03,05,14',
 
             // Receptor
             'receptor_tipo_documento' => 'required|string|size:2',
@@ -114,6 +122,15 @@ class FacturaController extends Controller
         // Validación especial para CCF (DTE-03): solo acepta NIT
         if ($tipoDte === '03') {
             $rules['receptor_tipo_documento'] .= '|in:36'; // Solo NIT para CCF
+        }
+
+        // Validaciones específicas para Factura de Sujeto Excluido (DTE-14)
+        if ($tipoDte === '14') {
+            // Según MH, codActividad y descActividad son OPCIONALES para FE y FSEE
+            $rules['receptor_cod_actividad'] = 'nullable|string|max:10';
+            $rules['receptor_desc_actividad'] = 'nullable|string|min:5|max:150';
+            // El distrito NO es requerido para DTE-14
+            $rules['receptor_distrito'] = 'nullable|string|size:2';
         }
 
         // Validar datos
@@ -197,12 +214,13 @@ class FacturaController extends Controller
             $dteJson = $this->dteService->construirDteJson($datosFactura, $precioIncluyeIva);
 
             // 🔍 LOG: Ver DTE JSON completo generado
+            // Todos los DTEs ahora usan 'receptor' en la estructura JSON
             Log::info('📋 DTE JSON COMPLETO GENERADO', [
                 'tipo_dte' => $validated['tipo_dte'],
                 'cuerpoDocumento_count' => count($dteJson['dteJson']['cuerpoDocumento'] ?? []),
                 'cuerpoDocumento' => $dteJson['dteJson']['cuerpoDocumento'] ?? [],
                 'dte_completo' => json_encode($dteJson, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE),
-                'receptor_completo' => $dteJson['dteJson']['receptor'],
+                'receptor_completo' => $dteJson['dteJson']['receptor'] ?? 'NO ENCONTRADO',
                 'receptor_nit_enviado' => $dteJson['dteJson']['receptor']['nit'] ?? $dteJson['dteJson']['receptor']['numDocumento'] ?? 'NO ENCONTRADO',
                 'tipo_documento_receptor' => $dteJson['dteJson']['receptor']['tipoDocumento'] ?? 'NO ENCONTRADO',
             ]);
@@ -213,6 +231,9 @@ class FacturaController extends Controller
                 // Para DTE-05, SIEMPRE usar IVA del 13% según validación del MH
                 // (Independientemente del tipo de documento relacionado)
                 $totalIva = round($dteJson['dteJson']['resumen']['totalGravada'] * 0.13, 2);
+            } elseif ($validated['tipo_dte'] === '14') {
+                // Para DTE-14 (Sujeto Excluido), el IVA SIEMPRE es 0
+                $totalIva = 0.00;
             } elseif ($validated['tipo_dte'] === '03') {
                 $totalIva = $dteJson['dteJson']['resumen']['totalIva'] ?? 0;  // CCF: guardado para BD
             } else {
@@ -220,32 +241,66 @@ class FacturaController extends Controller
             }
 
             // Guardar factura en BD
-            $datosFacturaDB = [
-                'numero_control' => $dteJson['dteJson']['identificacion']['numeroControl'],
-                'codigo_generacion' => $dteJson['dteJson']['identificacion']['codigoGeneracion'],
-                'tipo_dte' => $validated['tipo_dte'],
-                'fecha_emision' => $dteJson['dteJson']['identificacion']['fecEmi'],
-                'hora_emision' => $dteJson['dteJson']['identificacion']['horEmi'],
-                'receptor_tipo_documento' => $validated['receptor_tipo_documento'],
-                'receptor_num_documento' => $validated['receptor_num_documento'],
-                'receptor_nombre' => $validated['receptor_nombre'],
-                'receptor_nrc' => $validated['receptor_nrc'],
-                'receptor_actividad' => $validated['receptor_cod_actividad'],
-                'receptor_direccion' => json_encode($dteJson['dteJson']['receptor']['direccion']),
-                'receptor_telefono' => $validated['receptor_telefono'],
-                'receptor_correo' => $validated['receptor_correo'],
-                'total_gravada' => $dteJson['dteJson']['resumen']['totalGravada'],
-                'total_exenta' => $dteJson['dteJson']['resumen']['totalExenta'],
-                'total_no_sujeto' => $dteJson['dteJson']['resumen']['totalNoSuj'],
-                'total_descuento' => $dteJson['dteJson']['resumen']['totalDescu'],
-                'sub_total' => $dteJson['dteJson']['resumen']['subTotal'],
-                'total_iva' => $totalIva,
-                'total_pagar' => $dteJson['dteJson']['resumen']['montoTotalOperacion'] ?? $dteJson['dteJson']['resumen']['totalPagar'] ?? 0,
-                'total_letras' => $dteJson['dteJson']['resumen']['totalLetras'],
-                'condicion_operacion' => $validated['condicion_operacion'],
-                'dte_json' => $dteJson,
-                'estado' => 'pendiente',
-            ];
+            // Todos los DTEs usan 'receptor' en la estructura JSON
+            $receptorDireccion = $dteJson['dteJson']['receptor']['direccion'];
+
+            // Para DTE-14, la estructura de resumen es diferente
+            if ($validated['tipo_dte'] === '14') {
+                $datosFacturaDB = [
+                    'numero_control' => $dteJson['dteJson']['identificacion']['numeroControl'],
+                    'codigo_generacion' => $dteJson['dteJson']['identificacion']['codigoGeneracion'],
+                    'tipo_dte' => $validated['tipo_dte'],
+                    'fecha_emision' => $dteJson['dteJson']['identificacion']['fecEmi'],
+                    'hora_emision' => $dteJson['dteJson']['identificacion']['horEmi'],
+                    'receptor_tipo_documento' => $validated['receptor_tipo_documento'],
+                    'receptor_num_documento' => $validated['receptor_num_documento'],
+                    'receptor_nombre' => $validated['receptor_nombre'],
+                    'receptor_nrc' => $validated['receptor_nrc'] ?? null,
+                    'receptor_actividad' => $validated['receptor_cod_actividad'] ?? null,
+                    'receptor_direccion' => json_encode($receptorDireccion),
+                    'receptor_telefono' => $validated['receptor_telefono'],
+                    'receptor_correo' => $validated['receptor_correo'],
+                    // DTE-14 usa totalCompra en lugar de totalGravada/totalExenta
+                    'total_gravada' => 0.00,
+                    'total_exenta' => $dteJson['dteJson']['resumen']['totalCompra'] ?? 0,
+                    'total_no_sujeto' => 0.00,
+                    'total_descuento' => $dteJson['dteJson']['resumen']['descu'] ?? 0,
+                    'sub_total' => $dteJson['dteJson']['resumen']['totalCompra'] ?? 0,
+                    'total_iva' => 0.00,  // DTE-14 nunca tiene IVA
+                    'total_pagar' => $dteJson['dteJson']['resumen']['totalPagar'] ?? 0,
+                    'total_letras' => $dteJson['dteJson']['resumen']['totalLetras'],
+                    'condicion_operacion' => $validated['condicion_operacion'],
+                    'dte_json' => $dteJson,
+                    'estado' => 'pendiente',
+                ];
+            } else {
+                $datosFacturaDB = [
+                    'numero_control' => $dteJson['dteJson']['identificacion']['numeroControl'],
+                    'codigo_generacion' => $dteJson['dteJson']['identificacion']['codigoGeneracion'],
+                    'tipo_dte' => $validated['tipo_dte'],
+                    'fecha_emision' => $dteJson['dteJson']['identificacion']['fecEmi'],
+                    'hora_emision' => $dteJson['dteJson']['identificacion']['horEmi'],
+                    'receptor_tipo_documento' => $validated['receptor_tipo_documento'],
+                    'receptor_num_documento' => $validated['receptor_num_documento'],
+                    'receptor_nombre' => $validated['receptor_nombre'],
+                    'receptor_nrc' => $validated['receptor_nrc'] ?? null,
+                    'receptor_actividad' => $validated['receptor_cod_actividad'] ?? null,
+                    'receptor_direccion' => json_encode($receptorDireccion),
+                    'receptor_telefono' => $validated['receptor_telefono'],
+                    'receptor_correo' => $validated['receptor_correo'],
+                    'total_gravada' => $dteJson['dteJson']['resumen']['totalGravada'] ?? 0,
+                    'total_exenta' => $dteJson['dteJson']['resumen']['totalExenta'] ?? 0,
+                    'total_no_sujeto' => $dteJson['dteJson']['resumen']['totalNoSuj'] ?? 0,
+                    'total_descuento' => $dteJson['dteJson']['resumen']['totalDescu'] ?? 0,
+                    'sub_total' => $dteJson['dteJson']['resumen']['subTotal'] ?? 0,
+                    'total_iva' => $totalIva,
+                    'total_pagar' => $dteJson['dteJson']['resumen']['montoTotalOperacion'] ?? $dteJson['dteJson']['resumen']['totalPagar'] ?? 0,
+                    'total_letras' => $dteJson['dteJson']['resumen']['totalLetras'],
+                    'condicion_operacion' => $validated['condicion_operacion'],
+                    'dte_json' => $dteJson,
+                    'estado' => 'pendiente',
+                ];
+            }
 
             // Agregar campos de documento relacionado si es DTE-05
             if ($tipoDte === '05' && $documentoRelacionado) {
@@ -261,28 +316,46 @@ class FacturaController extends Controller
 
             // Guardar items
             foreach ($dteJson['dteJson']['cuerpoDocumento'] as $item) {
-                // Calcular IVA para guardar en BD
-                // CCF (DTE-03) y Nota de Crédito (DTE-05) no tienen ivaItem en cuerpoDocumento
-                if ($validated['tipo_dte'] === '03' || $validated['tipo_dte'] === '05') {
-                    // DTE-03 y DTE-05 SIEMPRE usan 13% según validación del MH
-                    $ivaItem = round($item['ventaGravada'] * 0.13, 2);
+                // Para DTE-14, la estructura de items es diferente
+                if ($validated['tipo_dte'] === '14') {
+                    // DTE-14 usa 'compra' en lugar de ventaGravada/ventaExenta
+                    $factura->items()->create([
+                        'num_item' => $item['numItem'],
+                        'codigo' => $item['codigo'] ?? null,
+                        'descripcion' => $item['descripcion'],
+                        'cantidad' => $item['cantidad'],
+                        'uni_medida' => $item['uniMedida'],
+                        'precio_unitario' => $item['precioUni'],
+                        'monto_descuento' => $item['montoDescu'] ?? 0,
+                        'venta_gravada' => 0.00,  // DTE-14 no tiene venta gravada
+                        'venta_exenta' => $item['compra'],  // El campo 'compra' va como exenta
+                        'venta_no_sujeta' => 0.00,
+                        'iva_item' => 0.00,  // DTE-14 nunca tiene IVA
+                    ]);
                 } else {
-                    $ivaItem = $item['ivaItem'];
-                }
+                    // Para DTE-01, DTE-03, DTE-05 (estructura normal)
+                    // Calcular IVA para guardar en BD
+                    if ($validated['tipo_dte'] === '03' || $validated['tipo_dte'] === '05') {
+                        // DTE-03 y DTE-05 SIEMPRE usan 13% según validación del MH
+                        $ivaItem = round($item['ventaGravada'] * 0.13, 2);
+                    } else {
+                        $ivaItem = $item['ivaItem'];
+                    }
 
-                $factura->items()->create([
-                    'num_item' => $item['numItem'],
-                    'codigo' => $item['codigo'],
-                    'descripcion' => $item['descripcion'],
-                    'cantidad' => $item['cantidad'],
-                    'uni_medida' => $item['uniMedida'],
-                    'precio_unitario' => $item['precioUni'],
-                    'monto_descuento' => $item['montoDescu'],
-                    'venta_gravada' => $item['ventaGravada'],
-                    'venta_exenta' => $item['ventaExenta'] ?? 0,
-                    'venta_no_sujeta' => $item['ventaNoSuj'] ?? 0,
-                    'iva_item' => $ivaItem,
-                ]);
+                    $factura->items()->create([
+                        'num_item' => $item['numItem'],
+                        'codigo' => $item['codigo'],
+                        'descripcion' => $item['descripcion'],
+                        'cantidad' => $item['cantidad'],
+                        'uni_medida' => $item['uniMedida'],
+                        'precio_unitario' => $item['precioUni'],
+                        'monto_descuento' => $item['montoDescu'],
+                        'venta_gravada' => $item['ventaGravada'],
+                        'venta_exenta' => $item['ventaExenta'] ?? 0,
+                        'venta_no_sujeta' => $item['ventaNoSuj'] ?? 0,
+                        'iva_item' => $ivaItem,
+                    ]);
+                }
             }
 
             // Si es CCF, limpiar campos que no deben ir al MH
@@ -526,8 +599,12 @@ class FacturaController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Error al procesar factura: ' . $e->getMessage());
-            return back()->with('error', 'Error al procesar la factura: ' . $e->getMessage())
+            Log::error('Error al procesar factura: ' . $e->getMessage(), [
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return back()->with('error', 'Error al procesar la factura: ' . $e->getMessage() . ' (Línea: ' . $e->getLine() . ')')
                 ->withInput();
         }
     }

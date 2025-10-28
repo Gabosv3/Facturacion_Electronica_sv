@@ -348,6 +348,11 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
             return $this->construirDteNotaCredito($datos, $precioIncluyeIva);
         }
 
+        // Si es Factura de Sujeto Excluido (DTE-14), usar método específico
+        if ($tipoDte === '14') {
+            return $this->construirDteSujetoExcluido($datos, $precioIncluyeIva);
+        }
+
         // Para DTE-01 (Factura) usar el método original
         return $this->construirDteFactura($datos, $precioIncluyeIva);
     }
@@ -854,6 +859,152 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
                 ],
                 'apendice' => null,
             ]
+        ];
+    }
+
+    /**
+     * Construir JSON para DTE-14 (Factura de Sujeto Excluido)
+     * Esquema según errores del MH:
+     * - Versión 3 (no 1)
+     * - Usa 'receptor' (no 'sujetoExcluido')
+     * - NO incluye 'extension'
+     * - Campos específicos en resumen y cuerpoDocumento
+     * - Requiere tipoContingencia y motivoContin
+     * - Requiere distrito en emisor
+     */
+    private function construirDteSujetoExcluido(array $datos, bool $precioIncluyeIva = false): array
+    {
+        $numeroControl = $this->generarNumeroControl('14');
+        $codigoGeneracion = $this->generarCodigoGeneracion();
+        $fechaEmision = now()->format('Y-m-d');
+        $horaEmision = now()->format('H:i:s');
+
+        // Para sujeto excluido todo es "compra" (no hay IVA)
+        $totalCompra = 0;
+        $totalDescuento = 0;
+
+        $items = [];
+        foreach ($datos['items'] as $index => $item) {
+            $cantidad = (float) $item['cantidad'];
+            $precioUnitario = (float) $item['precio_unitario'];
+            $montoDescu = (float) ($item['monto_descuento'] ?? 0);
+
+            // Calcular compra (precio total sin IVA)
+            $compra = round(($cantidad * $precioUnitario) - $montoDescu, 2);
+            $totalCompra += $compra;
+            $totalDescuento += $montoDescu;
+
+            $items[] = [
+                'numItem' => $index + 1,
+                'tipoItem' => 2, // 2 = Bienes
+                'cantidad' => $cantidad,
+                'codigo' => $item['codigo'] ?? null,
+                'uniMedida' => (int) ($item['uni_medida'] ?? 59),
+                'descripcion' => $item['descripcion'],
+                'precioUni' => $precioUnitario,
+                'montoDescu' => $montoDescu,
+                'compra' => $compra, // Campo requerido para DTE-14
+            ];
+        }
+
+        $totalPagar = $totalCompra;
+        $totalLetras = $this->numeroALetras($totalPagar);
+
+        // Formatear número de documento del receptor
+        $numDocumentoFormateado = $this->formatearNumeroDocumento(
+            $datos['receptor']['tipo_documento'],
+            $datos['receptor']['num_documento']
+        );
+
+        return [
+            'nit' => config('dte.nit'),
+            'activo' => true,
+            'passwordPri' => config('dte.password_pri'),
+            'dteJson' => [
+                'identificacion' => [
+                    'version' => 2, // Versión 2 para DTE-14
+                    'ambiente' => config('dte.ambiente', '00'),
+                    'tipoDte' => '14',
+                    'numeroControl' => $numeroControl,
+                    'codigoGeneracion' => $codigoGeneracion,
+                    'tipoModelo' => 1,
+                    'tipoOperacion' => 1,
+                    'tipoContingencia' => null,
+                    'motivoContin' => null,
+                    'fecEmi' => $fechaEmision,
+                    'horEmi' => $horaEmision,
+                    'tipoMoneda' => 'USD',
+                ],
+                'emisor' => [
+                    'nit' => config('dte.emisor.nit'),
+                    'nrc' => config('dte.emisor.nrc'),
+                    'nombre' => config('dte.emisor.nombre'),
+                    'codActividad' => config('dte.emisor.cod_actividad'),
+                    'descActividad' => config('dte.emisor.desc_actividad'),
+                    'direccion' => [
+                        'departamento' => config('dte.emisor.direccion.departamento'),
+                        'municipio' => config('dte.emisor.direccion.municipio'),
+                        'distrito' => config('dte.emisor.direccion.distrito'),
+                        'complemento' => config('dte.emisor.direccion.complemento'),
+                    ],
+                    'telefono' => config('dte.emisor.telefono'),
+                    'correo' => config('dte.emisor.correo'),
+                    'codEstable' => config('dte.emisor.cod_estable', '0000'),
+                    'codPuntoVenta' => config('dte.emisor.cod_punto_venta', '0000'),
+                ],
+                'receptor' => [ // USA 'receptor', NO 'sujetoExcluido'
+                    'tipoDocumento' => $datos['receptor']['tipo_documento'],
+                    'numDocumento' => $numDocumentoFormateado,
+                    'nombre' => $datos['receptor']['nombre'],
+                    'codActividad' => $datos['receptor']['cod_actividad'] ?? null,
+                    'descActividad' => !empty($datos['receptor']['desc_actividad']) && strlen($datos['receptor']['desc_actividad']) >= 5
+                        ? $datos['receptor']['desc_actividad']
+                        : null,
+                    'direccion' => [
+                        'departamento' => $datos['receptor']['departamento'],
+                        'municipio' => $datos['receptor']['municipio'],
+                        'distrito' => $datos['receptor']['distrito'] ?? '01', // Requerido por MH
+                        'complemento' => $datos['receptor']['complemento'],
+                    ],
+                    'telefono' => $datos['receptor']['telefono'] ?? null,
+                    'correo' => $datos['receptor']['correo'] ?? null,
+                ],
+                'cuerpoDocumento' => $items,
+                'resumen' => [
+                    'totalCompra' => $totalCompra,
+                    'descu' => $totalDescuento,
+                    'totalDescu' => $totalDescuento, // Requerido por MH
+                    'subTotal' => $totalCompra - $totalDescuento, // Requerido por MH
+                    'reteRenta' => 0.00, // Requerido por MH
+                    'totalPagar' => $totalPagar,
+                    'totalLetras' => $totalLetras,
+                    'condicionOperacion' => (int) ($datos['condicion_operacion'] ?? 1),
+                    'pagos' => [
+                        [
+                            'codigo' => $datos['forma_pago'] ?? '01',
+                            'montoPago' => $totalPagar,
+                            'referencia' => $datos['referencia_pago'] ?? null,
+                            'plazo' => null,
+                            'periodo' => null,
+                        ]
+                    ],
+                    'observaciones' => $datos['observaciones'] ?? null,
+                ],
+                'apendice' => null,
+            ],
+            // Datos para BD
+            'items' => $items,
+            'totales' => [
+                'total_no_sujeto' => 0.0,
+                'total_exenta' => $totalCompra,
+                'total_gravada' => 0.0,
+                'sub_total_ventas' => $totalCompra,
+                'total_descuento' => $totalDescuento,
+                'sub_total' => $totalCompra,
+                'total_iva' => 0.0, // SIEMPRE 0
+                'monto_total_operacion' => $totalPagar,
+                'total_pagar' => $totalPagar,
+            ],
         ];
     }
 }

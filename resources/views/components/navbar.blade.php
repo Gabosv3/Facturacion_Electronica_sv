@@ -27,6 +27,9 @@
                 <a href="{{ route('facturas.create_nota_credito') }}" class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded text-sm">
                     + Nota Crédito
                 </a>
+                <a href="{{ route('facturas.create_sujeto_excluido') }}" class="bg-orange-600 hover:bg-orange-700 px-4 py-2 rounded text-sm">
+                    + Sujeto Excluido
+                </a>
             </div>
         </div>
     </div>
