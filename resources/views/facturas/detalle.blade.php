@@ -278,6 +278,33 @@
                     </div>
                 </div>
 
+                <!-- Código QR para Consulta Pública -->
+                @if($factura->estado == 'enviado_mh')
+                    <div class="mt-8 pt-6 border-t">
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                            <div class="flex flex-col md:flex-row items-center gap-6">
+                                <div class="flex-shrink-0">
+                                    <img src="{{ $factura->getQrCodeUrl(200) }}"
+                                         alt="Código QR de Consulta Pública"
+                                         class="border-4 border-white shadow-lg rounded-lg"
+                                         width="200"
+                                         height="200">
+                                </div>
+                                <div class="flex-1 text-center md:text-left">
+                                    <h3 class="text-lg font-semibold text-blue-800 mb-2">📱 Código QR de Consulta Pública</h3>
+                                    <p class="text-sm text-blue-700 mb-3">
+                                        Escanee este código QR para verificar la validez de este documento en el portal del Ministerio de Hacienda.
+                                    </p>
+                                    <div class="bg-white rounded p-3 border border-blue-200">
+                                        <p class="text-xs text-gray-600 font-medium mb-1">URL de consulta:</p>
+                                        <p class="text-xs text-blue-600 break-all font-mono">{{ $factura->getUrlConsultaPublica() }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
                 <!-- Botones de acción -->
                 <div class="flex flex-wrap gap-4 mt-8 pt-6 border-t">
                     <a href="{{ route('facturas.index') }}" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold px-6 py-2 rounded-lg transition-colors">
@@ -430,7 +457,16 @@
                 .container, .container * { visibility: visible; }
                 .container { position: absolute; left: 0; top: 0; }
                 button { display: none !important; }
-                a { display: none !important; }
+                a[href*="facturas.index"] { display: none !important; }
+                form { display: none !important; }
+                #jsonViewer { display: none !important; }
+                /* Asegurar que el QR se imprima */
+                img[alt*="QR"] {
+                    visibility: visible !important;
+                    display: block !important;
+                    -webkit-print-color-adjust: exact;
+                    print-color-adjust: exact;
+                }
             }
         `;
         document.head.appendChild(style);

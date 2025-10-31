@@ -332,6 +332,38 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
     }
 
     /**
+     * Construir objeto receptor con campos opcionales como null
+     * Según esquema MH v2: los campos opcionales deben estar presentes con valor null si no tienen datos
+     * IMPORTANTE: DTE-14 (Sujeto Excluido) NO permite el campo 'nrc' en el esquema
+     *
+     * @param array $data Datos del receptor
+     * @param bool $omitirNrc Si es true, no incluye el campo nrc (para DTE-14)
+     * @return array Receptor con campos opcionales como null cuando están vacíos
+     */
+    private function construirReceptor(array $data, bool $omitirNrc = false): array
+    {
+        // Campos requeridos siempre presentes
+        $receptor = [
+            'tipoDocumento' => $data['tipoDocumento'],
+            'numDocumento' => $data['numDocumento'],
+        ];
+
+        // NRC: solo incluir si no es DTE-14 (Sujeto Excluido)
+        if (!$omitirNrc) {
+            $receptor['nrc'] = !empty($data['nrc']) ? $data['nrc'] : null;
+        }
+
+        $receptor['nombre'] = $data['nombre'];
+        $receptor['codActividad'] = !empty($data['codActividad']) ? $data['codActividad'] : null;
+        $receptor['descActividad'] = !empty($data['descActividad']) ? $data['descActividad'] : null;
+        $receptor['direccion'] = $data['direccion'];
+        $receptor['telefono'] = !empty($data['telefono']) ? $data['telefono'] : null;
+        $receptor['correo'] = !empty($data['correo']) ? $data['correo'] : null;
+
+        return $receptor;
+    }
+
+    /**
      * Construir JSON según tipo de DTE
      */
     public function construirDteJson(array $datos, bool $precioIncluyeIva = true): array
@@ -415,24 +447,24 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
                     'telefono' => config('dte.emisor.telefono'),
                     'correo' => config('dte.emisor.correo'),
                 ],
-                'receptor' => [
-    'tipoDocumento' => $datos['receptor']['tipo_documento'],
-    'numDocumento' => $numDocumentoFormateado,
-    'nrc' => $datos['receptor']['nrc'] ?? null,
-    'nombre' => $datos['receptor']['nombre'],
-    'codActividad' => $datos['receptor']['cod_actividad'] ?? null,
-    'descActividad' => !empty($datos['receptor']['desc_actividad']) && strlen($datos['receptor']['desc_actividad']) >= 5
-        ? $datos['receptor']['desc_actividad']
-        : 'ACTIVIDADES NO ESPECIFICADAS',
-    'direccion' => [
-        'departamento' => $datos['receptor']['departamento'],
-        'municipio' => $datos['receptor']['municipio'],
-        'distrito' => $datos['receptor']['distrito'] ? str_pad($datos['receptor']['distrito'], 2, '0', STR_PAD_LEFT) : '03', // Código de distrito según CAT-12 (formato 2 dígitos)
-        'complemento' => $datos['receptor']['complemento'],
-    ],
-    'telefono' => $datos['receptor']['telefono'] ?? null,
-    'correo' => $datos['receptor']['correo'] ?? null,
-],
+                'receptor' => $this->construirReceptor([
+                    'tipoDocumento' => $datos['receptor']['tipo_documento'],
+                    'numDocumento' => $numDocumentoFormateado,
+                    'nrc' => $datos['receptor']['nrc'] ?? null,
+                    'nombre' => $datos['receptor']['nombre'],
+                    'codActividad' => $datos['receptor']['cod_actividad'] ?? null,
+                    'descActividad' => !empty($datos['receptor']['desc_actividad']) && strlen($datos['receptor']['desc_actividad']) >= 5
+                        ? $datos['receptor']['desc_actividad']
+                        : null,
+                    'direccion' => [
+                        'departamento' => $datos['receptor']['departamento'],
+                        'municipio' => $datos['receptor']['municipio'],
+                        'distrito' => $datos['receptor']['distrito'] ? str_pad($datos['receptor']['distrito'], 2, '0', STR_PAD_LEFT) : '03',
+                        'complemento' => $datos['receptor']['complemento'],
+                    ],
+                    'telefono' => $datos['receptor']['telefono'] ?? null,
+                    'correo' => $datos['receptor']['correo'] ?? null,
+                ]),
                 'ventaTercero' => null,
                 'cuerpoDocumento' => array_map(function ($item, $index) {
                     return [
@@ -491,6 +523,8 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
                 'apendice' => null,
             ]
         ];
+
+        return $resultado;
     }
 
     /**
@@ -642,6 +676,8 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
                 'otrosDocumentos' => null,  // Requerido en CCF (puede ser null según algunos casos)
             ]
         ];
+
+        return $resultado;
     }
 
     /**
@@ -860,6 +896,9 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
                 'apendice' => null,
             ]
         ];
+
+        // Limpiar valores null del JSON antes de retornar
+        return $resultado;
     }
 
     /**
@@ -952,10 +991,11 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
                     'codEstable' => config('dte.emisor.cod_estable', '0000'),
                     'codPuntoVenta' => config('dte.emisor.cod_punto_venta', '0000'),
                 ],
-                'receptor' => [ // USA 'receptor', NO 'sujetoExcluido'
+                'receptor' => $this->construirReceptor([ // USA 'receptor', NO 'sujetoExcluido'
                     'tipoDocumento' => $datos['receptor']['tipo_documento'],
                     'numDocumento' => $numDocumentoFormateado,
                     'nombre' => $datos['receptor']['nombre'],
+                    'nrc' => $datos['receptor']['nrc'] ?? null,
                     'codActividad' => $datos['receptor']['cod_actividad'] ?? null,
                     'descActividad' => !empty($datos['receptor']['desc_actividad']) && strlen($datos['receptor']['desc_actividad']) >= 5
                         ? $datos['receptor']['desc_actividad']
@@ -963,12 +1003,12 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
                     'direccion' => [
                         'departamento' => $datos['receptor']['departamento'],
                         'municipio' => $datos['receptor']['municipio'],
-                        'distrito' => $datos['receptor']['distrito'] ?? '01', // Requerido por MH
+                        'distrito' => $datos['receptor']['distrito'] ?? '01',
                         'complemento' => $datos['receptor']['complemento'],
                     ],
                     'telefono' => $datos['receptor']['telefono'] ?? null,
                     'correo' => $datos['receptor']['correo'] ?? null,
-                ],
+                ], true), // true = omitir NRC para DTE-14
                 'cuerpoDocumento' => $items,
                 'resumen' => [
                     'totalCompra' => $totalCompra,
@@ -1006,5 +1046,7 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
                 'total_pagar' => $totalPagar,
             ],
         ];
+
+        return $resultado;
     }
 }

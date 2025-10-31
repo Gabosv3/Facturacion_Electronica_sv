@@ -10,6 +10,7 @@ This is a Laravel 10 application for generating and managing electronic invoices
 - **DTE-01**: Factura (Consumer Invoice) - Version 2
 - **DTE-03**: Comprobante de Crédito Fiscal (CCF - Tax Credit Certificate) - Version 3
 - **DTE-05**: Nota de Crédito (Credit Note) - Version 3
+- **DTE-14**: Factura de Sujeto Excluido (Exempt Subject Invoice) - Version 1
 
 ## Development Commands
 
@@ -89,7 +90,13 @@ php artisan cache:clear               # Clear application cache
 - Manages authentication tokens with the Ministerio de Hacienda API
 - Handles token lifecycle (generation, storage, validation, renewal)
 - Submits signed DTEs to MH's reception endpoint
+- Provides methods to query DTE status individually or in batches
 - Tokens are stored in `tokens_mh` table and auto-renewed before expiration (23h 50min lifetime)
+
+**ContingenciaService** (`app/Services/ContingenciaService.php`)
+- Manages contingency events for force majeure situations
+- Creates and processes batches of DTEs for deferred submission
+- Handles contingency event lifecycle and batch tracking
 
 ### Invoice Processing Flow
 
@@ -117,6 +124,11 @@ php artisan cache:clear               # Clear application cache
 - `isValid()` method checks token validity
 - Auto-deactivates old tokens when generating new ones
 
+**EventoContingencia** (`app/Models/EventoContingencia.php`)
+- Stores contingency event information
+- Tracks DTEs issued during contingency periods
+- Manages batch submission status and results
+
 ### Configuration
 
 **config/dte.php**
@@ -134,11 +146,29 @@ php artisan cache:clear               # Clear application cache
 - **IVA Calculation**: The system uses different IVA rates per document type:
   - DTE-01 (Factura): 11.5% - Formula: `ventaGravada * 0.115`
   - DTE-03 (CCF): 13% - Formula: `ventaGravada * 0.13`
-  - DTE-05 (Nota de Crédito): Inherits rate from related document (11.5% if DTE-01, 13% if DTE-03)
+  - DTE-05 (Nota de Crédito): Always 13% (regardless of related document type)
+  - DTE-14 (Sujeto Excluido): 0% - No IVA (uses `ventaExenta` instead of `ventaGravada`)
 - **Document Numbering**: Control numbers auto-increment per document type, extracting last correlative from database
 - **Token Renewal**: Tokens expire in ~24h; system auto-renews at 23h 50min to prevent gaps
 - **SSL Verification**: Disabled in non-production environments (see MHApiService:62, 186)
 - **Receptor District**: The `distrito` field is REQUIRED and must correspond to a valid district from CAT-12 for the selected municipality
+- **Receptor Optional Fields**: The following receptor fields are USER-OPTIONAL but must be present in JSON with `null` value when empty:
+  - `nrc`: Tax registration number
+    - **DTE-01**: Must be present with `null` if empty
+    - **DTE-03**: Required with actual value (IVA-registered taxpayers)
+    - **DTE-14**: Must be **OMITTED** (not permitted in schema, not even as `null`)
+  - `codActividad`: Economic activity code (optional for DTE-01, DTE-14; required for DTE-03) - `null` if empty
+  - `descActividad`: Economic activity description (optional for DTE-01, DTE-14; required for DTE-03) - `null` if empty
+  - `telefono`: Phone number (optional for all DTE types) - `null` if empty
+  - `correo`: Email address (optional for all DTE types) - `null` if empty
+  - **Critical**: MH schema v2 requires these fields to be present in the JSON structure (except `nrc` in DTE-14). When empty, they must have `null` value, NOT omitted or empty strings
+  - **Implementation**:
+    - `construirReceptor($data, $omitirNrc)` handles field inclusion logic (DTEService.php:343)
+    - DTE-01, DTE-03, DTE-05 call with `$omitirNrc = false` (default)
+    - DTE-14 calls with `$omitirNrc = true` to exclude NRC field entirely
+    - Form validation is conditional - these fields are required only for DTE-03 (FacturaController.php:90)
+  - **Example DTE-01**: `"nrc": null`, `"telefono": null`, `"correo": null`
+  - **Example DTE-14**: NRC field completely omitted from JSON structure
 
 ### Receptor Document Types (CAT-022)
 
@@ -295,6 +325,51 @@ MH_RECEPCION_LOTE_URL=https://apitest.dtes.mh.gob.sv/fesv/recepcionlote
 MH_CONSULTA_LOTE_URL=https://apitest.dtes.mh.gob.sv/fesv/consultarlote
 ```
 
+### DTE Query System (Sistema de Consultas)
+
+The system provides comprehensive DTE query functionality to check document status on the MH servers.
+
+**Query Types Available:**
+
+1. **Individual DTE Query** (`/consultas/dte`)
+   - Query specific DTE by generation code
+   - Returns current status, validation details, and processing information
+   - Useful for tracking submission status and troubleshooting
+
+2. **Batch Query** (`/consultas/lote`)
+   - Query entire batch by batch code
+   - Returns processing status for all DTEs in the batch
+   - Used primarily for contingency batch tracking
+
+3. **Quick Query** (`/consultas/rapida/{factura}`)
+   - Quick status lookup for invoices in the local database
+   - Automatically queries MH and updates local status
+   - Convenient shortcut from invoice list view
+
+4. **Search and Query** (`/consultas/buscar`)
+   - Search by control number or generation code
+   - Automatically queries MH if found in local database
+   - Updates local status based on MH response
+
+**Implementation:**
+- `ConsultaController` (`app/Http/Controllers/ConsultaController.php`) - Handles all query operations
+- `MHApiService::consultarEstadoDTE()` - Individual DTE status query (MHApiService.php:122)
+- `MHApiService::consultarLote()` - Batch status query
+- Results are automatically saved to `respuesta_mh` field in database
+
+**Use Cases:**
+- Verify DTE was received and processed by MH
+- Check validation errors or rejection reasons
+- Monitor contingency batch processing status
+- Troubleshoot submission issues
+- Audit DTE status for accounting reconciliation
+
+**Environment Variables:**
+```bash
+MH_CONSULTA_DTE_URL=https://apitest.dtes.mh.gob.sv/fesv/recepcion/consultadte/
+MH_CONSULTA_DTE_LOTE_URL=https://apitest.dtes.mh.gob.sv/fesv/recepcion/consultadtelote
+```
+
 ### Database Schema
 
 **facturas table**: Stores invoice headers with totals, receptor info, and MH response
@@ -316,31 +391,36 @@ MH_CONSULTA_LOTE_URL=https://apitest.dtes.mh.gob.sv/fesv/consultarlote
 
 ### Routes Structure
 
-- `/facturas` - List all invoices (DTE-01, DTE-03, and DTE-05)
+- `/facturas` - List all invoices (DTE-01, DTE-03, DTE-05, and DTE-14)
 - `/facturas/crear` - Invoice creation form (DTE-01)
 - `/facturas/crear-ccf` - CCF creation form (DTE-03)
 - `/facturas/crear-nota-credito` - Credit Note creation form (DTE-05)
+- `/facturas/crear-sujeto-excluido` - Exempt Subject Invoice creation form (DTE-14)
 - `/facturas/{id}` - Invoice details
 - `/admin/tokens` - Token management interface
 - `/contingencias` - Contingency events management
 - `/contingencias/crear` - Create new contingency event
 - `/contingencias/{id}` - Contingency event details and processing
+- `/consultas` - DTE query interface
+- `/consultas/dte` - Query individual DTE status
+- `/consultas/lote` - Query batch status
+- `/consultas/rapida/{factura}` - Quick query for specific invoice
 
 ### DTE Types Comparison
 
-| Feature | DTE-01 (Factura) | DTE-03 (CCF) | DTE-05 (Nota de Crédito) |
-|---------|------------------|--------------|--------------------------|
-| **JSON Version** | 2 | 3 | 3 |
-| **Receptor Document Type** | NIT, DUI, Passport, etc. | **Only NIT (code 36)** | Uses same as related document |
-| **Receptor NRC** | Optional | **Required** | Copied from related document |
-| **Receptor Economic Activity Code** | Optional | **Required** | Copied from related document |
-| **Purpose** | General sales | Sales to IVA-registered taxpayers | Cancel/adjust DTE-01 or DTE-03 |
-| **IVA Rate** | 11.5% | 13% | **Always 13%** (regardless of related doc) |
-| **Requires Related Document** | No | No | **Yes (required)** |
+| Feature | DTE-01 (Factura) | DTE-03 (CCF) | DTE-05 (Nota de Crédito) | DTE-14 (Sujeto Excluido) |
+|---------|------------------|--------------|--------------------------|---------------------------|
+| **JSON Version** | 2 | 3 | 3 | 1 |
+| **Receptor Document Type** | NIT, DUI, Passport, etc. | **Only NIT (code 36)** | Uses same as related document | NIT, DUI, Passport, etc. |
+| **Receptor NRC** | Optional | **Required** | Copied from related document | Optional |
+| **Receptor Economic Activity Code** | Optional | **Required** | Copied from related document | Optional |
+| **Purpose** | General sales | Sales to IVA-registered taxpayers | Cancel/adjust DTE-01 or DTE-03 | Sales to IVA-exempt entities |
+| **IVA Rate** | 11.5% | 13% | **Always 13%** (regardless of related doc) | **0% (IVA exempt)** |
+| **Requires Related Document** | No | No | **Yes (required)** | No |
 
 **Implementation Notes:**
-- The system automatically uses `version: 3` for DTE-03 and DTE-05, and `version: 2` for DTE-01 (see DTEService.php)
-- Validation rules change dynamically based on `tipo_dte` (see FacturaController.php:71)
+- The system automatically uses `version: 3` for DTE-03 and DTE-05, `version: 2` for DTE-01, and `version: 1` for DTE-14 (see DTEService.php)
+- Validation rules change dynamically based on `tipo_dte` (see FacturaController.php:82)
 - Each DTE type has independent numbering (correlativo) managed per `tipo_dte`
 
 **Critical Validations:**
@@ -445,6 +525,98 @@ Run `php artisan migrate` to add DTE-05 support fields:
 6. **`[receptor.nit] NIT CONTRIBUYENTE NO EXISTE`**
    - Cause: Trying to create credit note for invoice with DUI instead of NIT
    - Solution: Only create credit notes for invoices where receptor has NIT (code 36)
+
+### DTE-14 (Factura de Sujeto Excluido) - Exempt Subject Invoice
+
+**Purpose**: Used for sales to IVA-exempt entities such as diplomatic missions, international organizations, NGOs with tax exemption status, and other legally exempt subjects.
+
+**Key Characteristics:**
+- **JSON Version**: 1 (same as original DTE-01 structure)
+- **IVA Rate**: 0% (completely exempt from IVA)
+- **Receptor Types**: Can use any document type (NIT, DUI, Passport, etc.)
+- **Special Fields**: Similar structure to DTE-01 but with IVA exemption handling
+
+**When to Use DTE-14:**
+- Sales to foreign diplomatic missions
+- Sales to international organizations (UN, OAS, etc.)
+- Sales to NGOs with official tax exemption certificates
+- Sales to entities with special tax exemption status granted by the MH
+
+**Important Notes:**
+- ⚠️ The receptor must have a valid tax exemption status recognized by the MH
+- The system automatically sets IVA to 0% for all items in DTE-14
+- Control number format remains the same: `DTE-14-{establecimiento}{puntoVenta}-{correlativo}`
+- Independent correlativo counter separate from DTE-01, DTE-03, and DTE-05
+
+**Implementation Details:**
+- Uses JSON version 1 (see DTEService.php:352)
+- No IVA calculations applied (ventaExenta used instead of ventaGravada)
+- Validation rules ensure proper exempt subject documentation
+- Follows same signing and submission flow as other DTE types
+
+### QR Code Generation System (Código QR de Consulta Pública)
+
+The system automatically generates QR codes for all successfully sent invoices (estado = 'enviado_mh') according to MH specifications.
+
+**MH Requirements:**
+```
+URL Format: https://admin.factura.gob.sv/consultaPublica?ambiente={ambiente}&codGen={cod_generacion}&fechaEmi={fechaEmi}
+
+Parameters:
+- ambiente: "00" (Test) or "01" (Production)
+- codGen: Document generation code (UUID)
+- fechaEmi: Document emission date (YYYY-MM-DD format)
+```
+
+**Implementation:**
+
+The `Factura` model includes three methods for QR code generation (Factura.php:116-161):
+
+1. **`getUrlConsultaPublica()`** - Generates the MH public consultation URL
+   ```php
+   $url = $factura->getUrlConsultaPublica();
+   // Returns: https://admin.factura.gob.sv/consultaPublica?ambiente=00&codGen=...&fechaEmi=2025-10-17
+   ```
+
+2. **`getQrCodeUrl($size)`** - Generates URL to get QR code image from API
+   ```php
+   $qrImageUrl = $factura->getQrCodeUrl(200);
+   // Returns URL to QR Server API with the encoded consultation URL
+   ```
+
+3. **`getQrCodeBase64($size)`** - Generates base64-encoded QR image (optional)
+   ```php
+   $qrBase64 = $factura->getQrCodeBase64(200);
+   // Returns: data:image/png;base64,iVBORw0KGgoAAAANS...
+   ```
+
+**Display on Invoice:**
+- QR code is automatically displayed on invoice detail page (`resources/views/facturas/detalle.blade.php:281-306`)
+- Only shows for invoices with status `enviado_mh`
+- Includes both QR image and full consultation URL
+- QR code is included when printing the invoice (with print-specific CSS)
+
+**QR Code Service:**
+- Uses public API: `https://api.qrserver.com/v1/create-qr-code/`
+- No external dependencies required (no Composer packages needed)
+- Default size: 200x200 pixels (configurable)
+- Generates standard PNG images compatible with all QR readers
+
+**Usage Example:**
+```blade
+{{-- In Blade template --}}
+@if($factura->estado == 'enviado_mh')
+    <img src="{{ $factura->getQrCodeUrl(200) }}"
+         alt="Código QR de Consulta Pública">
+    <p>{{ $factura->getUrlConsultaPublica() }}</p>
+@endif
+```
+
+**Important Notes:**
+- QR codes are only generated for invoices successfully sent to MH
+- The QR links directly to MH's public consultation portal
+- Users can verify invoice authenticity by scanning the QR code
+- QR code is optimized for printing with `print-color-adjust: exact`
 
 ### Environment Variables Required
 

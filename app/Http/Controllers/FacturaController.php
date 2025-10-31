@@ -87,7 +87,7 @@ class FacturaController extends Controller
             'receptor_nombre' => 'required|string|max:255',
             'receptor_nrc' => $tipoDte === '03' ? 'required|string|max:20' : 'nullable|string|max:20',
             'receptor_cod_actividad' => $tipoDte === '03' ? 'required|string|max:10' : 'nullable|string|max:10',
-            'receptor_desc_actividad' => 'required|string|min:5|max:150',
+            'receptor_desc_actividad' => $tipoDte === '03' ? 'required|string|min:5|max:150' : 'nullable|string|min:5|max:150',
             'receptor_departamento' => 'required|string|size:2',
             'receptor_municipio' => 'required|string|size:2',
             'receptor_distrito' => 'required|string|size:2',
@@ -372,6 +372,16 @@ class FacturaController extends Controller
                 'url' => $apiUrl . '/firmardocumento/',
                 'factura_id' => $factura->id,
                 'tipo_dte' => $validated['tipo_dte'],
+            ]);
+
+            // 🔍 LOG: Verificar estructura del receptor antes de enviar a firmar
+            Log::info('👤 RECEPTOR ANTES DE FIRMAR', [
+                'receptor_completo' => $dteParaFirmar['dteJson']['receptor'] ?? 'NO ENCONTRADO',
+                'tiene_nrc' => isset($dteParaFirmar['dteJson']['receptor']['nrc']),
+                'tiene_codActividad' => isset($dteParaFirmar['dteJson']['receptor']['codActividad']),
+                'tiene_descActividad' => isset($dteParaFirmar['dteJson']['receptor']['descActividad']),
+                'tiene_telefono' => isset($dteParaFirmar['dteJson']['receptor']['telefono']),
+                'tiene_correo' => isset($dteParaFirmar['dteJson']['receptor']['correo']),
             ]);
 
             $response = Http::timeout(30)->post($apiUrl . '/firmardocumento/', $dteParaFirmar);
