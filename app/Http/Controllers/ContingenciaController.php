@@ -172,6 +172,11 @@ class ContingenciaController extends Controller
 
             $eventoJson = $this->contingenciaService->construirJsonEvento($evento);
 
+            // Guardar el JSON del evento en la base de datos
+            $evento->update([
+                'evento_json' => $eventoJson['dteJson'] ?? $eventoJson,
+            ]);
+
             // Firmar el evento usando el API local de firma
             $apiUrl = config('dte.api_url');
 

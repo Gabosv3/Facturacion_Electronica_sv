@@ -50,11 +50,15 @@ class Factura extends Model
         // Estado de nota de crédito
         'nota_credito_estado',
         'nota_credito_id',
+        // Campos de invalidación
+        'invalidada',
+        'evento_invalidacion_id',
     ];
 
     protected $casts = [
         'fecha_emision' => 'date',
         'dte_json' => 'array',
+        'respuesta_mh' => 'array',
         'total_gravada' => 'decimal:2',
         'total_exenta' => 'decimal:2',
         'total_no_sujeto' => 'decimal:2',
@@ -63,6 +67,7 @@ class Factura extends Model
         'total_iva' => 'decimal:2',
         'total_pagar' => 'decimal:2',
         'en_contingencia' => 'boolean',
+        'invalidada' => 'boolean',
     ];
 
     public function items()
@@ -104,6 +109,22 @@ class Factura extends Model
     {
         return $this->hasMany(Factura::class, 'documento_relacionado_id')
             ->where('tipo_dte', '05');
+    }
+
+    /**
+     * Relación con el evento de invalidación
+     */
+    public function eventoInvalidacion()
+    {
+        return $this->belongsTo(EventoInvalidacion::class, 'evento_invalidacion_id');
+    }
+
+    /**
+     * Relación con todos los eventos de invalidación de esta factura
+     */
+    public function eventosInvalidacion()
+    {
+        return $this->hasMany(EventoInvalidacion::class, 'factura_id');
     }
 
     /**

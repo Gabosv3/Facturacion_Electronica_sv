@@ -910,4 +910,92 @@ class MHApiService
             ];
         }
     }
+
+    /**
+     * Enviar evento de invalidación al MH
+     *
+     * @param string $eventoFirmado JSON del evento de invalidación firmado
+     * @param int $version Versión del JSON (default: 1)
+     * @return array Respuesta del MH
+     */
+    public function enviarInvalidacion(string $eventoFirmado, int $version = 1): array
+    {
+        try {
+            $token = $this->obtenerToken();
+
+            if (!$token) {
+                return [
+                    'success' => false,
+                    'message' => 'No se pudo obtener token del MH',
+                ];
+            }
+
+            $ambiente = config('dte.ambiente');
+            $invalidacionUrl = config('dte.mh_invalidacion_url');
+            $userAgent = config('dte.user_agent', 'SistemaFacturacion/1.0');
+
+            // ID de envío correlativo
+            $idEnvio = time();
+
+            Log::info('🔄 Enviando evento de invalidación al MH', [
+                'url' => $invalidacionUrl,
+                'ambiente' => $ambiente,
+                'version' => $version,
+                'idEnvio' => $idEnvio,
+            ]);
+
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $token,
+                'User-Agent' => $userAgent,
+                'Content-Type' => 'application/json',
+            ])
+            ->withOptions([
+                'verify' => config('app.env') === 'production',
+            ])
+            ->timeout(30)
+            ->post($invalidacionUrl, [
+                'ambiente' => $ambiente,
+                'idEnvio' => $idEnvio,
+                'version' => $version,
+                'documento' => $eventoFirmado,
+            ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+
+                Log::info('✅ Evento de invalidación enviado exitosamente', [
+                    'response' => $data,
+                ]);
+
+                return [
+                    'success' => true,
+                    'message' => 'Evento de invalidación enviado correctamente',
+                    'data' => $data,
+                    'sello_recepcion' => $data['selloRecibido'] ?? null,
+                ];
+            }
+
+            $error = $response->json();
+            Log::error('❌ Error al enviar evento de invalidación', [
+                'status' => $response->status(),
+                'error' => $error,
+            ]);
+
+            return [
+                'success' => false,
+                'message' => 'Error al enviar evento de invalidación: ' . ($error['descripcionMsg'] ?? json_encode($error)),
+                'data' => $error,
+            ];
+        } catch (\Exception $e) {
+            Log::error('❌ Excepción al enviar evento de invalidación', [
+                'exception' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return [
+                'success' => false,
+                'message' => 'Error al enviar evento de invalidación: ' . $e->getMessage(),
+            ];
+        }
+    }
 }

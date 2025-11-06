@@ -346,7 +346,11 @@
                 <!-- Respuesta del Ministerio (si existe) -->
                 @if($factura->respuesta_mh)
                     @php
-                        $respuestaMH = json_decode($factura->respuesta_mh, true);
+                        // Si respuesta_mh ya es array (por cast), usarlo directamente
+                        // Si es string (facturas antiguas), decodificarlo
+                        $respuestaMH = is_string($factura->respuesta_mh)
+                            ? json_decode($factura->respuesta_mh, true)
+                            : $factura->respuesta_mh;
                     @endphp
 
                     <div class="mt-6">

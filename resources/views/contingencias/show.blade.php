@@ -180,6 +180,18 @@
                         <p class="font-mono text-sm bg-gray-100 p-3 rounded">{{ $evento->codigo_lote }}</p>
                     </div>
                     @endif
+
+                    @if($evento->estado == 'procesado' && $evento->evento_json)
+                    <div class="mt-6 pt-6 border-t">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-2">📋 JSON del Evento Enviado al MH</h3>
+                        <details class="bg-gray-50 rounded-lg p-4">
+                            <summary class="cursor-pointer font-semibold text-gray-700 hover:text-gray-900">
+                                Ver JSON del evento de contingencia
+                            </summary>
+                            <pre class="text-xs text-gray-600 overflow-x-auto mt-3 bg-white p-3 rounded border">{{ json_encode($evento->evento_json, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) }}</pre>
+                        </details>
+                    </div>
+                    @endif
                 </div>
             </div>
 

@@ -405,6 +405,10 @@ MH_CONSULTA_DTE_LOTE_URL=https://apitest.dtes.mh.gob.sv/fesv/recepcion/consultad
 - `/consultas/dte` - Query individual DTE status
 - `/consultas/lote` - Query batch status
 - `/consultas/rapida/{factura}` - Quick query for specific invoice
+- `/invalidaciones` - Invalidation events management
+- `/invalidaciones/seleccionar` - Select invoice to invalidate
+- `/invalidaciones/crear` - Create invalidation event
+- `/invalidaciones/{id}` - Invalidation event details
 
 ### DTE Types Comparison
 
@@ -553,6 +557,173 @@ Run `php artisan migrate` to add DTE-05 support fields:
 - No IVA calculations applied (ventaExenta used instead of ventaGravada)
 - Validation rules ensure proper exempt subject documentation
 - Follows same signing and submission flow as other DTE types
+
+### Invalidation System (Sistema de Invalidación)
+
+The system implements the official MH invalidation process to cancel or nullify DTEs that were previously sent and received a reception seal.
+
+**Purpose**: Allows the issuing taxpayer to transmit the inactivation of a DTE previously received by the MH. Once invalidated, the DTE receives an "INVALIDADO" status but remains in the MH database for audit purposes.
+
+**Valid Reasons for Invalidation (CAT-026):**
+- Error in customer identification
+- Error in product or service billed
+- Error in operation date
+- Error in price of goods or services (applies only to Factura and Export Invoice)
+- Return of goods
+- Total rescission of the operation
+
+**Invalidation Types:**
+1. **Type 1 - Formal Errors**: Document issued incorrectly and must be replaced
+   - Requires: New corrected document must be issued FIRST
+   - Must include: Code of the replacement document
+   - Example: Invoice with wrong customer name
+
+2. **Type 2 - Rescind Operation**: Cancel transaction completely
+   - No replacement document needed
+   - Example: Customer returns product for full refund
+
+**Invalidation Workflow:**
+
+```
+1. User selects invoice to invalidate (must be estado='enviado_mh')
+   ↓
+2. System validates invalidation eligibility and deadlines
+   ↓
+3. User fills invalidation form:
+   - Type of invalidation (1 or 2)
+   - Reason/motive
+   - Responsible person data (issuer side)
+   - Requester person data
+   - Replacement invoice (if type 1)
+   ↓
+4. System creates EventoInvalidacion record
+   ↓
+5. System builds JSON event structure
+   ↓
+6. Event sent to local signing API
+   ↓
+7. Signed event sent to MH (/fesv/anulardte)
+   ↓
+8. MH validates and assigns "INVALIDADO" status to original DTE
+   ↓
+9. Invoice marked as invalidada=true in local database
+```
+
+**Deadlines for Invalidation:**
+
+The MH validates two dates:
+1. **Event Date** vs. **DTE Generation Date** (fecha de generación)
+2. **Transmission Date of Event** vs. **DTE Transmission Date**
+
+**By DTE Type:**
+- **DTE-03 (CCF), DTE-05 (Credit Note)**: Maximum 1 day after generation AND 1 day after transmission
+- **DTE-01 (Factura), DTE-14 (Exempt Subject)**: Maximum 3 months after generation AND 3 months after transmission
+
+**Key Services:**
+
+**InvalidacionService** (`app/Services/InvalidacionService.php`)
+- Creates invalidation events
+- Builds JSON structure per MH specifications
+- Signs events via local API
+- Sends to MH
+- Validates deadlines and eligibility
+- Complete workflow: `procesarInvalidacion($data)`
+
+**MHApiService** Methods:
+- `enviarInvalidacion($eventoFirmado, $version)` - Sends invalidation event to MH
+
+**Controllers:**
+- `InvalidacionController` (`app/Http/Controllers/InvalidacionController.php`) - Web interface management
+
+**Important Requirements:**
+
+1. **Replacement Document Priority**: When invalidating for formal errors (type 1), the replacement document MUST be issued and sent to MH FIRST, then create the invalidation event referencing the new document.
+
+2. **Required Fields**: All these fields are mandatory:
+   - Responsible person name, document type, document number (issuer side)
+   - Requester person name, document type, document number
+   - Invalidation reason/motive
+   - Original DTE sello recibido (obtained from respuesta_mh)
+
+3. **Special Conditions for Facturas**:
+   - When the receptor fields in the original factura are `null`, they must also be `null` in the invalidation event
+   - This applies to: tipoDocumento, numDocumento, nombre
+
+4. **Cannot Be Invalidated**:
+   - DTEs not successfully sent to MH (estado != 'enviado_mh')
+   - DTEs already invalidated
+   - DTEs outside the allowed deadline window
+
+**Database Schema:**
+
+**eventos_invalidacion table**:
+- `factura_id`: Foreign key to the DTE being invalidated
+- `codigo_invalidacion`: UUID for the invalidation event
+- `tipo_invalidacion`: 1 (formal errors) or 2 (rescind operation)
+- `factura_reemplazo_id`: Foreign key to replacement invoice (null for type 2)
+- `codigo_generacion_reemplazo`: Code of replacement document
+- `responsable_*`: Responsible person data (issuer)
+- `solicitante_*`: Requester person data
+- `evento_json`: Complete event JSON structure
+- `evento_firmado`: Signed JWT from signing API
+- `estado`: pendiente, firmado, enviado, procesado, error
+- `respuesta_mh`: Response from MH
+- `sello_recepcion`: Reception seal from MH
+
+**facturas table additions**:
+- `invalidada`: Boolean flag indicating if invoice is invalidated
+- `evento_invalidacion_id`: Foreign key to the invalidation event
+
+**Environment Variables:**
+```bash
+MH_INVALIDACION_URL=https://apitest.dtes.mh.gob.sv/fesv/anulardte  # Test
+MH_INVALIDACION_URL=https://api.dtes.mh.gob.sv/fesv/anulardte       # Production
+```
+
+**Common Errors and Solutions:**
+
+1. **"Plazo excedido para invalidar"**
+   - Cause: Attempting to invalidate outside the allowed deadline
+   - Solution: Check if DTE is within 1 day (CCF) or 3 months (Factura) from both generation and transmission dates
+
+2. **"Documento debe estar enviado al MH"**
+   - Cause: Trying to invalidate a DTE that hasn't been successfully sent
+   - Solution: Only invalidate DTEs with estado='enviado_mh'
+
+3. **"Debe emitir documento de reemplazo primero"**
+   - Cause: Type 1 invalidation without providing replacement document
+   - Solution: Issue and send the corrected document first, then create invalidation event
+
+4. **"Sello de recepción no encontrado"**
+   - Cause: Missing sello_recibido in the original DTE respuesta_mh
+   - Solution: Verify the DTE was properly processed by MH and has a valid seal
+
+**Usage Example:**
+```php
+// Through web interface
+1. Navigate to /invalidaciones/seleccionar
+2. Select invoice to invalidate
+3. Fill form with invalidation data
+4. Submit - system processes automatically
+
+// Programmatically
+$invalidacionService->procesarInvalidacion([
+    'factura_id' => $facturaId,
+    'tipo_invalidacion' => '1', // or '2'
+    'motivo_invalidacion' => 'Error in customer name',
+    'factura_reemplazo_id' => $nuevaFacturaId, // null if type 2
+    'codigo_generacion_reemplazo' => $codigo, // null if type 2
+    'responsable_nombre' => 'Juan Perez',
+    'responsable_tipo_doc' => '13', // DUI
+    'responsable_num_doc' => '012345678',
+    'solicitante_nombre' => 'Maria Lopez',
+    'solicitante_tipo_doc' => '13',
+    'solicitante_num_doc' => '087654321',
+]);
+```
+
+**Migration:**
+Run `php artisan migrate` to create the `eventos_invalidacion` table and add invalidation fields to `facturas` table.
 
 ### QR Code Generation System (Código QR de Consulta Pública)
 

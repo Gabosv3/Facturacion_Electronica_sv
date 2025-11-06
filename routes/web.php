@@ -50,3 +50,15 @@ Route::prefix('consultas')->name('consultas.')->group(function () {
     Route::post('/lote', [ConsultaController::class, 'consultarLote'])->name('lote');
     Route::get('/rapida/{factura}', [ConsultaController::class, 'consultaRapida'])->name('rapida');
 });
+
+// Rutas de invalidación
+use App\Http\Controllers\InvalidacionController;
+
+Route::prefix('invalidaciones')->name('invalidaciones.')->group(function () {
+    Route::get('/', [InvalidacionController::class, 'index'])->name('index');
+    Route::get('/seleccionar', [InvalidacionController::class, 'seleccionarFactura'])->name('seleccionar');
+    Route::get('/crear', [InvalidacionController::class, 'create'])->name('create');
+    Route::post('/guardar', [InvalidacionController::class, 'store'])->name('store');
+    Route::get('/{evento}', [InvalidacionController::class, 'show'])->name('show');
+    Route::post('/{evento}/reintentar', [InvalidacionController::class, 'reintentar'])->name('reintentar');
+});

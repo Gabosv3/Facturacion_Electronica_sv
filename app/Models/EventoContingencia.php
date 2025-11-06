@@ -17,6 +17,7 @@ class EventoContingencia extends Model
         'nit_emisor',
         'tipo_contingencia',
         'motivo_contingencia',
+        'evento_json',
         'fecha_hora_inicio',
         'fecha_hora_fin',
         'cantidad_dte',
@@ -29,6 +30,7 @@ class EventoContingencia extends Model
     protected $casts = [
         'fecha_hora_inicio' => 'datetime',
         'fecha_hora_fin' => 'datetime',
+        'evento_json' => 'array',
         'detalle_lote' => 'array',
     ];
 
