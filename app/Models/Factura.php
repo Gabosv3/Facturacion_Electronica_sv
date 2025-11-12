@@ -128,6 +128,40 @@ class Factura extends Model
     }
 
     /**
+     * Verifica si el DTE tiene una invalidación
+     *
+     * @return bool
+     */
+    public function tieneInvalidacion(): bool
+    {
+        return $this->invalidada || $this->eventosInvalidacion()->exists();
+    }
+
+    /**
+     * Obtiene la invalidación activa (procesada o enviada)
+     *
+     * @return EventoInvalidacion|null
+     */
+    public function getInvalidacionActiva()
+    {
+        return $this->eventosInvalidacion()
+            ->whereIn('estado', ['enviado', 'procesado'])
+            ->first();
+    }
+
+    /**
+     * Verifica si tiene una invalidación pendiente
+     *
+     * @return bool
+     */
+    public function tieneInvalidacionPendiente(): bool
+    {
+        return $this->eventosInvalidacion()
+            ->whereIn('estado', ['pendiente', 'firmado'])
+            ->exists();
+    }
+
+    /**
      * Genera la URL de consulta pública según especificaciones del MH
      *
      * Formato: https://admin.factura.gob.sv/consultaPublica?ambiente={ambiente}&codGen={cod_generacion}&fechaEmi={fechaEmi}

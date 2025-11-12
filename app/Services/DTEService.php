@@ -261,15 +261,26 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
      *
      * IMPORTANTE: El MH requiere que el DUI se envíe SIN guión (solo 9 dígitos)
      */
-    private function formatearNumeroDocumento(string $tipoDocumento, string $numeroDocumento): string
+    private function formatearNumeroDocumento(string $tipoDocumento, string $numeroDocumento, ?string $tipoDte = null): string
     {
         switch ($tipoDocumento) {
             case '13': // DUI - Persona natural SIN IVA
-                // Limpiar el número (quitar espacios, guiones, letras, etc.)
-                $numero = preg_replace('/[^0-9]/', '', $numeroDocumento);
+                // Limpiar el número (quitar espacios, letras, etc., pero mantener guiones)
+                $numero = preg_replace('/[^0-9\-]/', '', $numeroDocumento);
+
+                // Verificar si ya tiene el formato correcto con guión
+                if (preg_match('/^\d{8}-\d$/', $numero)) {
+                    // Si es DTE-14, quitar el guión
+                    if ($tipoDte === '14') {
+                        return str_replace('-', '', $numero);
+                    }
+                    return $numero; // Ya tiene el formato correcto: 12345678-9
+                }
+
+                // Si no tiene guión, limpiar solo números
+                $numero = preg_replace('/[^0-9]/', '', $numero);
 
                 // El DUI debe tener exactamente 9 dígitos
-                // IMPORTANTE: Se envía SIN guión al MH (solo números)
                 if (strlen($numero) < 9) {
                     // Si tiene menos de 9 dígitos, rellenar con ceros a la izquierda
                     $numero = str_pad($numero, 9, '0', STR_PAD_LEFT);
@@ -278,8 +289,13 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
                     $numero = substr($numero, 0, 9);
                 }
 
-                // Retornar solo números, SIN guión
-                return $numero;
+                // IMPORTANTE:
+                // - DTE-14: DUI SIN guión (9 dígitos): 012345678
+                // - DTE-01: DUI CON guión: 01234567-8
+                if ($tipoDte === '14') {
+                    return $numero; // Sin guión para DTE-14
+                }
+                return substr($numero, 0, 8) . '-' . substr($numero, 8, 1); // Con guión para otros DTEs
 
             case '36': // NIT - Contribuyente inscrito en IVA
                 // Limpiar el número (quitar espacios, guiones, etc.)
@@ -409,10 +425,10 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
         );
 
         // Determinar versión según tipo de DTE
-        // DTE-01 (Factura) = versión 2
+        // DTE-01 (Factura) = versión 1 (sin distrito)
         // DTE-03 (CCF) = versión 3
         $tipoDte = $datos['tipo_dte'] ?? '01';
-        $version = $tipoDte === '03' ? 3 : 2;
+        $version = $tipoDte === '03' ? 3 : 1;
 
         return [
             'nit' => config('dte.nit'),
@@ -441,9 +457,16 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
                     'nombreComercial' => config('dte.emisor.nombre_comercial'),
                     'codActividad' => config('dte.emisor.cod_actividad'),
                     'descActividad' => config('dte.emisor.desc_actividad'),
-                    'codEstable' => config('dte.emisor.cod_estable'),
-                    'codPuntoVenta' => config('dte.emisor.cod_punto_venta'),
-                    'direccion' => config('dte.emisor.direccion'),
+                    'tipoEstablecimiento' => '01',
+                    'codEstableMH' => null,
+                    'codEstable' => null,
+                    'codPuntoVentaMH' => null,
+                    'codPuntoVenta' => null,
+                    'direccion' => [
+                        'departamento' => config('dte.emisor.direccion.departamento'),
+                        'municipio' => config('dte.emisor.direccion.municipio'),
+                        'complemento' => config('dte.emisor.direccion.complemento'),
+                    ],
                     'telefono' => config('dte.emisor.telefono'),
                     'correo' => config('dte.emisor.correo'),
                 ],
@@ -459,7 +482,6 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
                     'direccion' => [
                         'departamento' => $datos['receptor']['departamento'],
                         'municipio' => $datos['receptor']['municipio'],
-                        'distrito' => $datos['receptor']['distrito'] ? str_pad($datos['receptor']['distrito'], 2, '0', STR_PAD_LEFT) : '03',
                         'complemento' => $datos['receptor']['complemento'],
                     ],
                     'telefono' => $datos['receptor']['telefono'] ?? null,
@@ -501,6 +523,7 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
                     'subTotal' => floatval($calculos['totales']['sub_total']),
                     'totalIva' => floatval($calculos['totales']['total_iva']),
                     'ivaRete1' => 0.0,
+                    'reteRenta' => 0.0,
                     'montoTotalOperacion' => floatval($calculos['totales']['monto_total_operacion']),
                     'totalNoGravado' => 0.0,
                     'saldoFavor' => 0.0,
@@ -517,14 +540,12 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
                             'periodo' => null,
                         ]
                     ],
-                    'observaciones' => $datos['observaciones'] ?? null,
                 ],
+                'extension' => null,
                 'otrosDocumentos' => null,
                 'apendice' => null,
             ]
         ];
-
-        return $resultado;
     }
 
     /**
@@ -949,10 +970,11 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
         $totalPagar = $totalCompra;
         $totalLetras = $this->numeroALetras($totalPagar);
 
-        // Formatear número de documento del receptor
+        // Formatear número de documento del receptor (DTE-14 requiere sin guión)
         $numDocumentoFormateado = $this->formatearNumeroDocumento(
             $datos['receptor']['tipo_documento'],
-            $datos['receptor']['num_documento']
+            $datos['receptor']['num_documento'],
+            '14' // Indicar que es DTE-14
         );
 
         return [
@@ -961,7 +983,7 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
             'passwordPri' => config('dte.password_pri'),
             'dteJson' => [
                 'identificacion' => [
-                    'version' => 2, // Versión 2 para DTE-14
+                    'version' => 1, // Versión 1 para DTE-14
                     'ambiente' => config('dte.ambiente', '00'),
                     'tipoDte' => '14',
                     'numeroControl' => $numeroControl,
@@ -980,42 +1002,42 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
                     'nombre' => config('dte.emisor.nombre'),
                     'codActividad' => config('dte.emisor.cod_actividad'),
                     'descActividad' => config('dte.emisor.desc_actividad'),
+                    'codEstableMH' => null,
+                    'codPuntoVentaMH' => null,
                     'direccion' => [
-                        'departamento' => config('dte.emisor.direccion.departamento'),
-                        'municipio' => config('dte.emisor.direccion.municipio'),
-                        'distrito' => config('dte.emisor.direccion.distrito'),
+                        'departamento' => str_pad(config('dte.emisor.direccion.departamento'), 2, '0', STR_PAD_LEFT),
+                        'municipio' => str_pad(config('dte.emisor.direccion.municipio'), 2, '0', STR_PAD_LEFT),
                         'complemento' => config('dte.emisor.direccion.complemento'),
                     ],
                     'telefono' => config('dte.emisor.telefono'),
                     'correo' => config('dte.emisor.correo'),
-                    'codEstable' => config('dte.emisor.cod_estable', '0000'),
-                    'codPuntoVenta' => config('dte.emisor.cod_punto_venta', '0000'),
+                    'codEstable' => null,
+                    'codPuntoVenta' => null,
                 ],
-                'receptor' => $this->construirReceptor([ // USA 'receptor', NO 'sujetoExcluido'
+                'sujetoExcluido' => [
                     'tipoDocumento' => $datos['receptor']['tipo_documento'],
                     'numDocumento' => $numDocumentoFormateado,
                     'nombre' => $datos['receptor']['nombre'],
-                    'nrc' => $datos['receptor']['nrc'] ?? null,
-                    'codActividad' => $datos['receptor']['cod_actividad'] ?? null,
+                    'codActividad' => !empty($datos['receptor']['cod_actividad']) ? $datos['receptor']['cod_actividad'] : null,
                     'descActividad' => !empty($datos['receptor']['desc_actividad']) && strlen($datos['receptor']['desc_actividad']) >= 5
                         ? $datos['receptor']['desc_actividad']
                         : null,
                     'direccion' => [
-                        'departamento' => $datos['receptor']['departamento'],
-                        'municipio' => $datos['receptor']['municipio'],
-                        'distrito' => $datos['receptor']['distrito'] ?? '01',
+                        'departamento' => str_pad($datos['receptor']['departamento'], 2, '0', STR_PAD_LEFT),
+                        'municipio' => str_pad($datos['receptor']['municipio'], 2, '0', STR_PAD_LEFT),
                         'complemento' => $datos['receptor']['complemento'],
                     ],
                     'telefono' => $datos['receptor']['telefono'] ?? null,
                     'correo' => $datos['receptor']['correo'] ?? null,
-                ], true), // true = omitir NRC para DTE-14
+                ],
                 'cuerpoDocumento' => $items,
                 'resumen' => [
                     'totalCompra' => $totalCompra,
                     'descu' => $totalDescuento,
-                    'totalDescu' => $totalDescuento, // Requerido por MH
-                    'subTotal' => $totalCompra - $totalDescuento, // Requerido por MH
-                    'reteRenta' => 0.00, // Requerido por MH
+                    'totalDescu' => $totalDescuento,
+                    'subTotal' => $totalCompra - $totalDescuento,
+                    'ivaRete1' => 0,
+                    'reteRenta' => 0,
                     'totalPagar' => $totalPagar,
                     'totalLetras' => $totalLetras,
                     'condicionOperacion' => (int) ($datos['condicion_operacion'] ?? 1),

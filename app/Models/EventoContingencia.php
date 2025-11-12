@@ -114,13 +114,119 @@ class EventoContingencia extends Model
     }
 
     /**
-     * Marcar como procesado
+     * Marcar como procesado y actualizar facturas con sellos de recepción
      */
     public function marcarProcesado(array $detalleLote): void
     {
         $this->update([
             'estado' => self::ESTADO_PROCESADO,
             'detalle_lote' => $detalleLote,
+        ]);
+
+        // Actualizar facturas con los sellos de recepción del MH
+        $this->actualizarFacturasConSellos($detalleLote);
+    }
+
+    /**
+     * Actualizar facturas con sellos de recepción del MH
+     */
+    private function actualizarFacturasConSellos(array $detalleLote): void
+    {
+        // El detalle del lote contiene la información de cada DTE procesado
+        // Estructura esperada: $detalleLote['respuestaDTE'] = array de DTEs
+        if (!isset($detalleLote['respuestaDTE']) || !is_array($detalleLote['respuestaDTE'])) {
+            \Log::warning('⚠️ No se encontró respuestaDTE en el detalle del lote', [
+                'evento_id' => $this->id,
+                'detalle_keys' => array_keys($detalleLote),
+            ]);
+            return;
+        }
+
+        $respuestaDTE = $detalleLote['respuestaDTE'];
+
+        \Log::info('🔄 Actualizando facturas con sellos de recepción', [
+            'evento_id' => $this->id,
+            'cantidad_respuestas' => count($respuestaDTE),
+        ]);
+
+        $facturasActualizadas = 0;
+        $facturasSinSello = 0;
+
+        foreach ($respuestaDTE as $dteRespuesta) {
+            // Buscar la factura por código de generación
+            $codigoGeneracion = $dteRespuesta['codigoGeneracion'] ?? null;
+
+            if (!$codigoGeneracion) {
+                \Log::warning('⚠️ DTE sin código de generación en respuesta');
+                continue;
+            }
+
+            $factura = Factura::where('codigo_generacion', $codigoGeneracion)
+                ->where('evento_contingencia_id', $this->id)
+                ->first();
+
+            if (!$factura) {
+                \Log::warning('⚠️ No se encontró factura con código de generación', [
+                    'codigo_generacion' => $codigoGeneracion,
+                ]);
+                continue;
+            }
+
+            // Extraer sello de recepción
+            $selloRecibido = $dteRespuesta['selloRecibido'] ?? null;
+            $estado = $dteRespuesta['estado'] ?? null;
+
+            if (!$selloRecibido) {
+                \Log::warning('⚠️ DTE sin sello de recepción', [
+                    'codigo_generacion' => $codigoGeneracion,
+                    'estado' => $estado,
+                ]);
+                $facturasSinSello++;
+                continue;
+            }
+
+            // Actualizar factura con sello y estado
+            $respuestaMhActual = $factura->respuesta_mh;
+
+            // Si respuesta_mh es string, decodificar
+            if (is_string($respuestaMhActual)) {
+                $respuestaMhActual = json_decode($respuestaMhActual, true) ?? [];
+            }
+
+            // Agregar información del envío al MH desde contingencia
+            $respuestaMhActual['envio_mh'] = [
+                'selloRecibido' => $selloRecibido,
+                'estado' => $estado,
+                'fhProcesamiento' => $dteRespuesta['fhProcesamiento'] ?? now()->format('d/m/Y H:i:s'),
+                'clasificaMsg' => $dteRespuesta['clasificaMsg'] ?? null,
+                'codigoMsg' => $dteRespuesta['codigoMsg'] ?? null,
+                'descripcionMsg' => $dteRespuesta['descripcionMsg'] ?? null,
+                'observaciones' => $dteRespuesta['observaciones'] ?? [],
+                'via_contingencia' => true,
+                'codigo_lote' => $this->codigo_lote,
+            ];
+
+            $factura->update([
+                'estado' => 'enviado_mh',
+                'estado_lote' => $estado,
+                'respuesta_mh' => $respuestaMhActual,
+            ]);
+
+            \Log::info('✅ Factura actualizada con sello de recepción', [
+                'factura_id' => $factura->id,
+                'numero_control' => $factura->numero_control,
+                'sello_recibido' => substr($selloRecibido, 0, 20) . '...',
+                'estado' => $estado,
+            ]);
+
+            $facturasActualizadas++;
+        }
+
+        \Log::info('📊 Resumen de actualización de facturas', [
+            'evento_id' => $this->id,
+            'facturas_actualizadas' => $facturasActualizadas,
+            'facturas_sin_sello' => $facturasSinSello,
+            'total_procesadas' => $facturasActualizadas + $facturasSinSello,
         ]);
     }
 

@@ -159,6 +159,7 @@
                                     <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">Cliente</th>
                                     <th class="px-4 py-3 text-right text-sm font-semibold text-gray-600">Total</th>
                                     <th class="px-4 py-3 text-center text-sm font-semibold text-gray-600">Estado</th>
+                                    <th class="px-4 py-3 text-center text-sm font-semibold text-gray-600">Invalidación</th>
                                     <th class="px-4 py-3 text-center text-sm font-semibold text-gray-600">Nota Crédito</th>
                                     <th class="px-4 py-3 text-center text-sm font-semibold text-gray-600">Acciones</th>
                                 </tr>
@@ -196,6 +197,34 @@
                                             <span class="px-3 py-1 bg-red-100 text-red-800 text-xs font-semibold rounded-full">Rechazado</span>
                                         @else
                                             <span class="px-3 py-1 bg-gray-100 text-gray-800 text-xs font-semibold rounded-full">Pendiente</span>
+                                        @endif
+                                    </td>
+                                    <td class="px-4 py-3 text-center">
+                                        @php
+                                            $invalidacionActiva = $factura->getInvalidacionActiva();
+                                        @endphp
+                                        @if($factura->invalidada || $invalidacionActiva)
+                                            @if($invalidacionActiva)
+                                                @if($invalidacionActiva->estado == 'procesado')
+                                                    <span class="px-2 py-1 bg-red-100 text-red-800 text-xs font-semibold rounded-full">
+                                                        ✓ Invalidado
+                                                    </span>
+                                                @elseif($invalidacionActiva->estado == 'enviado')
+                                                    <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-semibold rounded-full">
+                                                        ⏳ En proceso
+                                                    </span>
+                                                @endif
+                                            @else
+                                                <span class="px-2 py-1 bg-red-100 text-red-800 text-xs font-semibold rounded-full">
+                                                    ✓ Invalidado
+                                                </span>
+                                            @endif
+                                        @elseif($factura->tieneInvalidacionPendiente())
+                                            <span class="px-2 py-1 bg-gray-100 text-gray-800 text-xs font-semibold rounded-full">
+                                                📝 Pendiente
+                                            </span>
+                                        @else
+                                            <span class="text-gray-400 text-xs">-</span>
                                         @endif
                                     </td>
                                     <td class="px-4 py-3 text-center">

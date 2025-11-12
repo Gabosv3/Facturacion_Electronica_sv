@@ -24,6 +24,9 @@
                             @elseif($factura->tipo_dte == '05')
                                 <h1 class="text-3xl font-bold text-purple-800">NOTA DE CRÉDITO</h1>
                                 <p class="text-sm text-purple-600 font-semibold mt-1">DTE-05</p>
+                            @elseif($factura->tipo_dte == '14')
+                                <h1 class="text-3xl font-bold text-orange-800">FACTURA DE SUJETO EXCLUIDO</h1>
+                                <p class="text-sm text-orange-600 font-semibold mt-1">DTE-14</p>
                             @else
                                 <h1 class="text-3xl font-bold text-gray-800">FACTURA ELECTRÓNICA</h1>
                                 <p class="text-sm text-blue-600 font-semibold mt-1">DTE-01</p>
@@ -61,6 +64,8 @@
                                     <span class="inline-block px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded">CCF (DTE-03)</span>
                                 @elseif($factura->tipo_dte == '05')
                                     <span class="inline-block px-2 py-1 bg-purple-100 text-purple-800 text-xs font-semibold rounded">Nota de Crédito (DTE-05)</span>
+                                @elseif($factura->tipo_dte == '14')
+                                    <span class="inline-block px-2 py-1 bg-orange-100 text-orange-800 text-xs font-semibold rounded">Sujeto Excluido (DTE-14)</span>
                                 @else
                                     <span class="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded">Factura (DTE-01)</span>
                                 @endif
@@ -204,6 +209,94 @@
                                     @endif
                                 </p>
                             </div>
+                        @endif
+                    </div>
+                @endif
+
+                <!-- Información de Invalidación -->
+                @php
+                    $invalidacionActiva = $factura->getInvalidacionActiva();
+                    $tieneInvalidacionPendiente = $factura->tieneInvalidacionPendiente();
+                @endphp
+                @if($factura->invalidada || $invalidacionActiva || $tieneInvalidacionPendiente)
+                    <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                        <h3 class="text-sm font-semibold text-red-800 mb-3">
+                            @if($invalidacionActiva && $invalidacionActiva->estado == 'procesado')
+                                ⚠️ Documento Invalidado
+                            @elseif($invalidacionActiva && $invalidacionActiva->estado == 'enviado')
+                                ⏳ Invalidación en Proceso
+                            @elseif($tieneInvalidacionPendiente)
+                                📝 Invalidación Pendiente
+                            @else
+                                ⚠️ Documento Invalidado
+                            @endif
+                        </h3>
+
+                        @if($invalidacionActiva)
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <p class="text-sm"><span class="font-medium text-gray-700">Código Invalidación:</span> {{ $invalidacionActiva->codigo_invalidacion }}</p>
+                                    <p class="text-sm mt-1"><span class="font-medium text-gray-700">Fecha Evento:</span> {{ \Carbon\Carbon::parse($invalidacionActiva->fecha_evento)->format('d/m/Y H:i:s') }}</p>
+                                    <p class="text-sm mt-1"><span class="font-medium text-gray-700">Tipo:</span>
+                                        @if($invalidacionActiva->tipo_invalidacion == '1')
+                                            <span class="text-red-700">Tipo 1 - Errores formales (se emite documento de reemplazo)</span>
+                                        @else
+                                            <span class="text-red-700">Tipo 2 - Rescisión de operación</span>
+                                        @endif
+                                    </p>
+                                </div>
+                                <div>
+                                    <p class="text-sm"><span class="font-medium text-gray-700">Estado:</span>
+                                        @if($invalidacionActiva->estado == 'procesado')
+                                            <span class="px-2 py-1 bg-red-100 text-red-800 text-xs font-semibold rounded-full ml-1">✓ Procesado por MH</span>
+                                        @elseif($invalidacionActiva->estado == 'enviado')
+                                            <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-semibold rounded-full ml-1">⏳ Enviado al MH</span>
+                                        @endif
+                                    </p>
+                                    @if($invalidacionActiva->sello_recepcion)
+                                        <p class="text-sm mt-1"><span class="font-medium text-gray-700">Sello MH:</span> {{ substr($invalidacionActiva->sello_recepcion, 0, 30) }}...</p>
+                                    @endif
+                                    @if($invalidacionActiva->factura_reemplazo_id)
+                                        <p class="text-sm mt-1"><span class="font-medium text-gray-700">Documento de Reemplazo:</span>
+                                            <a href="{{ route('facturas.show', $invalidacionActiva->factura_reemplazo_id) }}" class="text-blue-600 hover:text-blue-800 underline">
+                                                Ver DTE reemplazo
+                                            </a>
+                                        </p>
+                                    @endif
+                                </div>
+                            </div>
+                            <div class="mt-3 pt-3 border-t border-red-200">
+                                <p class="text-sm"><span class="font-medium text-gray-700">Motivo:</span> <span class="text-red-700">{{ $invalidacionActiva->motivo_invalidacion }}</span></p>
+                            </div>
+                            <div class="mt-3 pt-3 border-t border-red-200">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <p class="text-xs font-medium text-gray-600 mb-1">Responsable (Emisor)</p>
+                                        <p class="text-sm">{{ $invalidacionActiva->responsable_nombre }}</p>
+                                        <p class="text-xs text-gray-600">{{ $invalidacionActiva->responsable_num_doc }}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs font-medium text-gray-600 mb-1">Solicitante</p>
+                                        <p class="text-sm">{{ $invalidacionActiva->solicitante_nombre }}</p>
+                                        <p class="text-xs text-gray-600">{{ $invalidacionActiva->solicitante_num_doc }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <a href="{{ route('invalidaciones.show', $invalidacionActiva->id) }}" class="text-sm text-blue-600 hover:text-blue-800 underline">
+                                    Ver detalles completos del evento de invalidación →
+                                </a>
+                            </div>
+                        @elseif($tieneInvalidacionPendiente)
+                            @php
+                                $invalidacionPendiente = $factura->eventosInvalidacion()->whereIn('estado', ['pendiente', 'firmado'])->first();
+                            @endphp
+                            @if($invalidacionPendiente)
+                                <p class="text-sm text-gray-700">Este documento tiene una invalidación en estado: <span class="font-semibold">{{ ucfirst($invalidacionPendiente->estado) }}</span></p>
+                                <p class="text-sm text-gray-600 mt-2">Fecha evento: {{ \Carbon\Carbon::parse($invalidacionPendiente->fecha_evento)->format('d/m/Y H:i:s') }}</p>
+                            @endif
+                        @else
+                            <p class="text-sm text-gray-700">Este documento ha sido marcado como invalidado.</p>
                         @endif
                     </div>
                 @endif

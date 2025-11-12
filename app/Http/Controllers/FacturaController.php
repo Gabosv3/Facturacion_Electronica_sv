@@ -90,7 +90,6 @@ class FacturaController extends Controller
             'receptor_desc_actividad' => $tipoDte === '03' ? 'required|string|min:5|max:150' : 'nullable|string|min:5|max:150',
             'receptor_departamento' => 'required|string|size:2',
             'receptor_municipio' => 'required|string|size:2',
-            'receptor_distrito' => 'required|string|size:2',
             'receptor_complemento' => 'required|string',
             'receptor_telefono' => 'nullable|string|max:20',
             'receptor_correo' => 'nullable|email',
@@ -129,8 +128,6 @@ class FacturaController extends Controller
             // Según MH, codActividad y descActividad son OPCIONALES para FE y FSEE
             $rules['receptor_cod_actividad'] = 'nullable|string|max:10';
             $rules['receptor_desc_actividad'] = 'nullable|string|min:5|max:150';
-            // El distrito NO es requerido para DTE-14
-            $rules['receptor_distrito'] = 'nullable|string|size:2';
         }
 
         // Validar datos
@@ -181,7 +178,6 @@ class FacturaController extends Controller
     'desc_actividad' => $validated['receptor_desc_actividad'],
     'departamento' => $validated['receptor_departamento'],
     'municipio' => $validated['receptor_municipio'],
-    'distrito' => $validated['receptor_distrito'], // ← DEBE ESTAR AQUÍ
     'complemento' => $validated['receptor_complemento'],
     'telefono' => $validated['receptor_telefono'],
     'correo' => $validated['receptor_correo'],
@@ -241,8 +237,12 @@ class FacturaController extends Controller
             }
 
             // Guardar factura en BD
-            // Todos los DTEs usan 'receptor' en la estructura JSON
-            $receptorDireccion = $dteJson['dteJson']['receptor']['direccion'];
+            // Para DTE-14, usar 'sujetoExcluido' en lugar de 'receptor'
+            if ($validated['tipo_dte'] === '14') {
+                $receptorDireccion = $dteJson['dteJson']['sujetoExcluido']['direccion'];
+            } else {
+                $receptorDireccion = $dteJson['dteJson']['receptor']['direccion'];
+            }
 
             // Para DTE-14, la estructura de resumen es diferente
             if ($validated['tipo_dte'] === '14') {
@@ -482,11 +482,12 @@ class FacturaController extends Controller
                 ]);
 
                 // Determinar versión según tipo de DTE (igual que en DTEService)
-                // DTE-01 = versión 2, DTE-03 = versión 3, DTE-05 = versión 3
+                // DTE-01 = versión 1, DTE-03 = versión 3, DTE-05 = versión 3, DTE-14 = versión 1
                 $versionDte = match($validated['tipo_dte']) {
                     '03' => 3,
                     '05' => 3,
-                    default => 2,
+                    '14' => 1,
+                    default => 1, // DTE-01 usa versión 1
                 };
 
                 // Enviar al Ministerio de Hacienda con política de reintentos

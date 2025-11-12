@@ -136,19 +136,12 @@
                                 </select>
                             </div>
 
-                            <div>
+                            <div class="md:col-span-2">
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Municipio *</label>
                                 <select name="receptor_municipio" id="municipioSelect" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
                                     <option value="">Seleccione primero un departamento</option>
                                 </select>
                                 <p class="text-xs text-gray-500 mt-1" id="municipioHelp">Seleccione un departamento para ver los municipios</p>
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Distrito *</label>
-                                <input type="text" name="receptor_distrito" id="distritoInput" value="03" maxlength="2" pattern="[0-9]{2}" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
-                                <p class="text-xs text-gray-500 mt-1">Código de distrito (2 dígitos). Por defecto: 03</p>
-                                <p class="text-xs text-yellow-600 mt-1">⚠️ IMPORTANTE: El catálogo CAT-12 de distritos corresponde a los municipios ANTES de la consolidación. Usa el código que funcionaba anteriormente.</p>
                             </div>
 
                             <div class="md:col-span-3">

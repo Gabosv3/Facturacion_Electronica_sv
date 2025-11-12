@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 This is a Laravel 10 application for generating and managing electronic invoices (DTE - Documentos Tributarios Electrónicos) according to El Salvador's Ministerio de Hacienda (MH) specifications. The system generates invoices, signs them via a local API, and submits them to the government's tax authority API.
 
 **Supported DTE Types:**
-- **DTE-01**: Factura (Consumer Invoice) - Version 2
+- **DTE-01**: Factura (Consumer Invoice) - Version 1
 - **DTE-03**: Comprobante de Crédito Fiscal (CCF - Tax Credit Certificate) - Version 3
 - **DTE-05**: Nota de Crédito (Credit Note) - Version 3
 - **DTE-14**: Factura de Sujeto Excluido (Exempt Subject Invoice) - Version 1
@@ -151,7 +151,10 @@ php artisan cache:clear               # Clear application cache
 - **Document Numbering**: Control numbers auto-increment per document type, extracting last correlative from database
 - **Token Renewal**: Tokens expire in ~24h; system auto-renews at 23h 50min to prevent gaps
 - **SSL Verification**: Disabled in non-production environments (see MHApiService:62, 186)
-- **Receptor District**: The `distrito` field is REQUIRED and must correspond to a valid district from CAT-12 for the selected municipality
+- **Receptor District**:
+  - **DTE-01**: The `distrito` field is NOT included (JSON version 1 without distrito)
+  - **DTE-03**: The `distrito` field is NOT included (JSON version 3 without distrito)
+  - **DTE-14**: The `distrito` field IS required (JSON version 1 with distrito)
 - **Receptor Optional Fields**: The following receptor fields are USER-OPTIONAL but must be present in JSON with `null` value when empty:
   - `nrc`: Tax registration number
     - **DTE-01**: Must be present with `null` if empty
@@ -183,11 +186,13 @@ According to Ministerio de Hacienda specifications:
 **Important:** DUI (code 13) should ONLY be used for natural persons who are NOT registered in IVA. For IVA registered taxpayers, always use NIT (code 36).
 
 **Formatting when sending to MH:**
-- **DUI**: 9 digits **WITHOUT dash** (e.g., `012345678` not `01234567-8`)
+- **DUI**: 9 digits **WITH dash** in format `########-#` (e.g., `01234567-8`)
+  - **IMPORTANT**: JSON version 1 requires DUI with dash
+  - The system automatically formats: `012345678` → `01234567-8`
 - **NIT**: 14 digits without dashes (e.g., `06142302881449`)
 - **Others**: Alphanumeric, as provided
 
-**Note:** Even though users may see the DUI with dash in the UI for readability, it must be sent to MH without the dash (only 9 numeric digits).
+**Note:** The DUI format changed between JSON versions. Version 1 (DTE-01, DTE-14) requires the dash, while older versions did not.
 
 ### Municipalities Catalog (CAT-13)
 
@@ -207,35 +212,25 @@ The system implements the **updated** official CAT-13 catalog with El Salvador's
 
 ### Districts Catalog (CAT-12) - IMPORTANTE
 
-⚠️ **CRITICAL**: The MH has NOT updated the CAT-12 district catalog to match the new consolidated municipalities (CAT-13). The district codes still correspond to the OLD 262 municipalities structure, not the new 47 consolidated municipalities.
+⚠️ **UPDATE (2025-11-11)**: The `distrito` field has been **REMOVED** from DTE-01 (Factura) as the system now uses JSON version 1 which does not include this field.
 
-**Current Implementation:**
-- **Location**: `public/js/catalogo-distritos.js` (reference catalog, not dynamically loaded)
+**Current Implementation by DTE Type:**
+- **DTE-01 (Factura)**: Does NOT use distrito field (version 1)
+- **DTE-03 (CCF)**: Does NOT use distrito field (version 3)
+- **DTE-05 (Nota de Crédito)**: Does NOT use distrito field (version 3)
+- **DTE-14 (Sujeto Excluido)**: DOES use distrito field (version 1 with distrito)
+
+**For DTE-14 Only:**
+- **Location**: `public/js/catalogo-distritos.js` (reference catalog)
 - **Manual input field** for district code (2 digits)
-- **Default value**: `03`
+- **Default value**: `01`
 - **Format**: 2-digit code (e.g., `01`, `02`, `03`)
-- **Validation**: Required field, must be 2 digits
+- **Validation**: Required field for DTE-14 only
 
 **Important Notes:**
-- The district code must correspond to a district from the **OLD municipality structure** (before consolidation)
-- Even though you select a NEW consolidated municipality in CAT-13, the district code must be from the old structure
-- Example:
-  - Department: `11` (Usulután)
-  - Municipality: `25` (USULUTAN ESTE - consolidated)
-  - District: `03` (from old structure) ✅ Works
-  - District: `01` (assuming it's from new structure) ❌ Rejected by MH
-
-**Why This Happens:**
-- MH updated CAT-13 (municipalities) in 2024/2025
-- MH did NOT update CAT-12 (districts) to match the new structure
-- There is NO official mapping between new consolidated municipalities and old district codes
-- Users must know which old district codes are valid for each case
-
-**Future Solution:**
-When MH provides the updated CAT-12 catalog or a mapping document, the system can be updated to:
-1. Implement dynamic district dropdown based on correct CAT-12
-2. Remove the manual input
-3. Provide proper validation
+- The district catalog issue with consolidated municipalities no longer affects DTE-01, DTE-03, or DTE-05
+- Only DTE-14 (Sujeto Excluido) requires the distrito field
+- This change aligns with MH's JSON version 1 specification for DTE-01
 
 ### MH Retry Policy (Política de Reintentos)
 
@@ -317,6 +312,15 @@ The system implements the official MH contingency process for force majeure even
 - Test environment: Max 300 batches, Production: Max 400 batches
 - DTEs must be signed BEFORE sending in batch
 - Complete workflow documented in `GUIA_CONTINGENCIA.md`
+
+**Automatic Seal Updates (Added 2025-11-05):**
+When a contingency is processed and MH returns status `PROCESADO`, the system automatically updates all invoices in the batch with:
+- Reception seal (`selloRecibido`) extracted from MH's batch response
+- Status changed from `firmado_contingencia` to `enviado_mh`
+- Complete MH response data including processing timestamp
+- Metadata marking it as processed via contingency (`via_contingencia: true`)
+
+This automation eliminates the need for manual status queries and enables immediate use of features like invalidation that require the reception seal. Implementation in `EventoContingencia::marcarProcesado()` and `EventoContingencia::actualizarFacturasConSellos()` (EventoContingencia.php:119-231).
 
 **Environment Variables:**
 ```bash
@@ -414,7 +418,8 @@ MH_CONSULTA_DTE_LOTE_URL=https://apitest.dtes.mh.gob.sv/fesv/recepcion/consultad
 
 | Feature | DTE-01 (Factura) | DTE-03 (CCF) | DTE-05 (Nota de Crédito) | DTE-14 (Sujeto Excluido) |
 |---------|------------------|--------------|--------------------------|---------------------------|
-| **JSON Version** | 2 | 3 | 3 | 1 |
+| **JSON Version** | 1 | 3 | 3 | 1 |
+| **Distrito Field** | **No** | **No** | **No** | **Yes** |
 | **Receptor Document Type** | NIT, DUI, Passport, etc. | **Only NIT (code 36)** | Uses same as related document | NIT, DUI, Passport, etc. |
 | **Receptor NRC** | Optional | **Required** | Copied from related document | Optional |
 | **Receptor Economic Activity Code** | Optional | **Required** | Copied from related document | Optional |
@@ -423,9 +428,19 @@ MH_CONSULTA_DTE_LOTE_URL=https://apitest.dtes.mh.gob.sv/fesv/recepcion/consultad
 | **Requires Related Document** | No | No | **Yes (required)** | No |
 
 **Implementation Notes:**
-- The system automatically uses `version: 3` for DTE-03 and DTE-05, `version: 2` for DTE-01, and `version: 1` for DTE-14 (see DTEService.php)
+- The system automatically uses `version: 1` for DTE-01 and DTE-14, `version: 3` for DTE-03 and DTE-05 (see DTEService.php)
 - Validation rules change dynamically based on `tipo_dte` (see FacturaController.php:82)
 - Each DTE type has independent numbering (correlativo) managed per `tipo_dte`
+- **IMPORTANT**: DTE-01 structure matches MH's JSON version 1 specification
+
+**DTE-01 JSON Version 1 Key Requirements:**
+- ✅ `identificacion.version: 1` in DTE JSON
+- ✅ `version: 1` in envelope sent to MH
+- ✅ NO `distrito` field in direccion (emisor and receptor)
+- ✅ DUI format with dash: `########-#`
+- ✅ Required emisor fields: `tipoEstablecimiento`, `codEstableMH`, `codEstable`, `codPuntoVentaMH`, `codPuntoVenta` (all can be null)
+- ✅ Required in resumen: `reteRenta` (usually 0.0)
+- ✅ Required: `extension` field (can be null)
 
 **Critical Validations:**
 - ⚠️ **DTE-03 (CCF)**: Receptor NIT CANNOT be the same as Emisor NIT - MH will reject with error "[receptor.nit] VALOR NO ES PERMITIDO"
