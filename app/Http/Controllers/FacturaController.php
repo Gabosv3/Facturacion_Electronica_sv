@@ -78,21 +78,27 @@ class FacturaController extends Controller
         // Determinar tipo de DTE
         $tipoDte = $request->input('tipo_dte', '01');
 
+        // Verificar si es factura de clientes varios
+        $esClientesVarios = $request->has('clientes_varios') && $request->input('clientes_varios') == '1';
+
         // Validaciones base
         $rules = [
             // Tipo DTE
             'tipo_dte' => 'required|string|in:01,03,05,14',
 
-            // Receptor
-            'receptor_tipo_documento' => 'required|string|size:2',
-            'receptor_num_documento' => 'required|string|max:20',
-            'receptor_nombre' => 'required|string|max:255',
+            // Clientes Varios
+            'clientes_varios' => 'nullable|boolean',
+
+            // Receptor - Ajustar según si es clientes varios
+            'receptor_tipo_documento' => $esClientesVarios ? 'nullable' : 'required|string|size:2',
+            'receptor_num_documento' => $esClientesVarios ? 'nullable' : 'required|string|max:20',
+            'receptor_nombre' => 'nullable|string|max:255',
             'receptor_nrc' => $tipoDte === '03' ? 'required|string|max:20' : 'nullable|string|max:20',
             'receptor_cod_actividad' => $tipoDte === '03' ? 'required|string|max:10' : 'nullable|string|max:10',
             'receptor_desc_actividad' => $tipoDte === '03' ? 'required|string|min:5|max:150' : 'nullable|string|min:5|max:150',
-            'receptor_departamento' => 'required|string|size:2',
-            'receptor_municipio' => 'required|string|size:2',
-            'receptor_complemento' => 'required|string',
+            'receptor_departamento' => $esClientesVarios ? 'nullable' : 'required|string|size:2',
+            'receptor_municipio' => $esClientesVarios ? 'nullable' : 'required|string|size:2',
+            'receptor_complemento' => $esClientesVarios ? 'nullable' : 'required|string',
             'receptor_telefono' => 'nullable|string|max:20',
             'receptor_correo' => 'nullable|email',
 
@@ -135,9 +141,24 @@ class FacturaController extends Controller
         // Validar datos
         $validated = $request->validate($rules);
 
-        // Convertir nombre del receptor a mayúsculas
-        if (isset($validated['receptor_nombre'])) {
-            $validated['receptor_nombre'] = strtoupper($validated['receptor_nombre']);
+        // Si es clientes varios, establecer valores NULL en la base de datos
+        if ($esClientesVarios) {
+            $validated['receptor_tipo_documento'] = null;
+            $validated['receptor_num_documento'] = null;
+            $validated['receptor_nombre'] = 'CLIENTES VARIOS';
+            $validated['receptor_nrc'] = null;
+            $validated['receptor_cod_actividad'] = null;
+            $validated['receptor_desc_actividad'] = null;
+            $validated['receptor_departamento'] = null;
+            $validated['receptor_municipio'] = null;
+            $validated['receptor_complemento'] = null;
+            $validated['receptor_telefono'] = null;
+            $validated['receptor_correo'] = null;
+        } else {
+            // Convertir nombre del receptor a mayúsculas solo si no es clientes varios
+            if (isset($validated['receptor_nombre'])) {
+                $validated['receptor_nombre'] = strtoupper($validated['receptor_nombre']);
+            }
         }
 
         // Asegurar que los campos opcionales tengan valores por defecto

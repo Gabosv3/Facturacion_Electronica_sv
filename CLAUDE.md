@@ -151,6 +151,7 @@ php artisan cache:clear               # Clear application cache
 - **Document Numbering**: Control numbers auto-increment per document type, extracting last correlative from database
 - **Token Renewal**: Tokens expire in ~24h; system auto-renews at 23h 50min to prevent gaps
 - **SSL Verification**: Disabled in non-production environments (see MHApiService:62, 186)
+- **Clientes Varios**: DTE-01 supports "Clientes Varios" (multiple customers) invoices where receptor data is not required (all fields are NULL except nombre = "CLIENTES VARIOS")
 - **Receptor District**:
   - **DTE-01**: The `distrito` field is NOT included (JSON version 1 without distrito)
   - **DTE-03**: The `distrito` field is NOT included (JSON version 3 without distrito)
@@ -573,6 +574,68 @@ Run `php artisan migrate` to add DTE-05 support fields:
 - Validation rules ensure proper exempt subject documentation
 - Follows same signing and submission flow as other DTE types
 
+### Clientes Varios (Multiple Customers Invoice)
+
+The system supports "Clientes Varios" invoices for DTE-01, which are used when specific customer data is not required.
+
+**Purpose**: Allows businesses to issue invoices without collecting specific customer information, useful for:
+- Retail sales to walk-in customers
+- Small transactions where customer data is not necessary
+- Quick sales where recording individual customer details is impractical
+
+**Implementation:**
+
+**Checkbox in Form** (`resources/views/facturas/crear.blade.php`)
+- Located at the top of the DTE-01 creation form
+- When activated:
+  - Hides customer data section (Datos del Cliente)
+  - Hides customer address section (Dirección del Cliente)
+  - Disables validation for these fields
+  - Only requires product/service information
+
+**Controller Logic** (`app/Http/Controllers/FacturaController.php`)
+- Detects checkbox: `$esClientesVarios = $request->has('clientes_varios') && $request->input('clientes_varios') == '1'`
+- Sets all receptor fields to NULL in database
+- Sets receptor name to "CLIENTES VARIOS"
+
+**DTE Service** (`app/Services/DTEService.php`)
+- Method `construirReceptor()` detects NULL values in tipoDocumento and numDocumento
+- Generates correct JSON structure for MH:
+  ```json
+  {
+    "receptor": {
+      "tipoDocumento": null,
+      "numDocumento": null,
+      "nrc": null,
+      "nombre": "CLIENTES VARIOS",
+      "codActividad": null,
+      "descActividad": null,
+      "direccion": null,
+      "telefono": null,
+      "correo": null
+    }
+  }
+  ```
+
+**Database Structure:**
+- Migration `2025_11_12_201311_hacer_campos_receptor_nullable_en_facturas.php` makes these fields nullable:
+  - `receptor_tipo_documento` → nullable
+  - `receptor_num_documento` → nullable
+  - `receptor_direccion` → nullable
+
+**Usage:**
+1. Navigate to `/facturas/crear`
+2. Check the "Factura de Clientes Varios" checkbox
+3. Only fill in products/services and payment conditions
+4. Submit - system generates invoice with "CLIENTES VARIOS" as receptor
+
+**Important Notes:**
+- ✅ Only available for DTE-01 (Factura), not for DTE-03, DTE-05, or DTE-14
+- ✅ All receptor fields stored as NULL in database (except nombre)
+- ✅ JSON sent to MH has correct NULL structure per official specifications
+- ✅ Follows signing and submission flow normally
+- ✅ Can generate QR code and send by email like regular invoices
+
 ### Invalidation System (Sistema de Invalidación)
 
 The system implements the official MH invalidation process to cancel or nullify DTEs that were previously sent and received a reception seal.
@@ -739,6 +802,21 @@ $invalidacionService->procesarInvalidacion([
 
 **Migration:**
 Run `php artisan migrate` to create the `eventos_invalidacion` table and add invalidation fields to `facturas` table.
+
+### Email Security (Updated 2025-11-12)
+
+When sending invoices by email via `FacturaElectronicaMail`, sensitive credentials are automatically removed from the attached JSON:
+
+**Protected Fields:**
+- `nit` - Authentication credential
+- `activo` - Credential status
+- `passwordPri` - Private key password
+
+**Implementation:**
+- `app/Mail/FacturaElectronicaMail.php` method `attachments()` creates a clean copy of the DTE JSON
+- Removes sensitive fields before attaching to email
+- Original JSON in database remains intact
+- Recipients only receive document data, not system credentials
 
 ### QR Code Generation System (Código QR de Consulta Pública)
 

@@ -32,8 +32,21 @@
                     @csrf
                     <input type="hidden" name="tipo_dte" value="01">
 
+                    <!-- Checkbox Clientes Varios -->
+                    <div class="mb-6 p-4 bg-yellow-50 border-2 border-yellow-300 rounded-lg">
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" id="clientesVarios" name="clientes_varios" value="1" class="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <label for="clientesVarios" class="text-lg font-semibold text-gray-800 cursor-pointer">
+                                Factura de Clientes Varios
+                            </label>
+                        </div>
+                        <p class="text-sm text-gray-600 mt-2 ml-8">
+                            📌 Active esta opción para generar una factura sin datos específicos del cliente. Solo necesitará agregar los productos/servicios.
+                        </p>
+                    </div>
+
                     <!-- Datos del Receptor -->
-                    <div class="mb-8">
+                    <div class="mb-8" id="datosClienteSection">
                         <h2 class="text-xl font-semibold text-gray-700 mb-4 border-b pb-2">Datos del Cliente</h2>
                         
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -91,7 +104,7 @@
                     </div>
 
                     <!-- Dirección del Receptor -->
-                    <div class="mb-8">
+                    <div class="mb-8" id="direccionClienteSection">
                         <h2 class="text-xl font-semibold text-gray-700 mb-4 border-b pb-2">Dirección del Cliente</h2>
                         
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -249,6 +262,74 @@
 
     <script>
         let itemCount = 1;
+
+        // ==========================================
+        // Manejo de Clientes Varios
+        // ==========================================
+        const clientesVariosCheckbox = document.getElementById('clientesVarios');
+        const datosClienteSection = document.getElementById('datosClienteSection');
+        const direccionClienteSection = document.getElementById('direccionClienteSection');
+
+        // Función para alternar secciones de cliente
+        function toggleClientesVarios() {
+            const esClientesVarios = clientesVariosCheckbox.checked;
+
+            if (esClientesVarios) {
+                // Ocultar secciones de cliente
+                datosClienteSection.style.display = 'none';
+                direccionClienteSection.style.display = 'none';
+
+                // Deshabilitar validación required en campos de cliente
+                datosClienteSection.querySelectorAll('input[required], select[required], textarea[required]').forEach(field => {
+                    field.removeAttribute('required');
+                    field.disabled = true;
+                });
+                direccionClienteSection.querySelectorAll('input[required], select[required], textarea[required]').forEach(field => {
+                    field.removeAttribute('required');
+                    field.disabled = true;
+                });
+
+                // Limpiar valores de los campos
+                datosClienteSection.querySelectorAll('input, select, textarea').forEach(field => {
+                    if (field.name !== 'receptor_nombre') {
+                        field.value = '';
+                    }
+                });
+                direccionClienteSection.querySelectorAll('input, select, textarea').forEach(field => {
+                    field.value = '';
+                });
+
+            } else {
+                // Mostrar secciones de cliente
+                datosClienteSection.style.display = 'block';
+                direccionClienteSection.style.display = 'block';
+
+                // Re-habilitar campos y validación required
+                datosClienteSection.querySelectorAll('input, select').forEach(field => {
+                    field.disabled = false;
+                    // Restaurar required en campos obligatorios
+                    if (field.name === 'receptor_tipo_documento' ||
+                        field.name === 'receptor_num_documento' ||
+                        field.name === 'receptor_nombre') {
+                        field.setAttribute('required', 'required');
+                    }
+                });
+                direccionClienteSection.querySelectorAll('input, select, textarea').forEach(field => {
+                    field.disabled = false;
+                    if (field.name === 'receptor_departamento' ||
+                        field.name === 'receptor_municipio' ||
+                        field.name === 'receptor_complemento') {
+                        field.setAttribute('required', 'required');
+                    }
+                });
+            }
+        }
+
+        // Event listener para el checkbox
+        clientesVariosCheckbox.addEventListener('change', toggleClientesVarios);
+
+        // Estado inicial
+        toggleClientesVarios();
 
         // Agregar nuevo item
         document.getElementById('addItem').addEventListener('click', function() {
