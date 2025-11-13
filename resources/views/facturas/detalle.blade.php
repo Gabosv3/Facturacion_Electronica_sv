@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Detalle Factura - {{ $factura->numero_control }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body class="bg-gray-100">
     @include('components.navbar')
@@ -413,6 +414,20 @@
                         👁️ Ver JSON
                     </button>
 
+                    @if($factura->receptor_correo && $factura->estado == 'enviado_mh')
+                        <form action="{{ route('facturas.enviarEmail', $factura) }}" method="POST" class="inline-block" id="form-enviar-email">
+                            @csrf
+                            <button type="button"
+                                    onclick="confirmarEnvioEmail('{{ $factura->receptor_correo }}', '{{ $factura->numero_control }}')"
+                                    class="bg-teal-600 hover:bg-teal-700 text-white font-semibold px-6 py-2 rounded-lg transition-colors inline-flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                </svg>
+                                Enviar por Email
+                            </button>
+                        </form>
+                    @endif
+
                     @if($factura->estado === 'enviado_mh')
                         <!-- Botón para consultar estado en MH -->
                         <form action="{{ route('consultas.buscar') }}" method="POST" class="inline">
@@ -567,6 +582,128 @@
             }
         `;
         document.head.appendChild(style);
+
+        function confirmarEnvioEmail(email, numeroControl) {
+            Swal.fire({
+                title: '📧 Enviar Factura por Email',
+                html: `
+                    <div class="text-left space-y-3 mt-4">
+                        <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                            <p class="text-sm text-gray-700">
+                                <span class="font-semibold text-blue-800">Factura:</span><br>
+                                <span class="text-lg font-bold text-gray-900">${numeroControl}</span>
+                            </p>
+                        </div>
+                        <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+                            <p class="text-sm text-gray-700">
+                                <span class="font-semibold text-green-800">Destinatario:</span><br>
+                                <span class="font-mono text-gray-900">${email}</span>
+                            </p>
+                        </div>
+                        <div class="bg-amber-50 p-4 rounded-lg border border-amber-200">
+                            <p class="text-sm text-gray-700">
+                                <span class="font-semibold text-amber-800">Se enviarán los siguientes archivos:</span>
+                            </p>
+                            <ul class="list-disc list-inside text-sm text-gray-600 mt-2 ml-2">
+                                <li>📄 Archivo JSON con los datos del DTE</li>
+                                <li>📑 Factura en formato HTML (imprimible como PDF)</li>
+                            </ul>
+                        </div>
+                    </div>
+                `,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#0d9488',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: '<i class="mr-2">✉️</i> Sí, enviar ahora',
+                cancelButtonText: 'Cancelar',
+                width: '600px',
+                customClass: {
+                    confirmButton: 'px-6 py-3 text-white font-semibold rounded-lg shadow-lg',
+                    cancelButton: 'px-6 py-3 text-white font-semibold rounded-lg'
+                },
+                showLoaderOnConfirm: true,
+                preConfirm: () => {
+                    return new Promise((resolve) => {
+                        // Mostrar loading
+                        Swal.fire({
+                            title: 'Enviando email...',
+                            html: `
+                                <div class="text-center">
+                                    <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-teal-600 mx-auto mb-4"></div>
+                                    <p class="text-gray-600">Por favor espere mientras se envía el correo electrónico</p>
+                                </div>
+                            `,
+                            allowOutsideClick: false,
+                            allowEscapeKey: false,
+                            showConfirmButton: false,
+                            didOpen: () => {
+                                // Enviar el formulario
+                                document.getElementById('form-enviar-email').submit();
+                            }
+                        });
+                    });
+                }
+            });
+        }
+
+        // Mostrar alertas de SweetAlert para los mensajes de sesión
+        @if(session('success'))
+            Swal.fire({
+                icon: 'success',
+                title: '¡Éxito!',
+                html: `
+                    <div class="text-center">
+                        <div class="text-lg font-semibold text-gray-800 mb-2">
+                            {{ session('success') }}
+                        </div>
+                        <div class="mt-4 p-3 bg-green-50 rounded-lg border border-green-200">
+                            <p class="text-sm text-green-800">
+                                ✅ El correo ha sido enviado exitosamente
+                            </p>
+                        </div>
+                    </div>
+                `,
+                confirmButtonColor: '#10b981',
+                confirmButtonText: 'Entendido',
+                timer: 5000,
+                timerProgressBar: true,
+            });
+        @endif
+
+        @if(session('error'))
+            Swal.fire({
+                icon: 'error',
+                title: 'Error al enviar',
+                html: `
+                    <div class="text-center">
+                        <div class="text-lg text-gray-800 mb-4">
+                            {{ session('error') }}
+                        </div>
+                        <div class="mt-4 p-3 bg-red-50 rounded-lg border border-red-200 text-left">
+                            <p class="text-sm text-red-800 font-semibold mb-2">Posibles soluciones:</p>
+                            <ul class="text-sm text-red-700 list-disc list-inside space-y-1">
+                                <li>Verifique la configuración de correo en .env</li>
+                                <li>Asegúrese de que la factura tenga un email válido</li>
+                                <li>Revise los logs en storage/logs/laravel.log</li>
+                            </ul>
+                        </div>
+                    </div>
+                `,
+                confirmButtonColor: '#dc2626',
+                confirmButtonText: 'Entendido',
+            });
+        @endif
+
+        @if(session('warning'))
+            Swal.fire({
+                icon: 'warning',
+                title: 'Advertencia',
+                text: '{{ session('warning') }}',
+                confirmButtonColor: '#f59e0b',
+                confirmButtonText: 'Entendido',
+            });
+        @endif
     </script>
 </body>
 </html>

@@ -58,7 +58,7 @@
 
                             <div class="md:col-span-2">
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Nombre Completo *</label>
-                                <input type="text" name="receptor_nombre" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required value="{{ old('receptor_nombre') }}">
+                                <input type="text" name="receptor_nombre" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required value="{{ old('receptor_nombre') }}" style="text-transform: uppercase;" oninput="this.value = this.value.toUpperCase()">
                             </div>
 
                             <div>
@@ -68,7 +68,7 @@
 
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Teléfono</label>
-                                <input type="text" name="receptor_telefono" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" value="{{ old('receptor_telefono') }}">
+                                <input type="text" name="receptor_telefono" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" value="{{ old('receptor_telefono') }}" placeholder="7777-7777" maxlength="9" oninput="formatearTelefono(this)">
                             </div>
 
                             <div>
@@ -485,6 +485,25 @@
                 return false;
             }
         });
+
+        // Función para formatear teléfono
+        function formatearTelefono(input) {
+            // Obtener solo números
+            let valor = input.value.replace(/\D/g, '');
+
+            // Limitar a 8 dígitos
+            if (valor.length > 8) {
+                valor = valor.substring(0, 8);
+            }
+
+            // Aplicar formato 7777-7777
+            if (valor.length > 4) {
+                valor = valor.substring(0, 4) + '-' + valor.substring(4);
+            }
+
+            // Actualizar el valor del input
+            input.value = valor;
+        }
     </script>
 </body>
 </html>

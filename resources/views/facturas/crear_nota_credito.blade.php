@@ -198,7 +198,7 @@
 
                             <div class="md:col-span-2">
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Nombre Completo *</label>
-                                <input type="text" name="receptor_nombre" id="receptor_nombre" class="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-100" readonly required>
+                                <input type="text" name="receptor_nombre" id="receptor_nombre" class="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-100" readonly required style="text-transform: uppercase;">
                             </div>
 
                             <div>
@@ -208,7 +208,7 @@
 
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Teléfono</label>
-                                <input type="text" name="receptor_telefono" id="receptor_telefono" class="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-100" readonly>
+                                <input type="text" name="receptor_telefono" id="receptor_telefono" class="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-100" readonly placeholder="7777-7777">
                             </div>
 
                             <div>
@@ -353,7 +353,14 @@
                 document.getElementById('receptor_nombre').value = selectedOption.dataset.nombre;
                 document.getElementById('receptor_nrc').value = selectedOption.dataset.nrc || '';
                 document.getElementById('receptor_cod_actividad').value = selectedOption.dataset.codActividad || '';
-                document.getElementById('receptor_telefono').value = selectedOption.dataset.telefono || '';
+
+                // Formatear teléfono al cargar desde factura relacionada
+                let telefono = selectedOption.dataset.telefono || '';
+                if (telefono && telefono.length === 8 && !telefono.includes('-')) {
+                    telefono = telefono.substring(0, 4) + '-' + telefono.substring(4);
+                }
+                document.getElementById('receptor_telefono').value = telefono;
+
                 document.getElementById('receptor_correo').value = selectedOption.dataset.correo || '';
 
                 // Parsear dirección

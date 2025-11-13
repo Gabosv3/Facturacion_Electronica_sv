@@ -6,10 +6,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use App\Models\Factura;
 use App\Services\DTEService;
 use App\Services\MHApiService;
 use App\Services\ContingenciaService;
+use App\Mail\FacturaElectronicaMail;
 
 class FacturaController extends Controller
 {
@@ -132,6 +134,11 @@ class FacturaController extends Controller
 
         // Validar datos
         $validated = $request->validate($rules);
+
+        // Convertir nombre del receptor a mayúsculas
+        if (isset($validated['receptor_nombre'])) {
+            $validated['receptor_nombre'] = strtoupper($validated['receptor_nombre']);
+        }
 
         // Asegurar que los campos opcionales tengan valores por defecto
         $validated = array_merge([
@@ -712,5 +719,49 @@ class FacturaController extends Controller
             Log::error('Error al eliminar factura: ' . $e->getMessage());
             return back()->with('error', 'Error al eliminar la factura: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Envía la factura electrónica por correo al receptor
+     */
+    public function enviarEmail(Factura $factura)
+    {
+        try {
+            // Verificar que la factura tenga correo electrónico
+            if (empty($factura->receptor_correo)) {
+                return back()->with('error', 'Esta factura no tiene un correo electrónico registrado.');
+            }
+
+            // Verificar que la factura esté enviada al MH
+            if ($factura->estado !== 'enviado_mh') {
+                return back()->with('warning', 'Solo se pueden enviar por correo facturas que hayan sido enviadas al Ministerio de Hacienda.');
+            }
+
+            // Enviar el correo
+            Mail::to($factura->receptor_correo)->send(new FacturaElectronicaMail($factura));
+
+            Log::info('Factura enviada por email', [
+                'factura_id' => $factura->id,
+                'numero_control' => $factura->numero_control,
+                'email_destino' => $factura->receptor_correo,
+            ]);
+
+            return back()->with('success', "Factura enviada correctamente a {$factura->receptor_correo}");
+        } catch (\Exception $e) {
+            Log::error('Error al enviar correo de factura: ' . $e->getMessage(), [
+                'factura_id' => $factura->id,
+                'numero_control' => $factura->numero_control,
+                'error' => $e->getMessage(),
+            ]);
+            return back()->with('error', 'Error al enviar el correo: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Genera el HTML del PDF de la factura
+     */
+    public function generarPdfHtml(Factura $factura)
+    {
+        return view('facturas.pdf', compact('factura'))->render();
     }
 }
