@@ -3,7 +3,8 @@
     "allow": [
       "Read(//mnt/c/xampp/htdocs/**)",
       "Bash(/mnt/c/xampp/php/php.exe artisan tinker --execute=:*)",
-      "Bash(/mnt/c/xampp/php/php.exe artisan migrate)"
+      "Bash(/mnt/c/xampp/php/php.exe artisan migrate)",
+      "Bash(/mnt/c/xampp/php/php.exe artisan tinker:*)"
     ],
     "deny": [],
     "ask": []

@@ -375,39 +375,55 @@
         });
 
         // Calcular totales según fórmula del Ministerio de Hacienda
+        // DTE-01 ahora usa 13% de IVA (igual que DTE-03)
         function calcularTotales() {
             const precioIncluyeIva = document.getElementById('precioIncluyeIva').checked;
-            let subtotal = 0;
-            let totalIva = 0;
-            
-            document.querySelectorAll('.item-row').forEach(row => {
-                const cantidad = parseFloat(row.querySelector('.cantidad').value) || 0;
-                const precio = parseFloat(row.querySelector('.precio').value) || 0;
-                const descuento = parseFloat(row.querySelector('.descuento').value) || 0;
-                
-                if (precioIncluyeIva) {
-                    // Precio INCLUYE IVA - Aplicar fórmula del MH: [(total)/1.13*0.13]
-                    const totalConIva = (cantidad * precio) - descuento;
-                    const ventaGravada = totalConIva / 1.13;
-                    const iva = ventaGravada * 0.13;
-                    
-                    subtotal += ventaGravada;
-                    totalIva += iva;
-                } else {
-                    // Precio NO incluye IVA
+            const tasaIva = 0.13; // DTE-01 Factura = 13%
+
+            if (precioIncluyeIva) {
+                // PRECIO INCLUYE IVA:
+                // - Subtotal = precio CON IVA (lo que ingresaste)
+                // - IVA = extraído del precio (informativo)
+                // - Total = Subtotal (NO sumar IVA otra vez)
+                let totalConIva = 0;
+
+                document.querySelectorAll('.item-row').forEach(row => {
+                    const cantidad = parseFloat(row.querySelector('.cantidad').value) || 0;
+                    const precio = parseFloat(row.querySelector('.precio').value) || 0;
+                    const descuento = parseFloat(row.querySelector('.descuento').value) || 0;
+                    totalConIva += (cantidad * precio) - descuento;
+                });
+
+                // Subtotal = precio CON IVA
+                const subtotal = totalConIva;
+                // IVA = extraído (informativo)
+                const totalSinIva = totalConIva / (1 + tasaIva);
+                const totalIva = totalConIva - totalSinIva;
+                // Total = Subtotal (NO sumar IVA)
+                const total = subtotal;
+
+                document.getElementById('subtotal').textContent = '$' + subtotal.toFixed(2);
+                document.getElementById('iva').textContent = '$' + totalIva.toFixed(2);
+                document.getElementById('total').textContent = '$' + total.toFixed(2);
+            } else {
+                // Precio NO incluye IVA - calcular normalmente
+                let subtotal = 0;
+
+                document.querySelectorAll('.item-row').forEach(row => {
+                    const cantidad = parseFloat(row.querySelector('.cantidad').value) || 0;
+                    const precio = parseFloat(row.querySelector('.precio').value) || 0;
+                    const descuento = parseFloat(row.querySelector('.descuento').value) || 0;
                     const ventaGravada = (cantidad * precio) - descuento;
-                    const iva = ventaGravada * 0.13;
-                    
                     subtotal += ventaGravada;
-                    totalIva += iva;
-                }
-            });
-            
-            const total = subtotal + totalIva;
-            
-            document.getElementById('subtotal').textContent = '$' + subtotal.toFixed(2);
-            document.getElementById('iva').textContent = '$' + totalIva.toFixed(2);
-            document.getElementById('total').textContent = '$' + total.toFixed(2);
+                });
+
+                const totalIva = subtotal * tasaIva;
+                const total = subtotal + totalIva;
+
+                document.getElementById('subtotal').textContent = '$' + subtotal.toFixed(2);
+                document.getElementById('iva').textContent = '$' + totalIva.toFixed(2);
+                document.getElementById('total').textContent = '$' + total.toFixed(2);
+            }
         }
 
         function attachCalculateEvents() {

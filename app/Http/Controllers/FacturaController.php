@@ -162,6 +162,8 @@ class FacturaController extends Controller
         }
 
         // Asegurar que los campos opcionales tengan valores por defecto
+        // IMPORTANTE: precio_incluye_iva debe ser false por defecto para DTE-01
+        // (el checkbox en el formulario está marcado, pero solo envía value="1" cuando está marcado)
         $validated = array_merge([
             'receptor_nrc' => null,
             'receptor_cod_actividad' => null,
@@ -169,8 +171,13 @@ class FacturaController extends Controller
             'receptor_correo' => null,
             'referencia_pago' => null,
             'observaciones' => null,
-            'precio_incluye_iva' => true,
+            'precio_incluye_iva' => false,  // false por defecto para DTE-01
         ], $validated);
+
+        // Convertir precio_incluye_iva a boolean si viene del formulario
+        if (isset($validated['precio_incluye_iva'])) {
+            $validated['precio_incluye_iva'] = (bool) $validated['precio_incluye_iva'];
+        }
 
         try {
             DB::beginTransaction();

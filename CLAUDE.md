@@ -144,10 +144,41 @@ php artisan cache:clear               # Clear application cache
 ### Important Notes
 
 - **IVA Calculation**: The system uses different IVA rates per document type:
-  - DTE-01 (Factura): 11.5% - Formula: `ventaGravada * 0.115`
-  - DTE-03 (CCF): 13% - Formula: `ventaGravada * 0.13`
+  - DTE-01 (Factura): 11.5%
+  - DTE-03 (CCF): 13%
   - DTE-05 (Nota de Crédito): Always 13% (regardless of related document type)
   - DTE-14 (Sujeto Excluido): 0% - No IVA (uses `ventaExenta` instead of `ventaGravada`)
+  - **CRITICAL - When "Price Includes IVA" is checked (DTE-01)**:
+    - `totalGravada` = Price WITH IVA included (the entered price)
+    - `totalIva` = Extracted IVA (informative only)
+    - `montoTotalOperacion` = `totalGravada` (**DO NOT add IVA again**)
+    - Each item's `precioUni` = price WITH IVA (entered price) ← **CRITICAL for MH validation**
+    - Each item's `ventaGravada` = price WITH IVA (must match: `cantidad × precioUni - descuento`)
+    - Each item's `ivaItem` = extracted IVA (informative)
+    - Formula: `totalGravada = sum(all item prices)`, `totalIva = totalGravada - (totalGravada / 1.115)`, `montoTotalOperacion = totalGravada`
+    - Example: 2 items × $20.00 = $40.00
+      - Item 1: `precioUni: 20.00`, `ventaGravada: 20.00`, `ivaItem: 2.06`
+      - Item 2: `precioUni: 20.00`, `ventaGravada: 20.00`, `ivaItem: 2.07`
+      - Resumen: `totalGravada: 40.00`, `totalIva: 4.13`, `montoTotalOperacion: 40.00` ✅
+    - MH validates: `ventaGravada = cantidad × precioUni - descuento` (must be exact)
+    - This prevents MH rejection errors:
+      - `[resumen.montoTotalOperacion] CALCULO INCORRECTO`
+      - `cuerpoDocumento.item.X: El calculo de total por item es erroneo`
+    - Implementation: `calcularTotalesItemsConTasa()` lines 142-215 (DTEService.php)
+  - **When "Price Does NOT Include IVA"**: Traditional calculation
+    - `totalGravada` = sum of base prices (WITHOUT IVA)
+    - `totalIva` = `totalGravada × tasaIva`
+    - `montoTotalOperacion` = `totalGravada + totalIva`
+- **Price Includes IVA Checkbox** (DTE-03 CCF):
+  - When **checked** (default): The entered price already includes IVA
+    - Example: Product price $20.00 → Venta gravada: $17.70, IVA: $2.30, Total: $20.00
+    - Formula: `precioSinIva = precioConIva / 1.13`, then `iva = precioSinIva * 0.13`
+    - **Total to pay remains the same as entered price** (no additional IVA added)
+  - When **unchecked**: The entered price does NOT include IVA
+    - Example: Product price $20.00 → Venta gravada: $20.00, IVA: $2.60, Total: $22.60
+    - Formula: `ventaGravada = precio`, then `iva = ventaGravada * 0.13`
+    - Total to pay is base price + calculated IVA
+  - Implementation: `DTEService::calcularTotalesItemsConTasa()` (DTEService.php:136)
 - **Document Numbering**: Control numbers auto-increment per document type, extracting last correlative from database
 - **Token Renewal**: Tokens expire in ~24h; system auto-renews at 23h 50min to prevent gaps
 - **SSL Verification**: Disabled in non-production environments (see MHApiService:62, 186)

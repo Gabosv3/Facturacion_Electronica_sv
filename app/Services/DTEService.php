@@ -132,49 +132,159 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
     /**
      * Calcular totales de items con tasa de IVA personalizada
      * Usado para DTE-03 (13%) y DTE-05 (heredado del documento relacionado)
+     *
+     * IMPORTANTE: Cuando precio incluye IVA, calculamos sobre el total para evitar errores de redondeo
      */
-    public function calcularTotalesItemsConTasa(array $items, float $tasaIva, bool $precioIncluyeIva = true): array
+    public function calcularTotalesItemsConTasa(array $items, float $tasaIva, bool $precioIncluyeIva = true, string $tipoDte = '01'): array
     {
-        $totalGravada = 0;
-        $totalExenta = 0;
-        $totalNoSujeto = 0;
         $totalDescuento = 0;
-        $totalIva = 0;
 
-        foreach ($items as &$item) {
-            $cantidad = (float) $item['cantidad'];
-            $precioUni = (float) $item['precio_unitario'];
-            $montoDescu = (float) ($item['monto_descuento'] ?? 0);
+        if ($precioIncluyeIva) {
+            // DTE-01: ventaGravada incluye IVA, montoTotalOperacion = totalGravada
+            // DTE-03 (CCF): ventaGravada SIN IVA, montoTotalOperacion = totalGravada + totalIva
+            $esDTE01 = ($tipoDte === '01' || $tipoDte === '14');
 
-            // SIEMPRE calcular como precio SIN IVA incluido
-            // (el comportamiento anterior correcto para DTE-01 y DTE-03)
-            $ventaGravada = round(($cantidad * $precioUni) - $montoDescu, 2);
-            $ivaItem = round($ventaGravada * $tasaIva, 2);
+            $totalConIva = 0;
+            $sumaVentaGravadaItems = 0;
+            $numItems = count($items);
+            $itemIndex = 0;
 
-            $item['venta_gravada'] = $ventaGravada;
-            $item['venta_exenta'] = 0;
-            $item['venta_no_sujeta'] = 0;
-            $item['iva_item'] = $ivaItem;
+            // Primer loop: calcular total con IVA
+            foreach ($items as &$item) {
+                $cantidad = (float) $item['cantidad'];
+                $precioUniIngresado = (float) $item['precio_unitario'];
+                $montoDescu = (float) ($item['monto_descuento'] ?? 0);
 
-            $totalGravada += $ventaGravada;
-            $totalDescuento += $montoDescu;
-            $totalIva += $ivaItem;
+                $totalItemConIva = ($cantidad * $precioUniIngresado) - $montoDescu;
+                $totalConIva += $totalItemConIva;
+                $totalDescuento += $montoDescu;
+            }
+
+            $divisor = 1 + $tasaIva; // 1.13
+
+            if ($esDTE01) {
+                // DTE-01: totalGravada = precio CON IVA
+                $totalGravada = round($totalConIva, 2);
+                $totalSinIva = round($totalConIva / $divisor, 2);
+                $totalIva = round($totalSinIva * $tasaIva, 2);
+            } else {
+                // DTE-03 (CCF): totalGravada = precio SIN IVA
+                $totalSinIva = round($totalConIva / $divisor, 2);
+                $totalGravada = $totalSinIva;
+                $totalIva = round($totalSinIva * $tasaIva, 2);
+            }
+
+            // Segundo loop: procesar cada item
+            foreach ($items as &$item) {
+                $cantidad = (float) $item['cantidad'];
+                $precioUniIngresado = (float) $item['precio_unitario'];
+                $montoDescu = (float) ($item['monto_descuento'] ?? 0);
+
+                $totalItemConIva = ($cantidad * $precioUniIngresado) - $montoDescu;
+
+                if ($esDTE01) {
+                    // DTE-01: ventaGravada CON IVA
+                    $ventaGravada = round($totalItemConIva, 2);
+                    $precioUniParaJson = $precioUniIngresado; // CON IVA
+                } else {
+                    // DTE-03 (CCF): ventaGravada SIN IVA
+                    $ventaGravadaSinIva = round($totalItemConIva / $divisor, 2);
+                    $ventaGravada = $ventaGravadaSinIva;
+                    $precioUniParaJson = round($precioUniIngresado / $divisor, 2); // SIN IVA
+                }
+
+                // Ajustar último item para que suma coincida
+                $itemIndex++;
+                if ($itemIndex === $numItems) {
+                    $ventaGravada = round($totalGravada - $sumaVentaGravadaItems, 2);
+                    if ($cantidad > 0) {
+                        $precioUniParaJson = round(($ventaGravada + $montoDescu) / $cantidad, 2);
+                    }
+                } else {
+                    $sumaVentaGravadaItems += $ventaGravada;
+                }
+
+                // IVA del item
+                $ivaItem = round($ventaGravada * $tasaIva, 2);
+
+                $item['precio_unitario'] = floatval($precioUniParaJson);
+                $item['venta_gravada'] = floatval($ventaGravada);
+                $item['venta_exenta'] = 0.0;
+                $item['venta_no_sujeta'] = 0.0;
+                $item['iva_item'] = floatval($ivaItem);
+            }
+
+            // DTE-01: montoTotalOperacion = totalGravada (ya incluye IVA)
+            // DTE-03: montoTotalOperacion = totalGravada + totalIva
+            $totalPagar = $esDTE01 ? $totalGravada : round($totalGravada + $totalIva, 2);
+
+            \Log::info('💰 Cálculo con precio incluye IVA', [
+                'tipo_dte' => $tipoDte,
+                'total_con_iva_ingresado' => $totalConIva,
+                'total_gravada' => $totalGravada,
+                'total_iva' => $totalIva,
+                'monto_total_operacion' => $totalPagar,
+            ]);
+
+        } else {
+            // Precio NO incluye IVA - Calcular venta gravada por item, pero IVA sobre el total
+            $totalGravada = 0;
+            $sumaVentaGravadaItems = 0;
+            $numItems = count($items);
+            $itemIndex = 0;
+
+            // Primer loop: calcular total de venta gravada
+            foreach ($items as &$item) {
+                $cantidad = (float) $item['cantidad'];
+                $precioUniIngresado = (float) $item['precio_unitario'];
+                $montoDescu = (float) ($item['monto_descuento'] ?? 0);
+
+                $ventaGravada = round(($cantidad * $precioUniIngresado) - $montoDescu, 2);
+                $totalGravada += $ventaGravada;
+                $totalDescuento += $montoDescu;
+            }
+
+            // Calcular IVA sobre el total de venta gravada
+            $totalGravada = round($totalGravada, 2);
+            $totalIva = round($totalGravada * $tasaIva, 2);
+
+            // Segundo loop: asignar valores a cada item
+            foreach ($items as &$item) {
+                $cantidad = (float) $item['cantidad'];
+                $precioUniIngresado = (float) $item['precio_unitario'];
+                $montoDescu = (float) ($item['monto_descuento'] ?? 0);
+
+                $ventaGravada = round(($cantidad * $precioUniIngresado) - $montoDescu, 2);
+
+                // Ajustar último item para que suma coincida
+                $itemIndex++;
+                if ($itemIndex === $numItems) {
+                    $ventaGravada = round($totalGravada - $sumaVentaGravadaItems, 2);
+                } else {
+                    $sumaVentaGravadaItems += $ventaGravada;
+                }
+
+                // IVA por item calculado proporcionalmente
+                $ivaItem = round($ventaGravada * $tasaIva, 2);
+
+                $item['venta_gravada'] = $ventaGravada;
+                $item['venta_exenta'] = 0;
+                $item['venta_no_sujeta'] = 0;
+                $item['iva_item'] = $ivaItem;
+            }
+
+            $totalPagar = round($totalGravada + $totalIva, 2);
         }
-
-        $subTotal = round($totalGravada + $totalExenta + $totalNoSujeto, 2);
-
-        // Monto total de operación = subtotal (sin IVA)
-        $totalPagar = round($subTotal, 2);
 
         return [
             'items' => $items,
             'totales' => [
                 'total_gravada' => round($totalGravada, 2),
-                'total_exenta' => round($totalExenta, 2),
-                'total_no_sujeto' => round($totalNoSujeto, 2),
-                'sub_total_ventas' => round($subTotal, 2),
+                'total_exenta' => 0.0,
+                'total_no_sujeto' => 0.0,
+                'sub_total_ventas' => round($totalGravada, 2),
                 'total_descuento' => round($totalDescuento, 2),
-                'sub_total' => round($subTotal, 2),
+                'sub_total' => round($totalGravada, 2),
                 'total_iva' => round($totalIva, 2),
                 'monto_total_operacion' => $totalPagar,
                 'total_pagar' => $totalPagar,
@@ -442,7 +552,10 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
         $fechaEmision = now()->format('Y-m-d');
         $horaEmision = now()->format('H:i:s');
 
-        $calculos = $this->calcularTotalesItems($datos['items'], $precioIncluyeIva);
+        // DTE-01 ahora usa 13% de IVA (igual que DTE-03)
+        $calculos = $this->calcularTotalesItemsConTasa($datos['items'], 0.13, $precioIncluyeIva, '01');
+
+        // Los totales ya vienen calculados correctamente desde calcularTotalesItemsConTasa
         $totalLetras = $this->numeroALetras($calculos['totales']['total_pagar']);
         
         // Verificar si es Clientes Varios (tipo_documento y num_documento son null)
@@ -560,6 +673,7 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
                     'totalDescu' => floatval($calculos['totales']['total_descuento']),
                     'tributos' => null,
                     'subTotal' => floatval($calculos['totales']['sub_total']),
+                    // Los totales ya vienen correctamente calculados desde calcularTotalesItemsConTasa
                     'totalIva' => floatval($calculos['totales']['total_iva']),
                     'ivaRete1' => 0.0,
                     'reteRenta' => 0.0,
@@ -598,15 +712,16 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
         $fechaEmision = now()->format('Y-m-d');
         $horaEmision = now()->format('H:i:s');
 
-        $calculos = $this->calcularTotalesItems($datos['items'], $precioIncluyeIva);
-        $totalLetras = $this->numeroALetras($calculos['totales']['total_pagar']);
+        // CCF usa 13% de IVA - Llamar directamente a calcularTotalesItemsConTasa
+        $calculos = $this->calcularTotalesItemsConTasa($datos['items'], 0.13, $precioIncluyeIva, '03');
 
         // Para CCF solo se usa NIT (sin formateo especial)
         $numDocumentoFormateado = $this->formatearNumeroDocumento('36', $datos['receptor']['num_documento']);
 
-        // Calcular IVA (13% en lugar de 11.5% que usa el sistema actual)
-        $totalIva = round($calculos['totales']['total_gravada'] * 0.13, 2);
-        $totalPagar = $calculos['totales']['total_gravada'] + $totalIva;
+        // Los totales ya vienen calculados correctamente desde calcularTotalesItemsConTasa
+        $totalIva = $calculos['totales']['total_iva'];
+        $totalPagar = $calculos['totales']['total_pagar'];
+        $totalLetras = $this->numeroALetras($totalPagar);
 
         return [
             'nit' => config('dte.nit'),
