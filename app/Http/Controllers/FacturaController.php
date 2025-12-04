@@ -792,4 +792,143 @@ class FacturaController extends Controller
     {
         return view('facturas.pdf', compact('factura'))->render();
     }
+
+    /**
+     * Exportar facturas filtradas a Excel
+     */
+    public function exportarExcel(Request $request)
+    {
+        try {
+            // Obtener los IDs de las facturas filtradas desde el request
+            $facturaIds = $request->input('factura_ids', []);
+
+            // Si no hay IDs, aplicar los mismos filtros que en el index
+            if (empty($facturaIds)) {
+                $query = Factura::query();
+
+                // Aplicar los mismos filtros que en index()
+                if ($request->filled('buscar')) {
+                    $buscar = $request->input('buscar');
+                    $query->where(function ($q) use ($buscar) {
+                        $q->where('numero_control', 'LIKE', "%{$buscar}%")
+                          ->orWhere('receptor_nombre', 'LIKE', "%{$buscar}%")
+                          ->orWhere('receptor_num_documento', 'LIKE', "%{$buscar}%")
+                          ->orWhere('codigo_generacion', 'LIKE', "%{$buscar}%");
+                    });
+                }
+
+                if ($request->filled('tipo_dte')) {
+                    $query->where('tipo_dte', $request->input('tipo_dte'));
+                }
+
+                if ($request->filled('estado')) {
+                    $query->where('estado', $request->input('estado'));
+                }
+
+                if ($request->filled('fecha_desde')) {
+                    $query->whereDate('fecha_emision', '>=', $request->input('fecha_desde'));
+                }
+
+                if ($request->filled('fecha_hasta')) {
+                    $query->whereDate('fecha_emision', '<=', $request->input('fecha_hasta'));
+                }
+
+                if ($request->filled('mes') && $request->filled('anio')) {
+                    $mes = $request->input('mes');
+                    $anio = $request->input('anio');
+                    $query->whereMonth('fecha_emision', $mes)
+                          ->whereYear('fecha_emision', $anio);
+                } elseif ($request->filled('anio')) {
+                    $query->whereYear('fecha_emision', $request->input('anio'));
+                }
+
+                $facturas = $query->orderBy('fecha_emision', 'desc')->get();
+            } else {
+                // Obtener facturas por IDs específicos
+                $facturas = Factura::whereIn('id', $facturaIds)
+                    ->orderBy('fecha_emision', 'desc')
+                    ->get();
+            }
+
+            // Verificar si hay facturas para exportar
+            if ($facturas->isEmpty()) {
+                return back()->with('warning', 'No hay facturas para exportar con los filtros aplicados.');
+            }
+
+            // Obtener el sello de recepción del JSON respuesta_mh
+            $getSelloRecibido = function($factura) {
+                if (empty($factura->respuesta_mh)) {
+                    return '';
+                }
+
+                $respuestaMh = is_string($factura->respuesta_mh)
+                    ? json_decode($factura->respuesta_mh, true)
+                    : $factura->respuesta_mh;
+
+                return $respuestaMh['selloRecibido'] ?? '';
+            };
+
+            // Crear el nombre del archivo con timestamp
+            $timestamp = now()->format('Y-m-d_His');
+            $filename = "facturas_export_{$timestamp}.csv";
+
+            // Configurar headers para descarga
+            $headers = [
+                'Content-Type' => 'text/csv; charset=utf-8',
+                'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+                'Pragma' => 'no-cache',
+                'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+                'Expires' => '0'
+            ];
+
+            // Crear el callback para generar el CSV
+            $callback = function() use ($facturas, $getSelloRecibido) {
+                $file = fopen('php://output', 'w');
+
+                // Agregar BOM para UTF-8 (para que Excel lo reconozca correctamente)
+                fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+
+                // Encabezados del CSV
+                fputcsv($file, [
+                    'Fecha de Emisión',
+                    'Tipo de DTE',
+                    'Número de Control',
+                    'Sello del Documento',
+                    'Número de Control Interno',
+                    'Código de Generación',
+                    'Ventas'
+                ], ';');
+
+                // Datos
+                foreach ($facturas as $factura) {
+                    fputcsv($file, [
+                        $factura->fecha_emision->format('d/m/Y'),
+                        $factura->tipo_dte,
+                        $factura->numero_control,
+                        $getSelloRecibido($factura),
+                        $factura->id, // Número de control interno (ID de la base de datos)
+                        $factura->codigo_generacion,
+                        number_format($factura->total_pagar, 2, '.', '')
+                    ], ';');
+                }
+
+                fclose($file);
+            };
+
+            Log::info('Facturas exportadas a Excel', [
+                'cantidad' => $facturas->count(),
+                'usuario' => auth()->user()->name ?? 'Sistema',
+            ]);
+
+            return response()->stream($callback, 200, $headers);
+
+        } catch (\Exception $e) {
+            Log::error('Error al exportar facturas: ' . $e->getMessage(), [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return back()->with('error', 'Error al exportar facturas: ' . $e->getMessage());
+        }
+    }
 }

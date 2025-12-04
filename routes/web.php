@@ -16,6 +16,7 @@ Route::prefix('facturas')->name('facturas.')->group(function () {
     Route::get('/crear-nota-credito', [FacturaController::class, 'createNotaCredito'])->name('create_nota_credito');
     Route::get('/crear-sujeto-excluido', [FacturaController::class, 'createSujetoExcluido'])->name('create_sujeto_excluido');
     Route::post('/guardar', [FacturaController::class, 'store'])->name('store');
+    Route::post('/exportar-excel', [FacturaController::class, 'exportarExcel'])->name('exportar_excel');
     Route::get('/{factura}', [FacturaController::class, 'show'])->name('show');
     Route::delete('/{factura}', [FacturaController::class, 'destroy'])->name('destroy');
     Route::post('/{factura}/enviar-email', [FacturaController::class, 'enviarEmail'])->name('enviarEmail');

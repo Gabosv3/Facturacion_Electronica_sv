@@ -16,7 +16,7 @@ This is a Laravel 10 application for generating and managing electronic invoices
 
 ### Initial Setup
 ```bash
-composer install
+composer install                       # Installs Laravel + Guzzle + PhpSpreadsheet
 cp .env.example .env
 php artisan key:generate
 php artisan migrate
@@ -154,17 +154,22 @@ php artisan cache:clear               # Clear application cache
     - `montoTotalOperacion` = `totalGravada` (**DO NOT add IVA again**)
     - Each item's `precioUni` = price WITH IVA (entered price) ← **CRITICAL for MH validation**
     - Each item's `ventaGravada` = price WITH IVA (must match: `cantidad × precioUni - descuento`)
-    - Each item's `ivaItem` = extracted IVA (informative)
+    - Each item's `ivaItem` = **EXTRACTED IVA** (not calculated by multiplying)
+    - **CRITICAL IVA Calculation**: `ivaItem = ventaGravada - (ventaGravada / 1.115)`
+      - ❌ **WRONG**: `ivaItem = ventaGravada × 0.115` (this adds IVA, causing MH rejection)
+      - ✅ **CORRECT**: `ivaItem = ventaGravada - round(ventaGravada / 1.115, 2)` (this extracts IVA)
     - Formula: `totalGravada = sum(all item prices)`, `totalIva = totalGravada - (totalGravada / 1.115)`, `montoTotalOperacion = totalGravada`
     - Example: 2 items × $20.00 = $40.00
-      - Item 1: `precioUni: 20.00`, `ventaGravada: 20.00`, `ivaItem: 2.06`
-      - Item 2: `precioUni: 20.00`, `ventaGravada: 20.00`, `ivaItem: 2.07`
-      - Resumen: `totalGravada: 40.00`, `totalIva: 4.13`, `montoTotalOperacion: 40.00` ✅
+      - Item 1: `precioUni: 20.00`, `ventaGravada: 20.00`, `ivaItem: 2.06` (= 20 - 17.94)
+      - Item 2: `precioUni: 20.00`, `ventaGravada: 20.00`, `ivaItem: 2.06` (= 20 - 17.94)
+      - Resumen: `totalGravada: 40.00`, `totalIva: 4.12`, `montoTotalOperacion: 40.00` ✅
     - MH validates: `ventaGravada = cantidad × precioUni - descuento` (must be exact)
+    - **MH also validates**: `ivaItem` must match the extracted IVA value
     - This prevents MH rejection errors:
       - `[resumen.montoTotalOperacion] CALCULO INCORRECTO`
       - `cuerpoDocumento.item.X: El calculo de total por item es erroneo`
-    - Implementation: `calcularTotalesItemsConTasa()` lines 142-215 (DTEService.php)
+      - `cuerpoDocumento.item.X: El iva calculado es diferente al proporcionado por la empresa`
+    - Implementation: `calcularTotalesItemsConTasa()` lines 142-217 (DTEService.php)
   - **When "Price Does NOT Include IVA"**: Traditional calculation
     - `totalGravada` = sum of base prices (WITHOUT IVA)
     - `totalIva` = `totalGravada × tasaIva`
@@ -433,6 +438,7 @@ MH_CONSULTA_DTE_LOTE_URL=https://apitest.dtes.mh.gob.sv/fesv/recepcion/consultad
 - `/facturas/crear-nota-credito` - Credit Note creation form (DTE-05)
 - `/facturas/crear-sujeto-excluido` - Exempt Subject Invoice creation form (DTE-14)
 - `/facturas/{id}` - Invoice details
+- `/facturas/exportar-excel` - Export filtered invoices to Excel (CSV)
 - `/admin/tokens` - Token management interface
 - `/contingencias` - Contingency events management
 - `/contingencias/crear` - Create new contingency event
@@ -912,6 +918,40 @@ The `Factura` model includes three methods for QR code generation (Factura.php:1
 - The QR links directly to MH's public consultation portal
 - Users can verify invoice authenticity by scanning the QR code
 - QR code is optimized for printing with `print-color-adjust: exact`
+
+### Excel Export System (Sistema de Exportación a Excel)
+
+The system includes functionality to export invoices to Excel (CSV format) with filtering capabilities.
+
+**Export Features:**
+- Exports filtered invoices from the main list view
+- Respects all applied filters (type, status, date range, search text)
+- CSV format with semicolon delimiter (;) compatible with Excel, LibreOffice, and Google Sheets
+- UTF-8 encoding with BOM for proper character display
+
+**Exported Fields:**
+1. Fecha de Emisión (Emission Date) - Format: DD/MM/YYYY
+2. Tipo de DTE (DTE Type) - Document type code (01, 03, 05, 14)
+3. Número de Control (Control Number) - Document control number
+4. Sello del Documento (Document Seal) - MH reception seal (extracted from respuesta_mh)
+5. Número de Control Interno (Internal Control Number) - Database ID
+6. Código de Generación (Generation Code) - Document UUID
+7. Ventas (Sales) - Total amount to pay
+
+**Usage:**
+1. Apply desired filters on `/facturas` page (type, status, dates, etc.)
+2. Click "Buscar" to apply filters
+3. Click "Exportar a Excel" button
+4. CSV file downloads automatically with naming format: `facturas_export_YYYY-MM-DD_HHMMSS.csv`
+
+**Implementation:**
+- Route: POST `/facturas/exportar-excel` (FacturaController@exportarExcel)
+- Method location: FacturaController.php:796-933
+- Frontend: Button and JavaScript in resources/views/facturas/index.blade.php:142-437
+- No PhpSpreadsheet required for basic CSV export (uses native PHP fputcsv)
+- Logs export activity with count of exported invoices
+
+**Note:** PhpSpreadsheet library is installed in composer.json for potential future enhancements, but current CSV export doesn't require it.
 
 ### Environment Variables Required
 

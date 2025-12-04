@@ -4,7 +4,12 @@
       "Read(//mnt/c/xampp/htdocs/**)",
       "Bash(/mnt/c/xampp/php/php.exe artisan tinker --execute=:*)",
       "Bash(/mnt/c/xampp/php/php.exe artisan migrate)",
-      "Bash(/mnt/c/xampp/php/php.exe artisan tinker:*)"
+      "Bash(/mnt/c/xampp/php/php.exe artisan tinker:*)",
+      "Bash(composer require:*)",
+      "Bash(/mnt/c/xampp/php/php.exe /mnt/c/composer/composer.phar require:*)",
+      "Bash(/mnt/c/xampp/php/php.exe composer.phar:*)",
+      "Bash(/mnt/c/xampp/php/php.exe artisan:*)",
+      "Bash(/mnt/c/xampp/php/php.exe:*)"
     ],
     "deny": [],
     "ask": []

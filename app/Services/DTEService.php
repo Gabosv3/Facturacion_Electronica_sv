@@ -205,7 +205,16 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
                 }
 
                 // IVA del item
-                $ivaItem = round($ventaGravada * $tasaIva, 2);
+                // Para DTE-01 con precio incluye IVA: el IVA se EXTRAE, no se agrega
+                // Para DTE-03: el IVA se CALCULA sobre la base
+                if ($esDTE01) {
+                    // Extraer IVA: IVA = ventaGravada - (ventaGravada / 1.115)
+                    $baseImponible = round($ventaGravada / $divisor, 2);
+                    $ivaItem = round($ventaGravada - $baseImponible, 2);
+                } else {
+                    // Calcular IVA: IVA = ventaGravada × 0.13
+                    $ivaItem = round($ventaGravada * $tasaIva, 2);
+                }
 
                 $item['precio_unitario'] = floatval($precioUniParaJson);
                 $item['venta_gravada'] = floatval($ventaGravada);

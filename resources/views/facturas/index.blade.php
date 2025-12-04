@@ -122,7 +122,7 @@
                         </div>
 
                         <!-- Botones de Acción -->
-                        <div class="flex items-center gap-3 pt-2">
+                        <div class="flex items-center gap-3 pt-2 flex-wrap">
                             <button type="submit"
                                     class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -138,6 +138,15 @@
                                 </svg>
                                 Limpiar Filtros
                             </a>
+
+                            <button type="button"
+                                    onclick="exportarExcel()"
+                                    class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                Exportar a Excel
+                            </button>
 
                             @if(request()->hasAny(['buscar', 'tipo_dte', 'estado', 'fecha_desde', 'fecha_hasta', 'mes', 'anio']))
                                 <span class="text-sm text-gray-600 ml-2">
@@ -374,6 +383,58 @@
                 confirmButtonColor: '#f59e0b',
             });
         @endif
+
+        /**
+         * Exportar facturas filtradas a Excel
+         */
+        function exportarExcel() {
+            // Crear un formulario temporal con los parámetros de filtrado actuales
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '{{ route("facturas.exportar_excel") }}';
+            form.style.display = 'none';
+
+            // Agregar token CSRF
+            const csrfToken = document.createElement('input');
+            csrfToken.type = 'hidden';
+            csrfToken.name = '_token';
+            csrfToken.value = '{{ csrf_token() }}';
+            form.appendChild(csrfToken);
+
+            // Copiar todos los filtros del formulario de búsqueda
+            const searchForm = document.querySelector('form[action="{{ route('facturas.index') }}"]');
+            const inputs = searchForm.querySelectorAll('input, select');
+
+            inputs.forEach(input => {
+                if (input.name && input.value) {
+                    const clone = input.cloneNode(true);
+                    form.appendChild(clone);
+                }
+            });
+
+            // Agregar el formulario al body y enviarlo
+            document.body.appendChild(form);
+
+            // Mostrar mensaje de espera
+            Swal.fire({
+                title: 'Exportando...',
+                html: 'Generando archivo Excel con las facturas filtradas.<br>Por favor espere...',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            // Enviar el formulario
+            form.submit();
+
+            // Cerrar el mensaje después de 2 segundos
+            setTimeout(() => {
+                Swal.close();
+                document.body.removeChild(form);
+            }, 2000);
+        }
     </script>
 </body>
 </html>
