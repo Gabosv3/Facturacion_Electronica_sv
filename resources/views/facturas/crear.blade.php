@@ -76,7 +76,7 @@
 
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">NRC (opcional)</label>
-                                <input type="text" name="receptor_nrc" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" value="{{ old('receptor_nrc') }}">
+                                <input type="text" name="receptor_nrc" pattern="[0-9]*" inputmode="numeric" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" value="{{ old('receptor_nrc') }}" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                             </div>
 
                             <div>
@@ -86,7 +86,7 @@
 
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Código Actividad Económica</label>
-                                <input type="text" name="receptor_cod_actividad" placeholder="Ej: 62010" maxlength="10" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" value="{{ old('receptor_cod_actividad') }}">
+                                <input type="text" name="receptor_cod_actividad" placeholder="Ej: 62010" maxlength="10" pattern="[0-9]*" inputmode="numeric" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" value="{{ old('receptor_cod_actividad') }}" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                                 <p class="text-xs text-gray-500 mt-1">Opcional</p>
                             </div>
 
@@ -169,7 +169,7 @@
 
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-2">Cantidad *</label>
-                                        <input type="number" step="0.01" name="items[0][cantidad]" class="cantidad w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required min="0.01">
+                                        <input type="number" step="1" name="items[0][cantidad]" class="cantidad w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required min="1">
                                     </div>
 
                                     <div>
@@ -348,7 +348,7 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Cantidad *</label>
-                        <input type="number" step="0.01" name="items[${itemCount}][cantidad]" class="cantidad w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required min="0.01">
+                        <input type="number" step="1" name="items[${itemCount}][cantidad]" class="cantidad w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required min="1">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Precio Unit. *</label>

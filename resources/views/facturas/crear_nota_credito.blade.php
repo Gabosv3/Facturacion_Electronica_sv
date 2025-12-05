@@ -267,7 +267,7 @@
                                     </div>
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-2">Cantidad</label>
-                                        <input type="number" name="items[0][cantidad]" step="0.01" min="0.01" class="w-full border border-gray-300 rounded-lg px-4 py-2" required>
+                                        <input type="number" name="items[0][cantidad]" step="1" min="1" class="w-full border border-gray-300 rounded-lg px-4 py-2" required>
                                     </div>
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-2">Precio Unit.</label>
@@ -489,7 +489,7 @@
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Cantidad</label>
-                            <input type="number" name="items[${itemCount}][cantidad]" step="0.01" min="0.01" class="w-full border border-gray-300 rounded-lg px-4 py-2" required>
+                            <input type="number" name="items[${itemCount}][cantidad]" step="1" min="1" class="w-full border border-gray-300 rounded-lg px-4 py-2" required>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Precio Unit.</label>
@@ -555,7 +555,7 @@
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Cantidad</label>
-                                <input type="number" name="items[${index}][cantidad]" value="${item.cantidad || ''}" step="0.01" min="0.01" class="w-full border border-gray-300 rounded-lg px-4 py-2" required>
+                                <input type="number" name="items[${index}][cantidad]" value="${item.cantidad || ''}" step="1" min="1" class="w-full border border-gray-300 rounded-lg px-4 py-2" required>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Precio Unit.</label>

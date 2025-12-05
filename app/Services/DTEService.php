@@ -198,7 +198,17 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
                 if ($itemIndex === $numItems) {
                     $ventaGravada = round($totalGravada - $sumaVentaGravadaItems, 2);
                     if ($cantidad > 0) {
+                        // Calcular precio unitario
                         $precioUniParaJson = round(($ventaGravada + $montoDescu) / $cantidad, 2);
+
+                        // CRÍTICO: El MH valida que cantidad × precioUni - descuento = ventaGravada
+                        // Ajustar ventaGravada para que coincida exactamente con el cálculo del MH
+                        $ventaGravadaAjustada = round(($cantidad * $precioUniParaJson) - $montoDescu, 2);
+
+                        // Si hay diferencia, ajustar ventaGravada al valor que el MH espera
+                        if ($ventaGravadaAjustada != $ventaGravada) {
+                            $ventaGravada = $ventaGravadaAjustada;
+                        }
                     }
                 } else {
                     $sumaVentaGravadaItems += $ventaGravada;
