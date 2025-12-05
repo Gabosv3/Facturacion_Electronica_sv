@@ -931,4 +931,45 @@ class FacturaController extends Controller
             return back()->with('error', 'Error al exportar facturas: ' . $e->getMessage());
         }
     }
+
+    /**
+     * Buscar cliente por DUI o NIT
+     */
+    public function buscarCliente(Request $request)
+    {
+        $request->validate([
+            'documento' => 'required|string|min:8|max:14',
+        ]);
+
+        try {
+            $documento = preg_replace('/[^0-9]/', '', $request->documento);
+
+            // Llamar al endpoint de Motors González
+            $response = Http::timeout(10)->get('https://motorsgonzalez.com/api/clientes/buscar/' . $documento);
+
+            if ($response->successful()) {
+                $data = $response->json();
+
+                return response()->json([
+                    'success' => true,
+                    'cliente' => $data['cliente'] ?? $data['data'] ?? $data
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Cliente no encontrado'
+            ], 404);
+        } catch (\Exception $e) {
+            Log::error('Error al buscar cliente:', [
+                'documento' => $request->documento,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al buscar cliente: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

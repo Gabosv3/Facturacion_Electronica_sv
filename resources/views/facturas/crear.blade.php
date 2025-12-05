@@ -65,8 +65,21 @@
 
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Número de Documento *</label>
-                                <input type="text" name="receptor_num_documento" placeholder="DUI: 12345678-9 / NIT: 1234-567890-123-4" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required value="{{ old('receptor_num_documento') }}">
+                                <div class="flex gap-2">
+                                    <input type="text" id="receptor_num_documento" name="receptor_num_documento" placeholder="DUI: 12345678-9 / NIT: 1234-567890-123-4" class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required value="{{ old('receptor_num_documento') }}">
+                                    <button type="button" id="btnBuscarCliente" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg transition whitespace-nowrap">
+                                        🔍 Buscar
+                                    </button>
+                                </div>
                                 <p class="text-xs text-gray-500 mt-1">DUI: 8 dígitos-1 dígito / NIT: 14 dígitos con guiones</p>
+                                <div id="clienteLoader" class="hidden mt-2 flex items-center gap-2">
+                                    <div class="animate-spin h-4 w-4 border-2 border-blue-600 border-r-transparent rounded-full"></div>
+                                    <span class="text-sm text-blue-600">Buscando cliente...</span>
+                                </div>
+                                <div id="clienteError" class="hidden mt-2 bg-red-100 border border-red-400 text-red-700 px-3 py-2 rounded text-sm"></div>
+                                <div id="clienteExito" class="hidden mt-2 bg-green-100 border border-green-400 text-green-700 px-3 py-2 rounded text-sm">
+                                    ✓ Cliente encontrado y datos cargados
+                                </div>
                             </div>
 
                             <div class="md:col-span-2">
@@ -601,6 +614,98 @@
             // Actualizar el valor del input
             input.value = valor;
         }
+
+        // Buscar cliente por DUI/NIT
+        document.getElementById('btnBuscarCliente').addEventListener('click', async function() {
+            const documento = document.getElementById('receptor_num_documento').value.trim();
+            
+            if (!documento) {
+                alert('Por favor ingresa un DUI o NIT');
+                return;
+            }
+
+            const loader = document.getElementById('clienteLoader');
+            const error = document.getElementById('clienteError');
+            const exito = document.getElementById('clienteExito');
+
+            // Limpiar mensajes previos
+            error.classList.add('hidden');
+            exito.classList.add('hidden');
+            loader.classList.remove('hidden');
+
+            try {
+                const response = await fetch('{{ route("facturas.buscar_cliente") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({ documento })
+                });
+
+                const data = await response.json();
+                loader.classList.add('hidden');
+
+                if (data.success && data.cliente) {
+                    const cliente = data.cliente;
+                    
+                    // Llenar los campos con los datos del cliente
+                    if (cliente.codigo_cliente) {
+                        document.getElementById('receptor_num_documento').value = cliente.codigo_cliente;
+                    }
+                    if (cliente.nombre) {
+                        document.querySelector('input[name="receptor_nombre"]').value = cliente.nombre.toUpperCase();
+                    }
+                    if (cliente.nrc) {
+                        document.querySelector('input[name="receptor_nrc"]').value = cliente.nrc;
+                    }
+                    if (cliente.telefono) {
+                        document.querySelector('input[name="receptor_telefono"]').value = cliente.telefono;
+                    }
+                    if (cliente.email) {
+                        const emailInput = document.querySelector('input[name="receptor_correo"]');
+                        if (emailInput) emailInput.value = cliente.email;
+                    }
+                    if (cliente.codigo_actividad) {
+                        document.querySelector('input[name="receptor_cod_actividad"]').value = cliente.codigo_actividad;
+                    }
+                    if (cliente.descripcion_actividad) {
+                        document.querySelector('input[name="receptor_desc_actividad"]').value = cliente.descripcion_actividad;
+                    }
+                    if (cliente.direccion) {
+                        const direccionInput = document.querySelector('input[name="receptor_direccion"]');
+                        if (direccionInput) direccionInput.value = cliente.direccion;
+                    }
+                    if (cliente.municipio) {
+                        const municipioSelect = document.querySelector('select[name="receptor_municipio"]');
+                        if (municipioSelect) municipioSelect.value = cliente.municipio;
+                    }
+                    if (cliente.departamento) {
+                        const departamentoSelect = document.querySelector('select[name="receptor_departamento"]');
+                        if (departamentoSelect) departamentoSelect.value = cliente.departamento;
+                    }
+
+                    exito.classList.remove('hidden');
+                    exito.textContent = '✓ Cliente encontrado y datos cargados correctamente';
+                } else {
+                    error.classList.remove('hidden');
+                    error.textContent = data.message || 'No se encontró cliente con ese documento';
+                }
+            } catch (e) {
+                loader.classList.add('hidden');
+                error.classList.remove('hidden');
+                error.textContent = 'Error al buscar cliente: ' + e.message;
+                console.error('Error:', e);
+            }
+        });
+
+        // Permitir búsqueda al presionar Enter
+        document.getElementById('receptor_num_documento').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('btnBuscarCliente').click();
+            }
+        });
     </script>
 </body>
 </html>
