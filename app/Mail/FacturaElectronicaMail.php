@@ -71,11 +71,33 @@ class FacturaElectronicaMail extends Mailable
         }, $this->factura->numero_control . '.json')
             ->withMime('application/json');
 
-        // Adjuntar HTML/PDF
-        $attachments[] = Attachment::fromData(function () {
-            return view('facturas.pdf', ['factura' => $this->factura])->render();
-        }, $this->factura->numero_control . '.html')
-            ->withMime('text/html');
+        // Adjuntar PDF (usando vista sin QR para evitar problemas con GD)
+        try {
+            $pdfService = app(\App\Services\PdfService::class);
+            $pdfContent = $pdfService->generateFromView('facturas.pdf_email', ['factura' => $this->factura]);
+
+            $attachments[] = Attachment::fromData(function () use ($pdfContent) {
+                return $pdfContent;
+            }, $this->factura->numero_control . '.pdf')
+                ->withMime('application/pdf');
+
+            \Log::info('PDF generado exitosamente para email', [
+                'factura_id' => $this->factura->id,
+                'size' => strlen($pdfContent) . ' bytes'
+            ]);
+        } catch (\Exception $e) {
+            // Si falla la generación del PDF, adjuntar HTML como fallback
+            \Log::warning('Error al generar PDF para factura, usando HTML como fallback', [
+                'factura_id' => $this->factura->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            $attachments[] = Attachment::fromData(function () {
+                return view('facturas.pdf_email', ['factura' => $this->factura])->render();
+            }, $this->factura->numero_control . '.html')
+                ->withMime('text/html');
+        }
 
         return $attachments;
     }

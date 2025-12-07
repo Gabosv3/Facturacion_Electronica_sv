@@ -462,9 +462,53 @@
             <div style="font-size: 11px; font-weight: bold; margin-bottom: 5px;">
                 Código QR - Consulta Pública MH
             </div>
-            <img src="{{ $factura->getQrCodeUrl(150) }}" alt="Código QR">
+            @php
+                // Intentar generar el QR de diferentes formas
+                $qrImage = null;
+                $consultaUrl = $factura->getUrlConsultaPublica();
+
+                // Método 1: Intentar descargar desde API y convertir a base64
+                try {
+                    $qrApiUrl = $factura->getQrCodeUrl(150);
+                    $context = stream_context_create([
+                        'http' => [
+                            'timeout' => 5,
+                            'ignore_errors' => true
+                        ],
+                        'ssl' => [
+                            'verify_peer' => false,
+                            'verify_peer_name' => false
+                        ]
+                    ]);
+                    $imageData = @file_get_contents($qrApiUrl, false, $context);
+                    if ($imageData !== false && strlen($imageData) > 0) {
+                        $qrImage = 'data:image/png;base64,' . base64_encode($imageData);
+                    }
+                } catch (\Exception $e) {
+                    \Log::warning('No se pudo descargar QR desde API: ' . $e->getMessage());
+                }
+
+                // Método 2: Si el método 1 falló, generar un QR simple usando SVG
+                if (!$qrImage) {
+                    $helper = new \App\Helpers\QrCodeHelper();
+                    $svgQr = $helper::generateSimpleSvgQr($consultaUrl, 150);
+                    $qrImage = $helper::svgToBase64($svgQr);
+                }
+            @endphp
+
+            @if($qrImage)
+                <img src="{{ $qrImage }}" alt="Código QR" style="width: 150px; height: 150px; display: block; margin: 10px auto;">
+            @else
+                <div style="width: 150px; height: 150px; border: 2px dashed #ccc; display: flex; align-items: center; justify-content: center; margin: 10px auto; text-align: center; padding: 10px; font-size: 9px; color: #999;">
+                    QR no disponible<br>Ver URL abajo
+                </div>
+            @endif
+
             <div style="font-size: 8px; color: #6b7280; margin-top: 5px;">
                 Escanea para verificar en admin.factura.gob.sv
+            </div>
+            <div style="font-size: 8px; color: #9ca3af; margin-top: 3px; word-break: break-all;">
+                {{ $consultaUrl }}
             </div>
         </div>
         @endif

@@ -98,6 +98,18 @@ php artisan cache:clear               # Clear application cache
 - Creates and processes batches of DTEs for deferred submission
 - Handles contingency event lifecycle and batch tracking
 
+**InvalidacionService** (`app/Services/InvalidacionService.php`)
+- Creates and processes invalidation events for DTEs
+- Validates deadlines and eligibility for invalidation
+- Builds JSON structure and signs invalidation events
+- Sends invalidation requests to MH
+
+**PdfService** (`app/Services/PdfService.php`)
+- Generates PDFs from Blade views for email attachments
+- Multi-library support with automatic detection
+- Fallback to HTML if PDF generation fails
+- Reusable for any PDF generation needs in the application
+
 ### Invoice Processing Flow
 
 1. User submits invoice data via `FacturaController@store`
@@ -952,6 +964,68 @@ The system includes functionality to export invoices to Excel (CSV format) with 
 - Logs export activity with count of exported invoices
 
 **Note:** PhpSpreadsheet library is installed in composer.json for potential future enhancements, but current CSV export doesn't require it.
+
+### PDF Generation System (Sistema de Generación de PDFs)
+
+The system includes a flexible PDF generation service for creating PDF attachments when sending invoices by email.
+
+**PdfService** (`app/Services/PdfService.php`)
+- Multi-library support with automatic detection
+- Generates PDFs from Blade views
+- Fallback mechanism if PDF generation fails
+
+**Supported PDF Libraries** (in priority order):
+1. **barryvdh/laravel-dompdf** (Recommended - Laravel wrapper for DomPDF)
+2. **dompdf/dompdf** (Native DomPDF)
+3. **mpdf/mpdf** (Alternative PDF library)
+4. **tecnickcom/tcpdf** (Alternative PDF library)
+
+**Email Attachment Behavior:**
+- **Primary**: Attaches PDF file (`.pdf`) when library is available
+- **Fallback**: Attaches HTML file (`.html`) if PDF generation fails
+- Automatic error logging for troubleshooting
+
+**Installation:**
+
+Install the recommended library:
+```bash
+composer require barryvdh/laravel-dompdf
+```
+
+For manual installation or SSL certificate issues, see `INSTALACION_PDF.md`
+
+**Verification:**
+```bash
+php artisan tinker
+```
+```php
+class_exists('\Dompdf\Dompdf');  // Should return: true
+class_exists('\Barryvdh\DomPDF\Facade\Pdf');  // Should return: true
+
+// Test PDF generation
+$factura = App\Models\Factura::where('estado', 'enviado_mh')->first();
+$pdfService = app(\App\Services\PdfService::class);
+$pdf = $pdfService->generateFromView('facturas.pdf', ['factura' => $factura]);
+echo 'PDF generado: ' . strlen($pdf) . ' bytes';
+```
+
+**Implementation:**
+- Service: `app/Services/PdfService.php`
+- Email class: `app/Mail/FacturaElectronicaMail.php` (attachments method)
+- PDF view template: `resources/views/facturas/pdf.blade.php`
+
+**Features:**
+- Automatically detects installed PDF library
+- Letter size paper format (portrait orientation)
+- UTF-8 encoding support
+- QR code embedded in PDF for public verification
+- Professional invoice layout optimized for printing
+
+**Important Notes:**
+- The PDF library is required for production use
+- If no library is installed, system falls back to HTML attachments
+- The `PdfService` is reusable for other PDF generation needs
+- DomPDF configuration can be published with: `php artisan vendor:publish --provider="Barryvdh\DomPDF\ServiceProvider"`
 
 ### Environment Variables Required
 

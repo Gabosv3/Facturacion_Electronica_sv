@@ -162,19 +162,10 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
 
             $divisor = 1 + $tasaIva; // 1.13
 
-            if ($esDTE01) {
-                // DTE-01: totalGravada = precio CON IVA
-                $totalGravada = round($totalConIva, 2);
-                $totalSinIva = round($totalConIva / $divisor, 2);
-                $totalIva = round($totalSinIva * $tasaIva, 2);
-            } else {
-                // DTE-03 (CCF): totalGravada = precio SIN IVA
-                $totalSinIva = round($totalConIva / $divisor, 2);
-                $totalGravada = $totalSinIva;
-                $totalIva = round($totalSinIva * $tasaIva, 2);
-            }
-
             // Segundo loop: procesar cada item
+            $sumaVentaGravada = 0;
+            $sumaIvaItems = 0;
+
             foreach ($items as &$item) {
                 $cantidad = (float) $item['cantidad'];
                 $precioUniIngresado = (float) $item['precio_unitario'];
@@ -188,31 +179,16 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
                     $precioUniParaJson = $precioUniIngresado; // CON IVA
                 } else {
                     // DTE-03 (CCF): ventaGravada SIN IVA
-                    $ventaGravadaSinIva = round($totalItemConIva / $divisor, 2);
-                    $ventaGravada = $ventaGravadaSinIva;
+                    // IMPORTANTE: Primero calcular precio unitario SIN IVA
                     $precioUniParaJson = round($precioUniIngresado / $divisor, 2); // SIN IVA
+
+                    // Luego calcular ventaGravada usando la fórmula del MH
+                    // CRÍTICO: El MH valida que ventaGravada = cantidad × precioUni - descuento
+                    $ventaGravada = round(($cantidad * $precioUniParaJson) - $montoDescu, 2);
                 }
 
-                // Ajustar último item para que suma coincida
-                $itemIndex++;
-                if ($itemIndex === $numItems) {
-                    $ventaGravada = round($totalGravada - $sumaVentaGravadaItems, 2);
-                    if ($cantidad > 0) {
-                        // Calcular precio unitario
-                        $precioUniParaJson = round(($ventaGravada + $montoDescu) / $cantidad, 2);
-
-                        // CRÍTICO: El MH valida que cantidad × precioUni - descuento = ventaGravada
-                        // Ajustar ventaGravada para que coincida exactamente con el cálculo del MH
-                        $ventaGravadaAjustada = round(($cantidad * $precioUniParaJson) - $montoDescu, 2);
-
-                        // Si hay diferencia, ajustar ventaGravada al valor que el MH espera
-                        if ($ventaGravadaAjustada != $ventaGravada) {
-                            $ventaGravada = $ventaGravadaAjustada;
-                        }
-                    }
-                } else {
-                    $sumaVentaGravadaItems += $ventaGravada;
-                }
+                // Acumular
+                $sumaVentaGravada += $ventaGravada;
 
                 // IVA del item
                 // Para DTE-01 con precio incluye IVA: el IVA se EXTRAE, no se agrega
@@ -226,6 +202,8 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
                     $ivaItem = round($ventaGravada * $tasaIva, 2);
                 }
 
+                $sumaIvaItems += $ivaItem;
+
                 $item['precio_unitario'] = floatval($precioUniParaJson);
                 $item['venta_gravada'] = floatval($ventaGravada);
                 $item['venta_exenta'] = 0.0;
@@ -233,9 +211,13 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
                 $item['iva_item'] = floatval($ivaItem);
             }
 
+            // Calcular totales finales basados en la suma de items (no en el total original)
+            $totalGravada = round($sumaVentaGravada, 2);
+            $totalIva = round($sumaIvaItems, 2);
+
             // DTE-01: montoTotalOperacion = totalGravada (ya incluye IVA)
-            // DTE-03: montoTotalOperacion = totalGravada + totalIva
-            $totalPagar = $esDTE01 ? $totalGravada : round($totalGravada + $totalIva, 2);
+            // DTE-03: montoTotalOperacion = totalConIva (el total que ingresó el usuario CON IVA)
+            $totalPagar = $esDTE01 ? $totalGravada : round($totalConIva, 2);
 
             \Log::info('💰 Cálculo con precio incluye IVA', [
                 'tipo_dte' => $tipoDte,
@@ -244,6 +226,21 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
                 'total_iva' => $totalIva,
                 'monto_total_operacion' => $totalPagar,
             ]);
+
+            return [
+                'items' => $items,
+                'totales' => [
+                    'total_gravada' => $totalGravada,
+                    'total_exenta' => 0.0,
+                    'total_no_sujeto' => 0.0,
+                    'sub_total_ventas' => $totalGravada,
+                    'total_descuento' => round($totalDescuento, 2),
+                    'sub_total' => $totalGravada,
+                    'total_iva' => $totalIva,
+                    'monto_total_operacion' => $totalPagar,
+                    'total_pagar' => $totalPagar,
+                ]
+            ];
 
         } else {
             // Precio NO incluye IVA - Calcular venta gravada por item, pero IVA sobre el total
