@@ -98,6 +98,18 @@ php artisan cache:clear               # Clear application cache
 - Creates and processes batches of DTEs for deferred submission
 - Handles contingency event lifecycle and batch tracking
 
+**InvalidacionService** (`app/Services/InvalidacionService.php`)
+- Creates and processes invalidation events for DTEs
+- Validates deadlines and eligibility for invalidation
+- Builds JSON structure and signs invalidation events
+- Sends invalidation requests to MH
+
+**PdfService** (`app/Services/PdfService.php`)
+- Generates PDFs from Blade views for email attachments
+- Multi-library support with automatic detection
+- Fallback to HTML if PDF generation fails
+- Reusable for any PDF generation needs in the application
+
 ### Invoice Processing Flow
 
 1. User submits invoice data via `FacturaController@store`
@@ -128,6 +140,11 @@ php artisan cache:clear               # Clear application cache
 - Stores contingency event information
 - Tracks DTEs issued during contingency periods
 - Manages batch submission status and results
+
+**EventoInvalidacion** (`app/Models/EventoInvalidacion.php`)
+- Stores invalidation event information
+- References original DTE and replacement document (if applicable)
+- Tracks invalidation process status and MH response
 
 ### Configuration
 
@@ -430,6 +447,19 @@ MH_CONSULTA_DTE_LOTE_URL=https://apitest.dtes.mh.gob.sv/fesv/recepcion/consultad
 - `codigo_lote`: Batch code returned by MH
 - `detalle_lote`: Processing details from MH
 
+**eventos_invalidacion table**: Invalidation events for canceling DTEs
+- `factura_id`: Foreign key to the DTE being invalidated
+- `codigo_invalidacion`: UUID for the invalidation event
+- `tipo_invalidacion`: 1 (formal errors) or 2 (rescind operation)
+- `factura_reemplazo_id`: Foreign key to replacement invoice (null for type 2)
+- `responsable_nombre`, `responsable_tipo_doc`, `responsable_num_doc`: Responsible person (issuer side)
+- `solicitante_nombre`, `solicitante_tipo_doc`, `solicitante_num_doc`: Requester person data
+- `evento_json`: Complete event JSON structure
+- `evento_firmado`: Signed JWT from signing API
+- `estado`: pendiente, firmado, enviado, procesado, error
+- `respuesta_mh`: Response from MH
+- `sello_recepcion`: Reception seal from MH
+
 ### Routes Structure
 
 - `/facturas` - List all invoices (DTE-01, DTE-03, DTE-05, and DTE-14)
@@ -524,9 +554,13 @@ The DTE-05 JSON schema is **completely different** from DTE-01 and DTE-03:
 - `cuerpoDocumento[].ivaItem`, `cuerpoDocumento[].psv`, `cuerpoDocumento[].noGravado`
 - `otrosDocumentos`
 
-**Document Related Type (CAT-025):**
-- `03` = Factura (when canceling/adjusting DTE-01)
-- `05` = Comprobante de Crédito Fiscal (when canceling/adjusting DTE-03)
+**Document Related Type (CAT-002 - Tipo de Documento):**
+- **CRITICAL**: In `documentoRelacionado.tipoDocumento`, use the **SAME code** as the original DTE being referenced
+- **DO NOT** use different codes or conversions
+- `01` = Factura (when canceling/adjusting DTE-01)
+- `03` = Comprobante de Crédito Fiscal (when canceling/adjusting DTE-03)
+- `14` = Factura de Sujeto Excluido (when canceling/adjusting DTE-14)
+- Implementation: `DTEService.php:924-931` uses direct assignment without mapping
 
 **Implementation:**
 - Auto-fills receptor data from the related document
@@ -582,6 +616,11 @@ Run `php artisan migrate` to add DTE-05 support fields:
 6. **`[receptor.nit] NIT CONTRIBUYENTE NO EXISTE`**
    - Cause: Trying to create credit note for invoice with DUI instead of NIT
    - Solution: Only create credit notes for invoices where receptor has NIT (code 36)
+
+7. **`Valor ingresado no es de los permitidos en el campo #/documentoRelacionado/0/tipoDocumento`**
+   - Cause: Using incorrect code mapping for `tipoDocumento` in `documentoRelacionado`
+   - Solution: Use the SAME code as the original DTE (01→01, 03→03, 14→14), no conversion needed
+   - Implementation: Fixed in `DTEService.php:924-931` to use direct assignment
 
 ### DTE-14 (Factura de Sujeto Excluido) - Exempt Subject Invoice
 
@@ -952,6 +991,68 @@ The system includes functionality to export invoices to Excel (CSV format) with 
 - Logs export activity with count of exported invoices
 
 **Note:** PhpSpreadsheet library is installed in composer.json for potential future enhancements, but current CSV export doesn't require it.
+
+### PDF Generation System (Sistema de Generación de PDFs)
+
+The system includes a flexible PDF generation service for creating PDF attachments when sending invoices by email.
+
+**PdfService** (`app/Services/PdfService.php`)
+- Multi-library support with automatic detection
+- Generates PDFs from Blade views
+- Fallback mechanism if PDF generation fails
+
+**Supported PDF Libraries** (in priority order):
+1. **barryvdh/laravel-dompdf** (Recommended - Laravel wrapper for DomPDF)
+2. **dompdf/dompdf** (Native DomPDF)
+3. **mpdf/mpdf** (Alternative PDF library)
+4. **tecnickcom/tcpdf** (Alternative PDF library)
+
+**Email Attachment Behavior:**
+- **Primary**: Attaches PDF file (`.pdf`) when library is available
+- **Fallback**: Attaches HTML file (`.html`) if PDF generation fails
+- Automatic error logging for troubleshooting
+
+**Installation:**
+
+Install the recommended library:
+```bash
+composer require barryvdh/laravel-dompdf
+```
+
+For manual installation or SSL certificate issues, see `INSTALACION_PDF.md`
+
+**Verification:**
+```bash
+php artisan tinker
+```
+```php
+class_exists('\Dompdf\Dompdf');  // Should return: true
+class_exists('\Barryvdh\DomPDF\Facade\Pdf');  // Should return: true
+
+// Test PDF generation
+$factura = App\Models\Factura::where('estado', 'enviado_mh')->first();
+$pdfService = app(\App\Services\PdfService::class);
+$pdf = $pdfService->generateFromView('facturas.pdf', ['factura' => $factura]);
+echo 'PDF generado: ' . strlen($pdf) . ' bytes';
+```
+
+**Implementation:**
+- Service: `app/Services/PdfService.php`
+- Email class: `app/Mail/FacturaElectronicaMail.php` (attachments method)
+- PDF view template: `resources/views/facturas/pdf.blade.php`
+
+**Features:**
+- Automatically detects installed PDF library
+- Letter size paper format (portrait orientation)
+- UTF-8 encoding support
+- QR code embedded in PDF for public verification
+- Professional invoice layout optimized for printing
+
+**Important Notes:**
+- The PDF library is required for production use
+- If no library is installed, system falls back to HTML attachments
+- The `PdfService` is reusable for other PDF generation needs
+- DomPDF configuration can be published with: `php artisan vendor:publish --provider="Barryvdh\DomPDF\ServiceProvider"`
 
 ### Environment Variables Required
 

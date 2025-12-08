@@ -9,7 +9,14 @@
       "Bash(/mnt/c/xampp/php/php.exe /mnt/c/composer/composer.phar require:*)",
       "Bash(/mnt/c/xampp/php/php.exe composer.phar:*)",
       "Bash(/mnt/c/xampp/php/php.exe artisan:*)",
-      "Bash(/mnt/c/xampp/php/php.exe:*)"
+      "Bash(/mnt/c/xampp/php/php.exe:*)",
+      "Read(//mnt/c/**)",
+      "Bash(PATH=\"/mnt/c/xampp/php:$PATH\" /mnt/c/composer/composer require:*)",
+      "Bash(cat:*)",
+      "WebSearch",
+      "WebFetch(domain:factura.gob.sv)",
+      "WebFetch(domain:admin.factura.gob.sv)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []

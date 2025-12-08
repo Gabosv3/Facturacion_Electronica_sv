@@ -257,11 +257,20 @@ class ContingenciaController extends Controller
                     continue;
                 }
 
+                // Determinar versión según tipo de DTE
+                // DTE-01 y DTE-14 usan versión 1
+                // DTE-03 y DTE-05 usan versión 3
+                $version = match($factura->tipo_dte) {
+                    '03', '05' => 3,
+                    '01', '14' => 1,
+                    default => 2, // Fallback por seguridad
+                };
+
                 // Enviar DTE al MH usando el método normal
                 $resultadoDTE = $this->mhApiService->enviarDTE($jwtFirmado, [
                     'ambiente' => config('dte.ambiente'),
                     'id_envio' => $factura->id,
-                    'version' => $factura->tipo_dte === '03' ? 3 : 2,
+                    'version' => $version,
                     'tipo_dte' => $factura->tipo_dte,
                     'codigo_generacion' => $factura->codigo_generacion,
                 ]);

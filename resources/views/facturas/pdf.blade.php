@@ -492,6 +492,9 @@
             <div style="font-size: 8px; color: #6b7280; margin-top: 5px;">
                 Escanea para verificar en admin.factura.gob.sv
             </div>
+            <div style="font-size: 8px; color: #9ca3af; margin-top: 3px; word-break: break-all;">
+                {{ $consultaUrl }}
+            </div>
         </div>
         @endif
 

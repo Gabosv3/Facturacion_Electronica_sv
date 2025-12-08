@@ -67,12 +67,12 @@
                                 <select name="receptor_tipo_documento" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
                                     <option value="">Seleccione...</option>
                                     <option value="36">NIT - Registro de contribuyente IVA</option>
-                                    <option value="13">DUI - Persona natural sin IVA</option>
+                                    <option value="13" selected>DUI - Persona natural sin IVA</option>
                                     <option value="02">Carnet de residente</option>
                                     <option value="03">Pasaporte</option>
                                     <option value="37">Otro</option>
                                 </select>
-                                <p class="text-xs text-gray-500 mt-1">DUI solo para personas naturales NO inscritas en IVA</p>
+                                <p class="text-xs text-gray-500 mt-1">DUI preseleccionado por defecto para sujetos excluidos</p>
                             </div>
 
                             <div>
@@ -88,7 +88,7 @@
 
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Código Actividad Económica (Opcional)</label>
-                                <input type="text" name="receptor_cod_actividad" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-orange-500" value="{{ old('receptor_cod_actividad') }}" placeholder="Ej: 10010">
+                                <input type="text" name="receptor_cod_actividad" pattern="[0-9]*" inputmode="numeric" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-orange-500" value="{{ old('receptor_cod_actividad') }}" placeholder="Ej: 10010" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                                 <p class="text-xs text-gray-500 mt-1">Código de la actividad económica del sujeto excluido (opcional según MH)</p>
                             </div>
 
@@ -176,7 +176,7 @@
 
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-2">Cantidad *</label>
-                                        <input type="number" step="0.01" name="items[0][cantidad]" class="cantidad w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required min="0.01">
+                                        <input type="number" step="1" name="items[0][cantidad]" class="cantidad w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required min="1">
                                     </div>
 
                                     <div>
@@ -287,7 +287,7 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Cantidad *</label>
-                        <input type="number" step="0.01" name="items[${itemCount}][cantidad]" class="cantidad w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required min="0.01">
+                        <input type="number" step="1" name="items[${itemCount}][cantidad]" class="cantidad w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required min="1">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Precio Unit. *</label>

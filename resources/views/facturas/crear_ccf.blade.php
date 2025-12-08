@@ -96,7 +96,7 @@
 
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">NRC (Obligatorio para CCF) *</label>
-                                <input type="text" name="receptor_nrc" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required value="{{ old('receptor_nrc') }}">
+                                <input type="text" name="receptor_nrc" pattern="[0-9]*" inputmode="numeric" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required value="{{ old('receptor_nrc') }}" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                                 <p class="text-xs text-red-600 mt-1 font-medium">⚠️ Campo obligatorio para CCF</p>
                             </div>
 
@@ -107,7 +107,7 @@
 
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Código Actividad Económica *</label>
-                                <input type="text" name="receptor_cod_actividad" placeholder="Ej: 62010" maxlength="10" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required value="{{ old('receptor_cod_actividad') }}">
+                                <input type="text" name="receptor_cod_actividad" placeholder="Ej: 62010" maxlength="10" pattern="[0-9]*" inputmode="numeric" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required value="{{ old('receptor_cod_actividad') }}" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                                 <p class="text-xs text-red-600 mt-1 font-medium">⚠️ Campo obligatorio para CCF</p>
                             </div>
 
