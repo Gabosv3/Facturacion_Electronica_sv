@@ -921,9 +921,14 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
             $fechaEmisionDocRelacionado = substr($fechaEmisionDocRelacionado, 0, 10);
         }
 
-        // Determinar tipo de documento relacionado según CAT-025 (no CAT-026)
-        // CAT-025: 03=Factura, 05=Nota de Crédito, 06=Nota de Débito, etc.
-        $tipoDocumentoRelacionado = $tipoDocRelacionado === '01' ? '03' : '05';
+        // Determinar tipo de documento relacionado
+        // IMPORTANTE: Según catálogo CAT-002 del MH, el tipoDocumento en documentoRelacionado
+        // debe usar EL MISMO CÓDIGO que el DTE original que se está referenciando:
+        //   - Cuando se referencia DTE-01 (Factura) → usar código '01'
+        //   - Cuando se referencia DTE-03 (CCF) → usar código '03'
+        //   - Cuando se referencia DTE-14 (Sujeto Excluido) → usar código '14'
+        // No se debe hacer ninguna conversión, usar el código tal cual
+        $tipoDocumentoRelacionado = $tipoDocRelacionado;
 
         return [
             'nit' => config('dte.nit'),
@@ -946,7 +951,7 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
                 ],
                 'documentoRelacionado' => [
                     [
-                        'tipoDocumento' => $tipoDocumentoRelacionado, // CAT-025: 03=Factura, 05=CCF
+                        'tipoDocumento' => $tipoDocumentoRelacionado, // CAT-002: 01=Factura, 03=CCF
                         'tipoGeneracion' => 1, // 1=Generado electrónicamente
                         'numeroDocumento' => $datos['documento_relacionado']['numero_control'],
                         'fechaEmision' => $fechaEmisionDocRelacionado,

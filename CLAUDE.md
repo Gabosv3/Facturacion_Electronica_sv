@@ -141,6 +141,11 @@ php artisan cache:clear               # Clear application cache
 - Tracks DTEs issued during contingency periods
 - Manages batch submission status and results
 
+**EventoInvalidacion** (`app/Models/EventoInvalidacion.php`)
+- Stores invalidation event information
+- References original DTE and replacement document (if applicable)
+- Tracks invalidation process status and MH response
+
 ### Configuration
 
 **config/dte.php**
@@ -442,6 +447,19 @@ MH_CONSULTA_DTE_LOTE_URL=https://apitest.dtes.mh.gob.sv/fesv/recepcion/consultad
 - `codigo_lote`: Batch code returned by MH
 - `detalle_lote`: Processing details from MH
 
+**eventos_invalidacion table**: Invalidation events for canceling DTEs
+- `factura_id`: Foreign key to the DTE being invalidated
+- `codigo_invalidacion`: UUID for the invalidation event
+- `tipo_invalidacion`: 1 (formal errors) or 2 (rescind operation)
+- `factura_reemplazo_id`: Foreign key to replacement invoice (null for type 2)
+- `responsable_nombre`, `responsable_tipo_doc`, `responsable_num_doc`: Responsible person (issuer side)
+- `solicitante_nombre`, `solicitante_tipo_doc`, `solicitante_num_doc`: Requester person data
+- `evento_json`: Complete event JSON structure
+- `evento_firmado`: Signed JWT from signing API
+- `estado`: pendiente, firmado, enviado, procesado, error
+- `respuesta_mh`: Response from MH
+- `sello_recepcion`: Reception seal from MH
+
 ### Routes Structure
 
 - `/facturas` - List all invoices (DTE-01, DTE-03, DTE-05, and DTE-14)
@@ -536,9 +554,13 @@ The DTE-05 JSON schema is **completely different** from DTE-01 and DTE-03:
 - `cuerpoDocumento[].ivaItem`, `cuerpoDocumento[].psv`, `cuerpoDocumento[].noGravado`
 - `otrosDocumentos`
 
-**Document Related Type (CAT-025):**
-- `03` = Factura (when canceling/adjusting DTE-01)
-- `05` = Comprobante de Crédito Fiscal (when canceling/adjusting DTE-03)
+**Document Related Type (CAT-002 - Tipo de Documento):**
+- **CRITICAL**: In `documentoRelacionado.tipoDocumento`, use the **SAME code** as the original DTE being referenced
+- **DO NOT** use different codes or conversions
+- `01` = Factura (when canceling/adjusting DTE-01)
+- `03` = Comprobante de Crédito Fiscal (when canceling/adjusting DTE-03)
+- `14` = Factura de Sujeto Excluido (when canceling/adjusting DTE-14)
+- Implementation: `DTEService.php:924-931` uses direct assignment without mapping
 
 **Implementation:**
 - Auto-fills receptor data from the related document
@@ -594,6 +616,11 @@ Run `php artisan migrate` to add DTE-05 support fields:
 6. **`[receptor.nit] NIT CONTRIBUYENTE NO EXISTE`**
    - Cause: Trying to create credit note for invoice with DUI instead of NIT
    - Solution: Only create credit notes for invoices where receptor has NIT (code 36)
+
+7. **`Valor ingresado no es de los permitidos en el campo #/documentoRelacionado/0/tipoDocumento`**
+   - Cause: Using incorrect code mapping for `tipoDocumento` in `documentoRelacionado`
+   - Solution: Use the SAME code as the original DTE (01→01, 03→03, 14→14), no conversion needed
+   - Implementation: Fixed in `DTEService.php:924-931` to use direct assignment
 
 ### DTE-14 (Factura de Sujeto Excluido) - Exempt Subject Invoice
 
