@@ -12,6 +12,9 @@ use App\Http\Controllers\InvalidacionController;
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login']);
 
+// Ruta de búsqueda de cliente (sin middleware, el controlador maneja la autenticación)
+Route::post('/facturas/buscar-cliente', [FacturaController::class, 'buscarCliente'])->name('buscar_cliente');
+
 // Ruta raíz - redirige a login si no está autenticado
 Route::get('/', function () {
     if (\Illuminate\Support\Facades\Session::has('auth_token')) {
@@ -37,7 +40,6 @@ Route::prefix('facturas')->name('facturas.')->group(function () {
     Route::get('/crear-sujeto-excluido', [FacturaController::class, 'createSujetoExcluido'])->name('create_sujeto_excluido');
     Route::post('/guardar', [FacturaController::class, 'store'])->name('store');
     Route::post('/exportar-excel', [FacturaController::class, 'exportarExcel'])->name('exportar_excel');
-    Route::post('/buscar-cliente', [FacturaController::class, 'buscarCliente'])->name('buscar_cliente');
     Route::get('/{factura}', [FacturaController::class, 'show'])->name('show');
     Route::delete('/{factura}', [FacturaController::class, 'destroy'])->name('destroy');
     Route::post('/{factura}/enviar-email', [FacturaController::class, 'enviarEmail'])->name('enviarEmail');

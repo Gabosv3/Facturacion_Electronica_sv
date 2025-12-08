@@ -373,7 +373,21 @@
                     @if($factura->receptor_direccion)
                     <div class="info-row">
                         <span class="info-label">Dirección:</span>
-                        <span class="info-value">{{ $factura->receptor_direccion }}</span>
+                        <span class="info-value">
+                            @php
+                                $direccion = $factura->receptor_direccion;
+                                // Si es JSON string, decodificar
+                                if (is_string($direccion)) {
+                                    $direccion = json_decode($direccion, true);
+                                }
+                                // Mostrar el complemento (dirección formateada)
+                                if (is_array($direccion) && isset($direccion['complemento'])) {
+                                    echo $direccion['complemento'];
+                                } else {
+                                    echo $factura->receptor_direccion;
+                                }
+                            @endphp
+                        </span>
                     </div>
                     @endif
                 </div>
@@ -462,7 +476,19 @@
             <div style="font-size: 11px; font-weight: bold; margin-bottom: 5px;">
                 Código QR - Consulta Pública MH
             </div>
-            <img src="{{ $factura->getQrCodeUrl(150) }}" alt="Código QR">
+            @php
+                $qrBase64 = $factura->getQrCodeLocalBase64(150);
+                if (!$qrBase64) {
+                    $qrBase64 = $factura->getQrCodeBase64(150);
+                }
+            @endphp
+            @if($qrBase64)
+                <img src="data:image/png;base64,{{ $qrBase64 }}" alt="Código QR" style="max-width: 150px; height: auto;">
+            @else
+                <div style="padding: 20px; background: #f0f0f0; border: 1px solid #ddd; text-align: center;">
+                    <p style="font-size: 10px; color: #666;">No se pudo generar el código QR</p>
+                </div>
+            @endif
             <div style="font-size: 8px; color: #6b7280; margin-top: 5px;">
                 Escanea para verificar en admin.factura.gob.sv
             </div>

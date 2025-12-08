@@ -192,6 +192,38 @@ class Factura extends Model
     }
 
     /**
+     * Genera código QR en base64 usando librería local endroid/qr-code
+     * 
+     * @param int $size Tamaño del QR en píxeles (default: 200)
+     * @return string|null Base64 del código QR o null si falla
+     */
+    public function getQrCodeLocalBase64(int $size = 200): ?string
+    {
+        try {
+            // Verificar si la librería está disponible
+            if (!class_exists('Endroid\QrCode\QrCode')) {
+                return null;
+            }
+
+            $qrCode = new \Endroid\QrCode\QrCode(
+                data: $this->getUrlConsultaPublica(),
+                size: $size,
+                margin: 10,
+                encoding: new \Endroid\QrCode\Encoding\Encoding('UTF-8'),
+            );
+
+            $writer = new \Endroid\QrCode\Writer\PngWriter();
+            $result = $writer->write($qrCode);
+            $dataUri = $result->getDataUri();
+
+            return str_replace('data:image/png;base64,', '', $dataUri);
+        } catch (\Exception $e) {
+            \Log::error('Error generando QR code local: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
      * Genera código QR en base64 usando Chart.js Google Charts API
      * Esta es una alternativa que genera el QR en base64
      *

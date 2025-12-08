@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Session;
 use App\Models\Factura;
 use App\Services\DTEService;
 use App\Services\MHApiService;
@@ -574,6 +575,114 @@ class FacturaController extends Controller
                         }
                     }
 
+                    // ====================================
+                    // POST a Motors González para descargo de stock
+                    // ====================================
+                    try {
+                        $clienteId = $request->input('cliente_id');
+                        $motorProductos = $request->input('motor_clientes_ids'); // JSON string del formulario
+
+                        Log::info('DEBUG: Iniciando descargo de stock', [
+                            'cliente_id_value' => $clienteId,
+                            'cliente_id_type' => gettype($clienteId),
+                            'motor_productos_value' => $motorProductos,
+                            'motor_productos_type' => gettype($motorProductos),
+                            'motor_productos_empty' => empty($motorProductos),
+                        ]);
+
+                        if ($clienteId && $motorProductos) {
+                            Log::info('DEBUG: Entró en IF - tiene cliente_id y motor_productos');
+                            
+                            // Si motorProductos viene como string JSON, decodificar
+                            if (is_string($motorProductos)) {
+                                $productosArray = json_decode($motorProductos, true);
+                                Log::info('DEBUG: Decodificado JSON', [
+                                    'json_result' => $productosArray,
+                                    'json_error' => json_last_error_msg(),
+                                ]);
+                            } else {
+                                $productosArray = $motorProductos;
+                                Log::info('DEBUG: Ya era array', ['productos_array' => $productosArray]);
+                            }
+                            
+                            if (is_array($productosArray) && !empty($productosArray)) {
+                                Log::info('DEBUG: Array tiene elementos', ['count' => count($productosArray)]);
+                                
+                                // Construir items para Motors González
+                                $itemsMotorsGonzalez = [];
+                                
+                                foreach ($productosArray as $prod) {
+                                    $itemsMotorsGonzalez[] = [
+                                        'producto_id' => (int)($prod['producto_id'] ?? 0),
+                                        'cantidad' => (float)($prod['cantidad'] ?? 0),
+                                        'precio_unitario' => (float)($prod['precio_unitario'] ?? 0),
+                                    ];
+                                }
+
+                                $payloadMotorsGonzalez = [
+                                    'numero_factura' => $factura->numero_control,
+                                    'cliente_id' => (int) $clienteId,
+                                    'cliente' => $factura->receptor_nombre,
+                                    'fecha' => $factura->fecha_emision->format('Y-m-d'), // Formato simple YYYY-MM-DD
+                                    'items' => $itemsMotorsGonzalez,
+                                ];
+
+                                Log::info('DEBUG: Payload construido', ['payload' => $payloadMotorsGonzalez]);
+
+                                // Hacer POST a Motors González
+                                $authToken = Session::get('auth_token');
+                                Log::info('DEBUG: Token disponible', ['tiene_token' => !empty($authToken)]);
+                                
+                                if ($authToken) {
+                                    Log::info('DEBUG: Enviando POST a Motors González');
+                                    
+                                    $response = Http::timeout(10)
+                                        ->withHeaders([
+                                            'Authorization' => 'Bearer ' . $authToken,
+                                            'Accept' => 'application/json',
+                                            'Content-Type' => 'application/json',
+                                        ])
+                                        ->post('https://motorsgonzalez.com/api/facturas', $payloadMotorsGonzalez);
+
+                                    Log::info('DEBUG: Respuesta recibida', [
+                                        'status' => $response->status(),
+                                        'successful' => $response->successful(),
+                                        'body' => $response->body(),
+                                    ]);
+
+                                    if ($response->successful()) {
+                                        $responseData = $response->json();
+                                        Log::info('DEBUG: Respuesta JSON', ['data' => $responseData]);
+                                        
+                                        if (isset($responseData['success']) && $responseData['success'] === true) {
+                                            Log::info('✅ Descargo registrado en Motors González', [
+                                                'factura_id' => $factura->id,
+                                            ]);
+                                        }
+                                    }
+                                } else {
+                                    Log::warning('DEBUG: No hay token');
+                                }
+                            } else {
+                                Log::warning('DEBUG: Array vacío o no es array', [
+                                    'is_array' => is_array($productosArray),
+                                    'empty' => empty($productosArray),
+                                    'value' => $productosArray,
+                                ]);
+                            }
+                        } else {
+                            Log::warning('DEBUG: No entró en IF', [
+                                'tiene_cliente_id' => !empty($clienteId),
+                                'tiene_motor_productos' => !empty($motorProductos),
+                            ]);
+                        }
+                    } catch (\Exception $e) {
+                        Log::error('EXCEPCIÓN en descargo de stock', [
+                            'error' => $e->getMessage(),
+                            'trace' => $e->getTraceAsString(),
+                        ]);
+                    }
+
                     DB::commit();
 
                     $mensaje = 'Factura generada, firmada y enviada al Ministerio de Hacienda exitosamente';
@@ -937,6 +1046,14 @@ class FacturaController extends Controller
      */
     public function buscarCliente(Request $request)
     {
+        // Validar autenticación
+        if (!Session::has('auth_token') || !Session::has('authenticated')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No autenticado'
+            ], 401);
+        }
+
         $request->validate([
             'documento' => 'required|string|min:8|max:14',
         ]);

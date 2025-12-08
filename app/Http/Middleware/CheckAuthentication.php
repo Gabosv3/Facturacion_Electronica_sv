@@ -18,6 +18,14 @@ class CheckAuthentication
     {
         // Verificar si el usuario tiene token de autenticación en sesión
         if (!Session::has('auth_token') || !Session::has('authenticated')) {
+            // Si es una petición AJAX, devolver JSON
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No autenticado'
+                ], 401);
+            }
+            
             return redirect()->route('login')
                 ->with('warning', 'Debes iniciar sesión para acceder');
         }

@@ -58,6 +58,8 @@
                 <form action="{{ route('facturas.store') }}" method="POST" id="facturaForm">
                     @csrf
                     <input type="hidden" name="tipo_dte" value="03">
+                    <input type="hidden" name="cliente_id" id="clienteIdField" value="">
+                    <input type="hidden" name="motor_clientes_ids" id="motorClientesIds" value="">
 
                     <!-- Datos del Receptor -->
                     <div class="mb-8">
@@ -74,21 +76,17 @@
 
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">NIT (14 dígitos) *</label>
-                                <div class="flex gap-2">
-                                    <input type="text" id="receptor_num_documento" name="receptor_num_documento" placeholder="06142302881449" class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required value="{{ old('receptor_num_documento') }}">
-                                    <button type="button" id="btnBuscarCliente" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg transition">
-                                        🔍 Buscar
-                                    </button>
+                                <div class="relative">
+                                    <input type="text" id="receptor_num_documento" name="receptor_num_documento" placeholder="06142302881449" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required value="{{ old('receptor_num_documento') }}">
+                                    <div id="busquedaLoader" style="display:none;" class="absolute right-3 top-3">
+                                        <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                    </div>
                                 </div>
                                 <p class="text-xs text-gray-500 mt-1" id="nitHelp">NIT: 14 dígitos sin guiones</p>
-                                <div id="clienteLoader" class="hidden mt-2 flex items-center gap-2">
-                                    <div class="animate-spin h-4 w-4 border-2 border-blue-600 border-r-transparent rounded-full"></div>
-                                    <span class="text-sm text-blue-600">Buscando cliente...</span>
-                                </div>
-                                <div id="clienteError" class="hidden mt-2 bg-red-100 border border-red-400 text-red-700 px-3 py-2 rounded text-sm"></div>
-                                <div id="clienteExito" class="hidden mt-2 bg-green-100 border border-green-400 text-green-700 px-3 py-2 rounded text-sm">
-                                    ✓ Cliente encontrado y datos cargados
-                                </div>
+                                <p id="resultadoBusqueda" class="text-xs mt-1 hidden"></p>
                             </div>
 
                             <div class="md:col-span-2">
@@ -179,10 +177,20 @@
 
                         <div id="itemsContainer">
                             <div class="item-row bg-gray-50 p-4 rounded-lg mb-4">
+                                <input type="hidden" name="items[0][producto_id]" class="producto-id" value="">
                                 <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
                                     <div class="md:col-span-1">
                                         <label class="block text-sm font-medium text-gray-700 mb-2">Código *</label>
-                                        <input type="text" name="items[0][codigo]" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+                                        <div class="relative">
+                                            <input type="text" name="items[0][codigo]" data-item-index="0" class="codigo-producto w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+                                            <div class="loader-producto hidden absolute right-3 top-3">
+                                                <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                </svg>
+                                            </div>
+                                        </div>
+                                        <p class="resultado-producto text-xs mt-1 hidden"></p>
                                     </div>
 
                                     <div class="md:col-span-2">
@@ -192,7 +200,7 @@
 
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-2">Cantidad *</label>
-                                        <input type="number" step="0.01" name="items[0][cantidad]" class="cantidad w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required min="0.01">
+                                        <input type="number" step="1" name="items[0][cantidad]" class="cantidad w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required min="1">
                                     </div>
 
                                     <div>
@@ -271,7 +279,7 @@
 
                     <!-- Botones -->
                     <div class="flex gap-4">
-                        <button type="submit" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-lg">
+                        <button type="submit" id="submitBtn" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-lg">
                             Generar y Firmar CCF
                         </button>
                         <a href="{{ route('facturas.index') }}" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold px-6 py-3 rounded-lg">
@@ -292,10 +300,20 @@
             const newItem = document.createElement('div');
             newItem.className = 'item-row bg-gray-50 p-4 rounded-lg mb-4';
             newItem.innerHTML = `
-                <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
+                <input type="hidden" name="items[${itemCount}][producto_id]" class="producto-id" value="">
+                <div class="grid grid-cols-1 md:grid-cols-6 gap-4\">
                     <div class="md:col-span-1">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Código *</label>
-                        <input type="text" name="items[${itemCount}][codigo]" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+                        <div class="relative">
+                            <input type="text" name="items[${itemCount}][codigo]" data-item-index="${itemCount}" class="codigo-producto w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+                            <div class="loader-producto hidden absolute right-3 top-3">
+                                <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <p class="resultado-producto text-xs mt-1 hidden"></p>
                     </div>
                     <div class="md:col-span-2">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Descripción *</label>
@@ -303,7 +321,7 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Cantidad *</label>
-                        <input type="number" step="0.01" name="items[${itemCount}][cantidad]" class="cantidad w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required min="0.01">
+                        <input type="number" step="1" name="items[${itemCount}][cantidad]" class="cantidad w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required min="1">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Precio Unit. *</label>
@@ -317,8 +335,13 @@
                 <button type="button" class="removeItem mt-2 text-red-500 hover:text-red-700 text-sm">Eliminar</button>
             `;
             container.appendChild(newItem);
+            
+            const newCodigoInput = newItem.querySelector('.codigo-producto');
+            setupProductSearch(newCodigoInput);
+            
             itemCount++;
             attachCalculateEvents();
+            verificarEstadoFormulario();
         });
 
         // Eliminar item
@@ -326,6 +349,7 @@
             if (e.target.classList.contains('removeItem')) {
                 e.target.closest('.item-row').remove();
                 calcularTotales();
+                verificarEstadoFormulario();
             }
         });
 
@@ -370,8 +394,14 @@
                 input.removeEventListener('input', calcularTotales);
                 input.addEventListener('input', calcularTotales);
             });
+            
+            document.querySelectorAll('.cantidad').forEach(input => {
+                input.removeEventListener('change', validarCantidad);
+                input.addEventListener('change', validarCantidad);
+            });
 
             document.getElementById('precioIncluyeIva').addEventListener('change', calcularTotales);
+            verificarEstadoFormulario();
         }
 
         attachCalculateEvents();
@@ -412,6 +442,9 @@
 
         // Deshabilitar municipio inicialmente
         municipioSelect.disabled = true;
+
+        // Obtener token de autenticación del servidor
+        const authToken = @json(session('auth_token'));
 
         // Validación de NIT
         const numDocInput = document.querySelector('input[name="receptor_num_documento"]');
@@ -487,93 +520,324 @@
             input.value = valor;
         }
 
-        // Buscar cliente por DUI/NIT
-        document.getElementById('btnBuscarCliente').addEventListener('click', async function() {
-            const documento = document.getElementById('receptor_num_documento').value.trim();
-            
-            if (!documento) {
-                alert('Por favor ingresa un DUI o NIT');
+        // Búsqueda de cliente por NIT
+        const docInput = document.getElementById('receptor_num_documento');
+        const busquedaLoader = document.getElementById('busquedaLoader');
+        const resultadoBusqueda = document.getElementById('resultadoBusqueda');
+        let timeoutBusqueda;
+
+        docInput.addEventListener('blur', function() {
+            clearTimeout(timeoutBusqueda);
+            const documento = this.value.trim();
+
+            if (!documento || documento.length < 14) {
+                resultadoBusqueda.classList.add('hidden');
                 return;
             }
 
-            const loader = document.getElementById('clienteLoader');
-            const error = document.getElementById('clienteError');
-            const exito = document.getElementById('clienteExito');
+            busquedaCliente(documento);
+        });
 
-            // Limpiar mensajes previos
-            error.classList.add('hidden');
-            exito.classList.add('hidden');
-            loader.classList.remove('hidden');
+        function busquedaCliente(documento) {
+            busquedaLoader.style.display = 'block';
+            resultadoBusqueda.classList.add('hidden');
 
-            try {
-                const response = await fetch('{{ route("facturas.buscar_cliente") }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    },
-                    body: JSON.stringify({ documento })
-                });
+            // Limpiar caracteres especiales del documento
+            const documentoLimpio = documento.replace(/[^0-9]/g, '');
 
-                const data = await response.json();
-                loader.classList.add('hidden');
+            // Validar que no esté vacío después de limpiar
+            if (!documentoLimpio || documentoLimpio.length < 14) {
+                busquedaLoader.style.display = 'none';
+                resultadoBusqueda.textContent = '✗ NIT inválido (debe tener 14 dígitos)';
+                resultadoBusqueda.className = 'text-xs text-red-600 mt-1 font-medium';
+                resultadoBusqueda.classList.remove('hidden');
+                return;
+            }
 
-                if (data.success && data.cliente) {
-                    const cliente = data.cliente;
-                    
-                    // Llenar los campos con los datos del cliente
-                    if (cliente.codigo_cliente) {
-                        document.getElementById('receptor_num_documento').value = cliente.codigo_cliente;
+            // Consumir directamente el endpoint de Motors González con autenticación
+            fetch(`https://motorsgonzalez.com/api/clientes/buscar/${documentoLimpio}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${authToken}`,
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => {
+                // Verificar si la respuesta es válida
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                busquedaLoader.style.display = 'none';
+
+                // La API puede devolver data directamente o dentro de data.data
+                const cliente = data.data || data;
+
+                // Verificar si hay datos del cliente
+                if (cliente && cliente.nombre) {
+                    // Capturar cliente_id si existe
+                    if (cliente.id || cliente.cliente_id) {
+                        const clienteId = cliente.id || cliente.cliente_id;
+                        document.getElementById('clienteIdField').value = clienteId;
                     }
-                    if (cliente.nombre) {
-                        document.querySelector('input[name="receptor_nombre"]').value = cliente.nombre.toUpperCase();
+
+                    // Rellenar razón social (nombre + apellido)
+                    let nombreCompleto = cliente.nombre || '';
+                    if (cliente.apellido) {
+                        nombreCompleto += ' ' + cliente.apellido;
                     }
-                    if (cliente.nrc) {
-                        document.querySelector('input[name="receptor_nrc"]').value = cliente.nrc;
+                    if (nombreCompleto) {
+                        document.querySelector('input[name="receptor_nombre"]').value = nombreCompleto.toUpperCase();
                     }
+
+                    // Rellenar teléfono
                     if (cliente.telefono) {
                         document.querySelector('input[name="receptor_telefono"]').value = cliente.telefono;
                     }
+
+                    // Rellenar correo
                     if (cliente.email) {
                         document.querySelector('input[name="receptor_correo"]').value = cliente.email;
                     }
-                    if (cliente.codigo_actividad) {
-                        document.querySelector('input[name="receptor_cod_actividad"]').value = cliente.codigo_actividad;
-                    }
-                    if (cliente.descripcion_actividad) {
-                        document.querySelector('input[name="receptor_desc_actividad"]').value = cliente.descripcion_actividad;
-                    }
+
+                    // Rellenar dirección
                     if (cliente.direccion) {
-                        document.querySelector('input[name="receptor_direccion"]').value = cliente.direccion;
-                    }
-                    if (cliente.municipio) {
-                        document.querySelector('select[name="receptor_municipio"]').value = cliente.municipio;
-                    }
-                    if (cliente.departamento) {
-                        document.querySelector('select[name="receptor_departamento"]').value = cliente.departamento;
+                        document.querySelector('textarea[name="receptor_complemento"]').value = cliente.direccion;
                     }
 
-                    exito.classList.remove('hidden');
-                    exito.textContent = '✓ Cliente encontrado y datos cargados correctamente';
+                    // Capturar NRC si existe en la API
+                    if (cliente.nrc) {
+                        document.querySelector('input[name="receptor_nrc"]').value = cliente.nrc;
+                    }
+
+                    // Capturar categoría económica si existe en la API
+                    if (cliente.categoria_economica) {
+                        // Si es un objeto con codigo y descripcion
+                        if (typeof cliente.categoria_economica === 'object') {
+                            if (cliente.categoria_economica.codigo) {
+                                document.querySelector('input[name="receptor_cod_actividad"]').value = cliente.categoria_economica.codigo;
+                            }
+                            if (cliente.categoria_economica.descripcion) {
+                                document.querySelector('input[name="receptor_desc_actividad"]').value = cliente.categoria_economica.descripcion;
+                            }
+                        }
+                        // Si es solo un string (código)
+                        else if (typeof cliente.categoria_economica === 'string') {
+                            document.querySelector('input[name="receptor_cod_actividad"]').value = cliente.categoria_economica;
+                        }
+                    }
+
+                    resultadoBusqueda.textContent = '✓ Datos del cliente cargados correctamente';
+                    resultadoBusqueda.className = 'text-xs text-green-600 mt-1 font-medium';
+                    resultadoBusqueda.classList.remove('hidden');
+
+                    // Limpiar mensaje después de 3 segundos
+                    setTimeout(() => {
+                        resultadoBusqueda.classList.add('hidden');
+                    }, 3000);
                 } else {
-                    error.classList.remove('hidden');
-                    error.textContent = data.message || 'No se encontró cliente con ese documento';
+                    // Si no hay datos, mostrar el mensaje de error del servidor
+                    const errorMsg = data.message || 'Cliente no encontrado';
+                    resultadoBusqueda.textContent = '✗ ' + errorMsg;
+                    resultadoBusqueda.className = 'text-xs text-orange-600 mt-1 font-medium';
+                    resultadoBusqueda.classList.remove('hidden');
                 }
-            } catch (e) {
-                loader.classList.add('hidden');
-                error.classList.remove('hidden');
-                error.textContent = 'Error al buscar cliente: ' + e.message;
-                console.error('Error:', e);
-            }
-        });
+            })
+            .catch(error => {
+                busquedaLoader.style.display = 'none';
+                
+                // Mostrar más detalles del error
+                let errorMsg = 'Error al buscar cliente';
+                if (error.message.includes('HTTP 401')) {
+                    errorMsg = 'Token expirado o inválido';
+                } else if (error.message.includes('HTTP 404')) {
+                    errorMsg = 'Cliente no encontrado';
+                } else if (error.message.includes('HTTP 500')) {
+                    errorMsg = 'Error del servidor de Motors González';
+                }
+                
+                resultadoBusqueda.textContent = '✗ ' + errorMsg;
+                resultadoBusqueda.className = 'text-xs text-red-600 mt-1 font-medium';
+                resultadoBusqueda.classList.remove('hidden');
+            });
+        }
 
-        // Permitir búsqueda al presionar Enter
-        document.getElementById('receptor_num_documento').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                document.getElementById('btnBuscarCliente').click();
+        // ==========================================
+        // Validación de cantidad vs stock
+        // ==========================================
+        function validarCantidad(event) {
+            const cantidadInput = event.target;
+            const cantidad = parseFloat(cantidadInput.value) || 0;
+            const stock = parseFloat(cantidadInput.getAttribute('data-stock')) || 0;
+            const itemRow = cantidadInput.closest('.item-row');
+            
+            // Buscar TODOS los mensajes de error en el item y limpiarlos
+            const mensajesError = itemRow.querySelectorAll('.mensaje-stock-error');
+            mensajesError.forEach(msg => {
+                msg.textContent = '';
+                msg.classList.add('hidden');
+            });
+
+            if (cantidad > stock && stock > 0) {
+                cantidadInput.classList.add('border-red-500', 'border-2');
+                cantidadInput.value = stock;
+                itemRow.classList.add('error-stock');
+                
+                // Crear y mostrar mensaje
+                let mensajeError = itemRow.querySelector('.mensaje-stock-error');
+                if (!mensajeError) {
+                    mensajeError = document.createElement('p');
+                    mensajeError.className = 'mensaje-stock-error text-xs mt-1 font-medium';
+                    cantidadInput.closest('div').parentElement.appendChild(mensajeError);
+                }
+                mensajeError.textContent = `⚠️ Stock insuficiente. Disponible: ${stock}`;
+                mensajeError.className = 'text-xs mt-1 font-medium text-red-600';
+                mensajeError.classList.remove('hidden');
+            } else if (cantidad > 0) {
+                cantidadInput.classList.remove('border-red-500', 'border-2');
+                itemRow.classList.remove('error-stock');
             }
-        });
+
+            verificarEstadoFormulario();
+        }
+
+        function verificarEstadoFormulario() {
+            const submitBtn = document.getElementById('submitBtn');
+            const itemsConError = document.querySelectorAll('.item-row.error-stock');
+            
+            if (itemsConError.length > 0) {
+                submitBtn.disabled = true;
+                submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                submitBtn.title = 'Hay items con stock insuficiente';
+            } else {
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                submitBtn.title = '';
+            }
+        }
+
+        // ==========================================
+        // Búsqueda de productos por código
+        // ==========================================
+        function setupProductSearch(codigoInput) {
+            codigoInput.addEventListener('blur', function() {
+                const codigo = this.value.trim();
+                if (!codigo) {
+                    return;
+                }
+                buscarProducto(codigo, this);
+            });
+        }
+
+        function buscarProducto(codigo, inputElement) {
+            const itemRow = inputElement.closest('.item-row');
+            if (!itemRow) {
+                return;
+            }
+            
+            const indexAttr = inputElement.getAttribute('data-item-index');
+            const authToken = '{{ session("auth_token") }}';
+
+            fetch(`https://motorsgonzalez.com/api/productos/buscar/${codigo}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${authToken}`,
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                const producto = data.data || data;
+
+                if (producto && producto.codigo) {
+                    // Capturar producto_id si existe
+                    if (producto.id || producto.producto_id) {
+                        const productoId = producto.id || producto.producto_id;
+                        const productoIdInput = itemRow.querySelector('.producto-id');
+                        if (productoIdInput) {
+                            productoIdInput.value = productoId;
+                        }
+                    }
+
+                    inputElement.value = producto.codigo;
+                    
+                    const descInput = itemRow.querySelector('input[name="items[' + indexAttr + '][descripcion]"]');
+                    if (descInput) {
+                        descInput.value = producto.nombre_completo || producto.nombre || '';
+                    }
+
+                    const precioInput = itemRow.querySelector('input[name="items[' + indexAttr + '][precio_unitario]"]');
+                    if (precioInput && producto.Precio_unitario) {
+                        precioInput.value = producto.Precio_unitario;
+                    }
+
+                    const cantidadInput = itemRow.querySelector('input[name="items[' + indexAttr + '][cantidad]"]');
+                    if (cantidadInput) {
+                        const stockDisponible = producto.stock_actual || 0;
+                        cantidadInput.setAttribute('data-stock', stockDisponible);
+                        cantidadInput.setAttribute('max', stockDisponible);
+                        cantidadInput.value = '';
+                        cantidadInput.removeEventListener('change', validarCantidad);
+                        cantidadInput.addEventListener('change', validarCantidad);
+                    }
+
+                    calcularTotales();
+                    console.log('✓ Producto encontrado:', producto.nombre || producto.codigo);
+                } else {
+                    // Limpiar el campo si no encuentra el producto
+                    inputElement.value = '';
+                    inputElement.focus();
+                }
+            })
+            .catch(error => {
+                // Limpiar el campo en caso de error
+                inputElement.value = '';
+                inputElement.focus();
+            });
+        }
+
+        setupProductSearch(document.querySelector('.codigo-producto'));
+
+        // Función para recolectar producto_ids antes de enviar
+        function recolectarProductoIds() {
+            const productos = [];
+            document.querySelectorAll('.item-row').forEach(row => {
+                const productoIdInput = row.querySelector('.producto-id');
+                const codigoInput = row.querySelector('.codigo-producto');
+                const cantidadInput = row.querySelector('.cantidad');
+                const precioInput = row.querySelector('.precio');
+                
+                if (productoIdInput && codigoInput.value && cantidadInput.value && precioInput && precioInput.value) {
+                    productos.push({
+                        producto_id: productoIdInput.value || 0,
+                        codigo: codigoInput.value,
+                        cantidad: cantidadInput.value,
+                        precio_unitario: precioInput.value
+                    });
+                }
+            });
+            return productos;
+        }
+
+        // Agregar listener al submit del formulario - ANTES de cualquier otra cosa
+        document.getElementById('facturaForm').addEventListener('submit', function(e) {
+            console.log('=== SUBMIT INICIADO ===');
+            
+            // Recolectar producto_ids INMEDIATAMENTE
+            const productos = recolectarProductoIds();
+            
+            if (productos.length > 0) {
+                const jsonProductos = JSON.stringify(productos);
+                document.getElementById('motorClientesIds').value = jsonProductos;
+            }
+        }, true); // Usar captura en lugar de burbuja
     </script>
 </body>
 </html>

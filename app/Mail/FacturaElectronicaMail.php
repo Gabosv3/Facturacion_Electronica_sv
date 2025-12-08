@@ -9,6 +9,7 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Queue\SerializesModels;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class FacturaElectronicaMail extends Mailable
 {
@@ -41,6 +42,9 @@ class FacturaElectronicaMail extends Mailable
     {
         return new Content(
             view: 'emails.factura_electronica',
+            with: [
+                'factura' => $this->factura,
+            ],
         );
     }
 
@@ -71,11 +75,20 @@ class FacturaElectronicaMail extends Mailable
         }, $this->factura->numero_control . '.json')
             ->withMime('application/json');
 
-        // Adjuntar HTML/PDF
-        $attachments[] = Attachment::fromData(function () {
-            return view('facturas.pdf', ['factura' => $this->factura])->render();
-        }, $this->factura->numero_control . '.html')
-            ->withMime('text/html');
+        // Adjuntar PDF de la factura
+        try {
+            $pdf = Pdf::loadView('facturas.pdf', ['factura' => $this->factura]);
+            $attachments[] = Attachment::fromData(function () use ($pdf) {
+                return $pdf->output();
+            }, $this->factura->numero_control . '.pdf')
+                ->withMime('application/pdf');
+        } catch (\Exception $e) {
+            // Si hay error generando PDF, adjuntar HTML como fallback
+            $attachments[] = Attachment::fromData(function () {
+                return view('facturas.pdf', ['factura' => $this->factura])->render();
+            }, $this->factura->numero_control . '.html')
+                ->withMime('text/html');
+        }
 
         return $attachments;
     }
