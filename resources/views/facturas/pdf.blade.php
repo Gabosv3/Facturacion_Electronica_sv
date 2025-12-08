@@ -477,6 +477,7 @@
                 Código QR - Consulta Pública MH
             </div>
             @php
+                $consultaUrl = $consultaUrl ?? $factura->getUrlConsultaPublica() ?? '';
                 $qrBase64 = $factura->getQrCodeLocalBase64(150);
                 if (!$qrBase64) {
                     $qrBase64 = $factura->getQrCodeBase64(150);
