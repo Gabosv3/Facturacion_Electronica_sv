@@ -355,7 +355,7 @@
                                         @if($factura->tipo_dte === '03' || $factura->tipo_dte === '05')
                                             (13%)
                                         @else
-                                            (11.5%)
+                                            (13% .)
                                         @endif:
                                     </span>
                                     <span class="font-semibold">${{ number_format($factura->total_iva, 2) }}</span>
