@@ -477,6 +477,7 @@
         // Validación y formateo de documentos
         const tipoDocSelect = document.querySelector('select[name="receptor_tipo_documento"]');
         const numDocInput = document.querySelector('input[name="receptor_num_documento"]');
+        const nrcInput = document.querySelector('input[name="receptor_nrc"]');
         const helpText = numDocInput.nextElementSibling;
 
         tipoDocSelect.addEventListener('change', function() {
@@ -488,31 +489,50 @@
                     numDocInput.placeholder = 'Ej: 12345678-9 o 123456789';
                     helpText.textContent = 'DUI: 9 dígitos (formato: ########-#) - Solo para personas naturales sin IVA';
                     helpText.className = 'text-xs text-blue-600 mt-1 font-medium';
+                    // Bloquear campo NRC para DUI (personas naturales sin IVA no tienen NRC)
+                    nrcInput.disabled = true;
+                    nrcInput.value = '';
+                    nrcInput.classList.add('bg-gray-200', 'cursor-not-allowed');
                     break;
                 case '36': // NIT - Contribuyente IVA
                     numDocInput.placeholder = 'Ej: 06142302881449';
                     helpText.textContent = 'NIT: 14 dígitos sin guiones - Para contribuyentes inscritos en IVA';
                     helpText.className = 'text-xs text-blue-600 mt-1 font-medium';
+                    // Desbloquear campo NRC para NIT
+                    nrcInput.disabled = false;
+                    nrcInput.classList.remove('bg-gray-200', 'cursor-not-allowed');
                     break;
                 case '02': // Carnet de residente
                     numDocInput.placeholder = 'Número de carnet de residente';
                     helpText.textContent = 'Ingrese el número de carnet de residente';
                     helpText.className = 'text-xs text-gray-500 mt-1';
+                    // Desbloquear campo NRC
+                    nrcInput.disabled = false;
+                    nrcInput.classList.remove('bg-gray-200', 'cursor-not-allowed');
                     break;
                 case '03': // Pasaporte
                     numDocInput.placeholder = 'Número de pasaporte';
                     helpText.textContent = 'Ingrese el número de pasaporte';
                     helpText.className = 'text-xs text-gray-500 mt-1';
+                    // Desbloquear campo NRC
+                    nrcInput.disabled = false;
+                    nrcInput.classList.remove('bg-gray-200', 'cursor-not-allowed');
                     break;
                 case '37': // Otro
                     numDocInput.placeholder = 'Otro documento de identificación';
                     helpText.textContent = 'Ingrese el número de documento';
                     helpText.className = 'text-xs text-gray-500 mt-1';
+                    // Desbloquear campo NRC
+                    nrcInput.disabled = false;
+                    nrcInput.classList.remove('bg-gray-200', 'cursor-not-allowed');
                     break;
                 default:
                     numDocInput.placeholder = 'Seleccione primero el tipo de documento';
                     helpText.textContent = 'Seleccione el tipo de documento';
                     helpText.className = 'text-xs text-gray-500 mt-1';
+                    // Desbloquear campo NRC por defecto
+                    nrcInput.disabled = false;
+                    nrcInput.classList.remove('bg-gray-200', 'cursor-not-allowed');
             }
         });
 
