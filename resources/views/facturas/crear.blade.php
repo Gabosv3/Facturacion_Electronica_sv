@@ -755,13 +755,16 @@
                         document.querySelector('textarea[name="receptor_complemento"]').value = cliente.direccion;
                     }
 
-                    // Capturar NRC si existe en la API
-                    if (cliente.nrc) {
+                    // Verificar el tipo de documento seleccionado
+                    const tipoDocumento = document.querySelector('select[name="receptor_tipo_documento"]').value;
+
+                    // Capturar NRC solo si NO es DUI
+                    if (cliente.nrc && tipoDocumento !== '13') {
                         document.querySelector('input[name="receptor_nrc"]').value = cliente.nrc;
                     }
 
-                    // Capturar categoría económica si existe en la API
-                    if (cliente.categoria_economica) {
+                    // Capturar categoría económica solo si NO es DUI
+                    if (cliente.categoria_economica && tipoDocumento !== '13') {
                         // Si es un objeto con codigo y descripcion
                         if (typeof cliente.categoria_economica === 'object') {
                             if (cliente.categoria_economica.codigo) {
