@@ -20,14 +20,15 @@ const catalogoMunicipios = {
         { codigo: '17', nombre: 'SANTA ANA OESTE' }
     ],
     '03': [ // Sonsonate
-        { codigo: '18', nombre: 'SONSONATE NORTE' },
-        { codigo: '19', nombre: 'SONSONATE CENTRO' },
-        { codigo: '20', nombre: 'SONSONATE ESTE' },
-        { codigo: '34', nombre: 'SONSONATE OESTE' }
+        { codigo: '17', nombre: 'SONSONATE NORTE' },
+        { codigo: '18', nombre: 'SONSONATE CENTRO' },
+        { codigo: '19', nombre: 'SONSONATE ESTE' },
+        { codigo: '20', nombre: 'SONSONATE OESTE' }
     ],
     '04': [ // Chalatenango
-        { codigo: '35', nombre: 'CHALATENANGO NORTE' },
-        { codigo: '36', nombre: 'CHALATENANGO CENTRO' }
+        { codigo: '34', nombre: 'CHALATENANGO NORTE' },
+        { codigo: '35', nombre: 'CHALATENANGO CENTRO' },
+        { codigo: '36', nombre: 'CHALATENANGO SUR' }
     ],
     '05': [ // La Libertad
         { codigo: '23', nombre: 'LA LIBERTAD NORTE' },
@@ -38,24 +39,24 @@ const catalogoMunicipios = {
         { codigo: '28', nombre: 'LA LIBERTAD SUR' }
     ],
     '06': [ // San Salvador
-        { codigo: '29', nombre: 'SAN SALVADOR NORTE' },
-        { codigo: '30', nombre: 'SAN SALVADOR OESTE' },
-        { codigo: '31', nombre: 'SAN SALVADOR ESTE' },
-        { codigo: '32', nombre: 'SAN SALVADOR CENTRO' },
-        { codigo: '33', nombre: 'SAN SALVADOR SUR' }
+        { codigo: '20', nombre: 'SAN SALVADOR NORTE' },
+        { codigo: '21', nombre: 'SAN SALVADOR OESTE' },
+        { codigo: '22', nombre: 'SAN SALVADOR ESTE' },
+        { codigo: '23', nombre: 'SAN SALVADOR CENTRO' },
+        { codigo: '24', nombre: 'SAN SALVADOR SUR' }
     ],
     '07': [ // Cuscatlán
-        { codigo: '34', nombre: 'CUSCATLAN NORTE' },
-        { codigo: '35', nombre: 'CUSCATLAN SUR' }
+        { codigo: '17', nombre: 'CUSCATLAN NORTE' },
+        { codigo: '18', nombre: 'CUSCATLAN SUR' }
     ],
     '08': [ // La Paz
-        { codigo: '36', nombre: 'LA PAZ OESTE' },
-        { codigo: '37', nombre: 'LA PAZ CENTRO' },
-        { codigo: '38', nombre: 'LA PAZ ESTE' }
+        { codigo: '23', nombre: 'LA PAZ OESTE' },
+        { codigo: '24', nombre: 'LA PAZ CENTRO' },
+        { codigo: '25', nombre: 'LA PAZ ESTE' }
     ],
     '09': [ // Cabañas
-        { codigo: '39', nombre: 'CABAÑAS OESTE' },
-        { codigo: '40', nombre: 'CABAÑAS ESTE' }
+        { codigo: '10', nombre: 'CABAÑAS OESTE' },
+        { codigo: '11', nombre: 'CABAÑAS ESTE' }
     ],
     '10': [ // San Vicente
         { codigo: '14', nombre: 'SAN VICENTE NORTE' },
