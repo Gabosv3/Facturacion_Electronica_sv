@@ -223,6 +223,10 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
                 $item['venta_exenta'] = 0.0;
                 $item['venta_no_sujeta'] = 0.0;
                 $item['iva_item'] = floatval($ivaItem);
+                // Preservar tipo_item
+                if (!isset($item['tipo_item'])) {
+                    $item['tipo_item'] = 1;  // Por defecto Bien
+                }
             }
 
             // Calcular totales finales basados en la suma de items (no en el total original)
@@ -318,6 +322,10 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
                 $item['venta_exenta'] = 0;
                 $item['venta_no_sujeta'] = 0;
                 $item['iva_item'] = $ivaItem;
+                // Preservar tipo_item
+                if (!isset($item['tipo_item'])) {
+                    $item['tipo_item'] = 1;  // Por defecto Bien
+                }
             }
 
             $totalPagar = round($subTotal + $totalIva, 2);

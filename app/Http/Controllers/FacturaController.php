@@ -105,6 +105,7 @@ class FacturaController extends Controller
 
             // Items
             'items' => 'required|array|min:1',
+            'items.*.tipo_item' => 'required|integer|in:1,2',
             'items.*.codigo' => 'required|string|max:50',
             'items.*.descripcion' => 'required|string',
             'items.*.cantidad' => 'required|numeric|min:0.01',
