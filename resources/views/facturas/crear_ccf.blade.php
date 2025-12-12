@@ -178,8 +178,17 @@
                         <div id="itemsContainer">
                             <div class="item-row bg-gray-50 p-4 rounded-lg mb-4">
                                 <input type="hidden" name="items[0][producto_id]" class="producto-id" value="">
-                                <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
-                                    <div class="md:col-span-1">
+                                <div class="grid grid-cols-1 md:grid-cols-7 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Tipo *</label>
+                                        <select name="items[0][tipo_item]" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+                                            <option value="">Seleccionar</option>
+                                            <option value="1">Bien</option>
+                                            <option value="2">Servicio</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-2">Código *</label>
                                         <div class="relative">
                                             <input type="text" name="items[0][codigo]" data-item-index="0" class="codigo-producto w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
@@ -301,8 +310,17 @@
             newItem.className = 'item-row bg-gray-50 p-4 rounded-lg mb-4';
             newItem.innerHTML = `
                 <input type="hidden" name="items[${itemCount}][producto_id]" class="producto-id" value="">
-                <div class="grid grid-cols-1 md:grid-cols-6 gap-4\">
-                    <div class="md:col-span-1">
+                <div class="grid grid-cols-1 md:grid-cols-7 gap-4\">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Tipo *</label>
+                        <select name="items[${itemCount}][tipo_item]" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+                            <option value="">Seleccionar</option>
+                            <option value="1">Bien</option>
+                            <option value="2">Servicio</option>
+                        </select>
+                    </div>
+
+                    <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Código *</label>
                         <div class="relative">
                             <input type="text" name="items[${itemCount}][codigo]" data-item-index="${itemCount}" class="codigo-producto w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>

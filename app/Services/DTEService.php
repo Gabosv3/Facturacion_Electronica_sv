@@ -839,7 +839,7 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
 
                     return [
                         'numItem' => $index + 1,
-                        'tipoItem' => 2,  // Para CCF es tipo 2 (bienes) o 3 (servicios), no 1
+                        'tipoItem' => intval($item['tipo_item'] ?? 1),  // Usar tipo_item enviado por usuario, por defecto 1 (bien)
                         'numeroDocumento' => null,
                         'cantidad' => floatval($item['cantidad']),
                         'codigo' => $item['codigo'],
@@ -870,7 +870,7 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
                     'tributos' => [  // En CCF el IVA total va en tributos
                         [
                             'codigo' => '20',
-                            'descripcion' => 'IVA',
+                            'descripcion' => 'Impuesto al Valor Agregado 13%',
                             'valor' => $totalIva,
                         ]
                     ],
