@@ -463,6 +463,7 @@
 
         // Obtener token de autenticación del servidor
         const authToken = @json(session('auth_token'));
+        const motorApiUrl = @json(config('services.motor_api.url'));
 
         // Validación de NIT
         const numDocInput = document.querySelector('input[name="receptor_num_documento"]');
@@ -572,8 +573,8 @@
                 return;
             }
 
-            // Consumir directamente el endpoint de Motors González con autenticación
-            fetch(`https://motorsgonzalez.com/api/clientes/buscar/${documentoLimpio}`, {
+            // Consumir el endpoint de Motors González desde .env con autenticación
+            fetch(`${motorApiUrl}/clientes/buscar/${documentoLimpio}`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${authToken}`,
@@ -756,9 +757,8 @@
             }
             
             const indexAttr = inputElement.getAttribute('data-item-index');
-            const authToken = '{{ session("auth_token") }}';
 
-            fetch(`https://motorsgonzalez.com/api/productos/buscar/${codigo}`, {
+            fetch(`${motorApiUrl}/productos/buscar/${codigo}`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${authToken}`,

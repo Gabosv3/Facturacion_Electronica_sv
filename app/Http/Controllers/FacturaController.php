@@ -642,7 +642,7 @@ class FacturaController extends Controller
                                             'Accept' => 'application/json',
                                             'Content-Type' => 'application/json',
                                         ])
-                                        ->post('https://motorsgonzalez.com/api/facturas', $payloadMotorsGonzalez);
+                                        ->post(config('services.motor_api.url') . '/facturas', $payloadMotorsGonzalez);
 
                                     Log::info('DEBUG: Respuesta recibida', [
                                         'status' => $response->status(),
@@ -1062,7 +1062,7 @@ class FacturaController extends Controller
             $documento = preg_replace('/[^0-9]/', '', $request->documento);
 
             // Llamar al endpoint de Motors González
-            $response = Http::timeout(10)->get('https://motorsgonzalez.com/api/clientes/buscar/' . $documento);
+            $response = Http::timeout(10)->get(config('services.motor_api.url') . '/clientes/buscar/' . $documento);
 
             if ($response->successful()) {
                 $data = $response->json();

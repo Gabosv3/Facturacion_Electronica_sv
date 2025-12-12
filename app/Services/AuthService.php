@@ -7,7 +7,12 @@ use Illuminate\Support\Facades\Log;
 
 class AuthService
 {
-    private $loginUrl = 'https://motorsgonzalez.com/api/login';
+    private $loginUrl;
+
+    public function __construct()
+    {
+        $this->loginUrl = config('services.motor_api.url') . '/login';
+    }
 
     /**
      * Autenticar usuario contra el servidor externo
