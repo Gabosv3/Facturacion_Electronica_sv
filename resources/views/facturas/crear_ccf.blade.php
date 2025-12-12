@@ -302,18 +302,20 @@
 
     <script>
         let itemCount = 1;
+        let servicioCount = 1;
 
         // Agregar nuevo item
         document.getElementById('addItem').addEventListener('click', function() {
             const container = document.getElementById('itemsContainer');
             const newItem = document.createElement('div');
             newItem.className = 'item-row bg-gray-50 p-4 rounded-lg mb-4';
+            
             newItem.innerHTML = `
                 <input type="hidden" name="items[${itemCount}][producto_id]" class="producto-id" value="">
                 <div class="grid grid-cols-1 md:grid-cols-7 gap-4\">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Tipo *</label>
-                        <select name="items[${itemCount}][tipo_item]" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+                        <select name="items[${itemCount}][tipo_item]" class="tipo-item w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" data-item-index="${itemCount}" required>
                             <option value="">Seleccionar</option>
                             <option value="1">Bien</option>
                             <option value="2">Servicio</option>
@@ -354,13 +356,49 @@
             `;
             container.appendChild(newItem);
             
-            const newCodigoInput = newItem.querySelector('.codigo-producto');
-            setupProductSearch(newCodigoInput);
+            const tipoItemSelect = newItem.querySelector('.tipo-item');
+            const codigoInput = newItem.querySelector('.codigo-producto');
+            
+            // Listener para cambios en tipo_item
+            tipoItemSelect.addEventListener('change', function() {
+                aplicarLogicaTipo(this, codigoInput);
+            });
+            
+            // Si es edición inicial, setup búsqueda
+            setupProductSearch(codigoInput);
             
             itemCount++;
             attachCalculateEvents();
             verificarEstadoFormulario();
         });
+
+        // Aplicar lógica según el tipo seleccionado
+        function aplicarLogicaTipo(tipoSelect, codigoInput) {
+            const tipo = tipoSelect.value;
+            
+            if (tipo === '2') {
+                // SERVICIO: código auto-generado
+                const servicioCode = 'SERV-' + String(servicioCount).padStart(3, '0');
+                servicioCount++;
+                
+                codigoInput.value = servicioCode;
+                codigoInput.readOnly = true;
+                codigoInput.classList.add('bg-gray-200');
+                codigoInput.style.cursor = 'not-allowed';
+                
+                // Remover evento de búsqueda
+                codigoInput.removeEventListener('blur', function() {});
+            } else if (tipo === '1') {
+                // BIEN: código manual con búsqueda
+                codigoInput.value = '';
+                codigoInput.readOnly = false;
+                codigoInput.classList.remove('bg-gray-200');
+                codigoInput.style.cursor = 'auto';
+                
+                // Re-agregar búsqueda si no está
+                setupProductSearch(codigoInput);
+            }
+        }
 
         // Eliminar item
         document.addEventListener('click', function(e) {
