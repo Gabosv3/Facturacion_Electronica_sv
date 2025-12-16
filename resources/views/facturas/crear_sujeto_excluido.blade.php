@@ -6,7 +6,6 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Generar Factura Sujeto Excluido - DTE-14</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="{{ asset('js/catalogo-municipios.js') }}"></script>
 </head>
 <body class="bg-gray-100">
     @include('components.navbar')
@@ -163,10 +162,29 @@
                         
                         <div id="itemsContainer">
                             <div class="item-row bg-gray-50 p-4 rounded-lg mb-4">
-                                <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
-                                    <div class="md:col-span-1">
+                                <input type="hidden" name="items[0][producto_id]" class="producto-id" value="">
+                                <div class="grid grid-cols-1 md:grid-cols-7 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Tipo *</label>
+                                        <select name="items[0][tipo_item]" class="tipo-item w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" data-item-index="0" required>
+                                            <option value="">Seleccionar</option>
+                                            <option value="1">Bien</option>
+                                            <option value="2">Servicio</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-2">Código *</label>
-                                        <input type="text" name="items[0][codigo]" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+                                        <div class="relative">
+                                            <input type="text" name="items[0][codigo]" data-item-index="0" class="codigo-producto w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+                                            <div class="loader-producto hidden absolute right-3 top-3">
+                                                <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                </svg>
+                                            </div>
+                                        </div>
+                                        <p class="resultado-producto text-xs mt-1 hidden"></p>
                                     </div>
 
                                     <div class="md:col-span-2">
@@ -269,6 +287,7 @@
 
     <script>
         let itemCount = 1;
+        let servicioCount = 1;
 
         // Agregar nuevo item
         document.getElementById('addItem').addEventListener('click', function() {
@@ -276,11 +295,31 @@
             const newItem = document.createElement('div');
             newItem.className = 'item-row bg-gray-50 p-4 rounded-lg mb-4';
             newItem.innerHTML = `
-                <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
-                    <div class="md:col-span-1">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Código *</label>
-                        <input type="text" name="items[${itemCount}][codigo]" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+                <input type="hidden" name="items[${itemCount}][producto_id]" class="producto-id" value="">
+                <div class="grid grid-cols-1 md:grid-cols-7 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Tipo *</label>
+                        <select name="items[${itemCount}][tipo_item]" class="tipo-item w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" data-item-index="${itemCount}" required>
+                            <option value="">Seleccionar</option>
+                            <option value="1">Bien</option>
+                            <option value="2">Servicio</option>
+                        </select>
                     </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Código *</label>
+                        <div class="relative">
+                            <input type="text" name="items[${itemCount}][codigo]" data-item-index="${itemCount}" class="codigo-producto w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+                            <div class="loader-producto hidden absolute right-3 top-3">
+                                <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <p class="resultado-producto text-xs mt-1 hidden"></p>
+                    </div>
+
                     <div class="md:col-span-2">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Descripción *</label>
                         <input type="text" name="items[${itemCount}][descripcion]" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
@@ -289,6 +328,83 @@
                         <label class="block text-sm font-medium text-gray-700 mb-2">Cantidad *</label>
                         <input type="number" step="1" name="items[${itemCount}][cantidad]" class="cantidad w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required min="1">
                     </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Precio Unit. *</label>
+                        <input type="number" step="0.01" name="items[${itemCount}][precio_unitario]" class="precio w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required min="0">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Descuento</label>
+                        <input type="number" step="0.01" name="items[${itemCount}][monto_descuento]" value="0" class="descuento w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" min="0">
+                    </div>
+                </div>
+                <button type="button" class="removeItem mt-2 text-red-500 hover:text-red-700 text-sm">Eliminar</button>
+            `;
+            container.appendChild(newItem);
+            
+            const tipoItemSelect = newItem.querySelector('.tipo-item');
+            const codigoInput = newItem.querySelector('.codigo-producto');
+            
+            // Listener para cambios en tipo_item
+            tipoItemSelect.addEventListener('change', function() {
+                aplicarLogicaTipo(this, codigoInput);
+            });
+            
+            // Si es edición inicial, setup búsqueda
+            setupProductSearch(codigoInput);
+            
+            itemCount++;
+            attachCalculateEvents();
+        });
+
+        // Aplicar lógica según el tipo seleccionado
+        function aplicarLogicaTipo(tipoSelect, codigoInput) {
+            const tipo = tipoSelect.value;
+            
+            if (tipo === '2') {
+                // SERVICIO: código auto-generado
+                const servicioCode = 'SERV-' + String(servicioCount).padStart(3, '0');
+                servicioCount++;
+                
+                codigoInput.value = servicioCode;
+                codigoInput.readOnly = true;
+                codigoInput.classList.add('bg-gray-200');
+                codigoInput.style.cursor = 'not-allowed';
+                
+                // Remover evento de búsqueda
+                codigoInput.removeEventListener('blur', function() {});
+            } else if (tipo === '1') {
+                // BIEN: código manual con búsqueda
+                codigoInput.value = '';
+                codigoInput.readOnly = false;
+                codigoInput.classList.remove('bg-gray-200');
+                codigoInput.style.cursor = 'auto';
+                
+                // Re-agregar búsqueda si no está
+                setupProductSearch(codigoInput);
+            }
+        }
+
+        // Eliminar item
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('removeItem')) {
+                e.target.closest('.item-row').remove();
+                calcularTotales();
+            }
+        });
+
+        // Setup del primer item (item 0)
+        const primerTipoItem = document.querySelector('select[name="items[0][tipo_item]"]');
+        const primerCodigoInput = document.querySelector('input[name="items[0][codigo]"]');
+        
+        if (primerTipoItem) {
+            primerTipoItem.addEventListener('change', function() {
+                aplicarLogicaTipo(this, primerCodigoInput);
+            });
+        }
+
+        if (primerCodigoInput) {
+            setupProductSearch(primerCodigoInput);
+        }
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Precio Unit. *</label>
                         <input type="number" step="0.01" name="items[${itemCount}][precio_unitario]" class="precio w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required min="0">
@@ -524,5 +640,6 @@
             input.value = valor;
         }
     </script>
+    <script src="{{ asset('js/catalogo-municipios.js') }}"></script>
 </body>
 </html>
