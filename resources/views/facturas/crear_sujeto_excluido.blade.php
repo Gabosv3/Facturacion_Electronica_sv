@@ -602,8 +602,60 @@
             }
         });
 
-        // Validación antes de enviar
-        document.getElementById('facturaForm').addEventListener('submit', function(e) {
+        // Validación de descuento vs precio total
+        function validarDescuento(event) {
+            const descuentoInput = event.target;
+            const descuento = parseFloat(descuentoInput.value) || 0;
+            const itemRow = descuentoInput.closest('.item-row');
+            
+            const cantidadInput = itemRow.querySelector('.cantidad');
+            const precioInput = itemRow.querySelector('.precio');
+            
+            const cantidad = parseFloat(cantidadInput.value) || 0;
+            const precio = parseFloat(precioInput.value) || 0;
+            const precioTotal = cantidad * precio;
+
+            const mensajesError = itemRow.querySelectorAll('.mensaje-descuento-error');
+            mensajesError.forEach(msg => {
+                msg.textContent = '';
+                msg.classList.add('hidden');
+            });
+
+            if (descuento > precioTotal && precioTotal > 0) {
+                descuentoInput.classList.add('border-red-500', 'border-2');
+                descuentoInput.value = precioTotal;
+                itemRow.classList.add('error-descuento');
+                
+                let mensajeError = itemRow.querySelector('.mensaje-descuento-error');
+                if (!mensajeError) {
+                    mensajeError = document.createElement('p');
+                    mensajeError.className = 'mensaje-descuento-error text-xs mt-1 font-medium';
+                    descuentoInput.closest('div').parentElement.appendChild(mensajeError);
+                }
+                mensajeError.textContent = `⚠️ Descuento no puede ser mayor a $${precioTotal.toFixed(2)} (cantidad × precio)`;
+                mensajeError.className = 'text-xs mt-1 font-medium text-red-600';
+                mensajeError.classList.remove('hidden');
+            } else if (descuento >= 0) {
+                descuentoInput.classList.remove('border-red-500', 'border-2');
+                itemRow.classList.remove('error-descuento');
+            }
+
+            calcularTotales();
+        }
+
+        // Validación al blur en descuento
+        document.addEventListener('blur', function(e) {
+            if (e.target.classList.contains('descuento')) {
+                validarDescuento(e);
+            }
+        }, true);
+
+        // Validación al change en descuento
+        document.addEventListener('change', function(e) {
+            if (e.target.classList.contains('descuento')) {
+                validarDescuento(e);
+            }
+        });
             const tipo = tipoDocSelect.value;
             const numDoc = numDocInput.value.replace(/[^0-9]/g, '');
 
