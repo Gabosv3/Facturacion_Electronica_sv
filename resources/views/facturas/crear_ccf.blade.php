@@ -369,7 +369,6 @@
             
             itemCount++;
             attachCalculateEvents();
-            attachItemValidation();  // AGREGAR VALIDACIÓN AL NUEVO ITEM
             verificarEstadoFormulario();
         });
 
@@ -455,13 +454,6 @@
             document.querySelectorAll('.cantidad').forEach(input => {
                 input.removeEventListener('change', validarCantidad);
                 input.addEventListener('change', validarCantidad);
-            });
-
-            document.querySelectorAll('.descuento').forEach(input => {
-                input.removeEventListener('change', validarDescuento);
-                input.addEventListener('change', validarDescuento);
-                input.removeEventListener('blur', validarDescuento);
-                input.addEventListener('blur', validarDescuento);
             });
 
             document.getElementById('precioIncluyeIva').addEventListener('change', calcularTotales);
@@ -730,50 +722,6 @@
         }
 
         // ==========================================
-        // Validación de descuento vs precio total
-        // ==========================================
-        function validarDescuento(event) {
-            const descuentoInput = event.target;
-            const descuento = parseFloat(descuentoInput.value) || 0;
-            const itemRow = descuentoInput.closest('.item-row');
-            
-            const cantidadInput = itemRow.querySelector('.cantidad');
-            const precioInput = itemRow.querySelector('.precio');
-            
-            const cantidad = parseFloat(cantidadInput.value) || 0;
-            const precio = parseFloat(precioInput.value) || 0;
-            const precioTotal = cantidad * precio;
-
-            const mensajesError = itemRow.querySelectorAll('.mensaje-descuento-error');
-            mensajesError.forEach(msg => {
-                msg.textContent = '';
-                msg.classList.add('hidden');
-            });
-
-            if (descuento > precioTotal && precioTotal > 0) {
-                descuentoInput.classList.add('border-red-500', 'border-2');
-                descuentoInput.value = precioTotal;
-                itemRow.classList.add('error-descuento');
-                
-                let mensajeError = itemRow.querySelector('.mensaje-descuento-error');
-                if (!mensajeError) {
-                    mensajeError = document.createElement('p');
-                    mensajeError.className = 'mensaje-descuento-error text-xs mt-1 font-medium';
-                    descuentoInput.closest('div').parentElement.appendChild(mensajeError);
-                }
-                mensajeError.textContent = `⚠️ Descuento no puede ser mayor a $${precioTotal.toFixed(2)} (cantidad × precio)`;
-                mensajeError.className = 'text-xs mt-1 font-medium text-red-600';
-                mensajeError.classList.remove('hidden');
-            } else if (descuento >= 0) {
-                descuentoInput.classList.remove('border-red-500', 'border-2');
-                itemRow.classList.remove('error-descuento');
-            }
-
-            verificarEstadoFormulario();
-            calcularTotales();
-        }
-
-        // ==========================================
         // Validación de cantidad vs stock
         // ==========================================
         function validarCantidad(event) {
@@ -814,12 +762,12 @@
 
         function verificarEstadoFormulario() {
             const submitBtn = document.getElementById('submitBtn');
-            const itemsConError = document.querySelectorAll('.item-row.error-stock, .item-row.error-descuento');
+            const itemsConError = document.querySelectorAll('.item-row.error-stock');
             
             if (itemsConError.length > 0) {
                 submitBtn.disabled = true;
                 submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
-                submitBtn.title = 'Hay items con errores (stock insuficiente o descuento inválido)';
+                submitBtn.title = 'Hay items con stock insuficiente';
             } else {
                 submitBtn.disabled = false;
                 submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
@@ -913,126 +861,6 @@
 
         setupProductSearch(document.querySelector('.codigo-producto'));
 
-        // VALIDACIÓN EN TIEMPO REAL DE ITEMS (IDÉNTICA A DTE-01)
-        // Validar campo de item
-        function validarCampoItem(input, tipoValidacion = 'default') {
-            const itemRow = input.closest('.item-row');
-            const campoNombre = input.name.match(/\[([^\]]+)\]/)?.[1] || '';
-            const valor = input.value.trim();
-            let esValido = true;
-            let mensaje = '';
-
-            // Campos obligatorios no deben estar vacíos
-            const camposObligatorios = ['tipo_item', 'codigo', 'descripcion', 'cantidad', 'precio_unitario'];
-            
-            if (camposObligatorios.includes(campoNombre)) {
-                if (!valor) {
-                    esValido = false;
-                    mensaje = 'Este campo es obligatorio';
-                }
-            }
-
-            // Campos de moneda (precio y descuento) deben ser positivos
-            const camposMoneda = ['precio_unitario', 'monto_descuento'];
-            if (camposMoneda.includes(campoNombre) && valor) {
-                const numeroValor = parseFloat(valor);
-                if (isNaN(numeroValor) || numeroValor < 0) {
-                    esValido = false;
-                    mensaje = 'Solo se permiten números positivos';
-                } else if (numeroValor === 0 && campoNombre === 'precio_unitario') {
-                    esValido = false;
-                    mensaje = 'El precio debe ser mayor a 0';
-                }
-            }
-
-            // Campo cantidad debe ser positivo
-            if (campoNombre === 'cantidad' && valor) {
-                const numeroValor = parseInt(valor);
-                if (isNaN(numeroValor) || numeroValor <= 0) {
-                    esValido = false;
-                    mensaje = 'La cantidad debe ser mayor a 0';
-                }
-            }
-
-            // Validar descuento no sea mayor al subtotal
-            if (campoNombre === 'monto_descuento' && valor) {
-                const cantidadInput = itemRow.querySelector('input[name*="cantidad"]');
-                const precioInput = itemRow.querySelector('input[name*="precio_unitario"]');
-                
-                if (cantidadInput && precioInput && cantidadInput.value && precioInput.value) {
-                    const subtotal = parseFloat(cantidadInput.value) * parseFloat(precioInput.value);
-                    const descuento = parseFloat(valor);
-                    
-                    if (descuento > subtotal) {
-                        esValido = false;
-                        mensaje = `Descuento no puede ser mayor al subtotal ($${subtotal.toFixed(2)})`;
-                    }
-                }
-            }
-
-            // Aplicar estilos visual
-            if (esValido && valor) {
-                input.classList.remove('border-red-500', 'bg-red-50', 'error-field');
-                input.classList.add('border-green-500');
-                // Remover mensaje de error si existe
-                const existentMsg = itemRow.querySelector(`[data-error-for="${input.name}"]`);
-                if (existentMsg) existentMsg.remove();
-            } else if (!esValido) {
-                input.classList.remove('border-green-500');
-                input.classList.add('border-red-500', 'bg-red-50', 'error-field');
-                
-                // Mostrar/actualizar mensaje de error
-                let msgElement = itemRow.querySelector(`[data-error-for="${input.name}"]`);
-                if (!msgElement) {
-                    msgElement = document.createElement('p');
-                    msgElement.setAttribute('data-error-for', input.name);
-                    msgElement.className = 'text-red-600 text-xs mt-1 font-semibold';
-                    input.parentElement.appendChild(msgElement);
-                }
-                msgElement.textContent = mensaje;
-            } else {
-                input.classList.remove('border-red-500', 'bg-red-50', 'error-field', 'border-green-500');
-            }
-
-            return esValido;
-        }
-
-        // Attach validación a todos los inputs de items existentes
-        function attachItemValidation() {
-            document.querySelectorAll('.item-row input, .item-row select').forEach(input => {
-                // Remover listeners anteriores (si existen)
-                input.removeEventListener('blur', handleItemBlur);
-                input.removeEventListener('change', handleItemChange);
-                input.removeEventListener('input', handleItemInput);
-                
-                // Agregar nuevos listeners
-                input.addEventListener('blur', handleItemBlur);
-                input.addEventListener('change', handleItemChange);
-                input.addEventListener('input', handleItemInput);
-            });
-        }
-
-        // Handlers para validación
-        function handleItemBlur(e) {
-            validarCampoItem(e.target, 'blur');
-            calcularTotales();
-        }
-
-        function handleItemChange(e) {
-            validarCampoItem(e.target, 'change');
-            calcularTotales();
-        }
-
-        function handleItemInput(e) {
-            // Solo validar en tiempo real para campos numéricos
-            if (['precio_unitario', 'monto_descuento', 'cantidad'].includes(e.target.name.match(/\[([^\]]+)\]/)?.[1])) {
-                validarCampoItem(e.target, 'input');
-            }
-        }
-
-        // Inicializar validación en items existentes
-        attachItemValidation();
-
         // Función para recolectar producto_ids antes de enviar
         function recolectarProductoIds() {
             const productos = [];
@@ -1057,37 +885,6 @@
         // Agregar listener al submit del formulario - ANTES de cualquier otra cosa
         document.getElementById('facturaForm').addEventListener('submit', function(e) {
             console.log('=== SUBMIT INICIADO ===');
-            
-            // Validar todos los items antes de enviar
-            let hayErrores = false;
-            document.querySelectorAll('.item-row').forEach(itemRow => {
-                // Validar campos obligatorios
-                const tipoInput = itemRow.querySelector('select[name*="tipo_item"]');
-                const codigoInput = itemRow.querySelector('input[name*="codigo"]');
-                const descInput = itemRow.querySelector('input[name*="descripcion"]');
-                const cantidadInput = itemRow.querySelector('input[name*="cantidad"]');
-                const precioInput = itemRow.querySelector('input[name*="precio_unitario"]');
-                
-                [tipoInput, codigoInput, descInput, cantidadInput, precioInput].forEach(input => {
-                    if (input && !validarCampoItem(input)) {
-                        hayErrores = true;
-                    }
-                });
-                
-                // Validar descuento si existe
-                const descuentoInput = itemRow.querySelector('input[name*="monto_descuento"]');
-                if (descuentoInput && descuentoInput.value) {
-                    if (!validarCampoItem(descuentoInput)) {
-                        hayErrores = true;
-                    }
-                }
-            });
-            
-            if (hayErrores) {
-                e.preventDefault();
-                alert('⚠️ Por favor corrija los errores en los items antes de continuar');
-                return false;
-            }
             
             // Recolectar producto_ids INMEDIATAMENTE
             const productos = recolectarProductoIds();

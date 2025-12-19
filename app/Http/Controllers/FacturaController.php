@@ -232,22 +232,16 @@ class FacturaController extends Controller
             }
 
             // Generar DTE completo
-            // IMPORTANTE: Según normativa MH:
-            // - DTE-03 (CCF): SIEMPRE true (precios incluyen IVA)
-            // - DTE-05 (Nota Crédito): usar valor del checkbox
-            // - DTE-01 y DTE-14: usar valor del checkbox
-            if ($validated['tipo_dte'] === '03') {
-                $precioIncluyeIva = true;  // OBLIGATORIO para CCF
-            } else {
-                $precioIncluyeIva = (bool) ($validated['precio_incluye_iva'] ?? false);
-            }
+            // Para DTE-05, usar el valor del checkbox precio_incluye_iva
+            $precioIncluyeIva = ($validated['tipo_dte'] === '05')
+                ? (bool) ($validated['precio_incluye_iva'] ?? false)
+                : (bool) ($validated['precio_incluye_iva'] ?? false);
 
-            // 🔍 LOG: Ver valor de precioIncluyeIva
-            Log::info('💰 Valor de precioIncluyeIva (normalizado)', [
+            // 🔍 LOG: Ver valor del checkbox
+            Log::info('💰 Valor del checkbox precio_incluye_iva', [
                 'tipo_dte' => $validated['tipo_dte'],
                 'precio_incluye_iva_raw' => $validated['precio_incluye_iva'] ?? 'NO PRESENTE',
-                'precio_incluye_iva_final' => $precioIncluyeIva,
-                'razon' => $validated['tipo_dte'] === '03' ? 'CCF: FORZADO a true' : 'Valor del formulario',
+                'precio_incluye_iva_bool' => $precioIncluyeIva,
             ]);
 
             $dteJson = $this->dteService->construirDteJson($datosFactura, $precioIncluyeIva);
