@@ -292,8 +292,9 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
             $subTotal = $subTotalVentas;
 
             // DTE-01: montoTotalOperacion = subTotal (precio con IVA incluido, con descuento)
-            // DTE-03: montoTotalOperacion = totalGravada + totalIva (precio calculado con descuento ya aplicado)
-            $totalPagar = $esDTE01 ? $subTotal : round($totalGravada + $totalIva, 2);
+            // DTE-03: montoTotalOperacion = subTotal + totalIva (base sin IVA + IVA calculado)
+            // CRÍTICO: Redondear SIEMPRE a 2 decimales para evitar errores de punto flotante
+            $totalPagar = round($esDTE01 ? $subTotal : ($subTotal + $totalIva), 2);
 
             \Log::info('💰 Cálculo con precio incluye IVA (CON DESCUENTO CORRECTO)', [
                 'tipo_dte' => $tipoDte,
@@ -755,42 +756,42 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
                         'numItem' => $index + 1,
                         'tipoItem' => 1,
                         'numeroDocumento' => null,
-                        'cantidad' => floatval($item['cantidad']),
+                        'cantidad' => round(floatval($item['cantidad']), 2),
                         'codigo' => $item['codigo'],
                         'codTributo' => null,
                         'uniMedida' => (int) ($item['uni_medida'] ?? 59),
                         'descripcion' => $item['descripcion'],
-                        'precioUni' => floatval($item['precio_unitario']),
-                        'montoDescu' => floatval($item['monto_descuento'] ?? 0),
-                        'ventaNoSuj' => floatval($item['venta_no_sujeta']),
-                        'ventaExenta' => floatval($item['venta_exenta']),
-                        'ventaGravada' => floatval($item['venta_gravada']),
+                        'precioUni' => round(floatval($item['precio_unitario']), 2),
+                        'montoDescu' => round(floatval($item['monto_descuento'] ?? 0), 2),
+                        'ventaNoSuj' => round(floatval($item['venta_no_sujeta']), 2),
+                        'ventaExenta' => round(floatval($item['venta_exenta']), 2),
+                        'ventaGravada' => round(floatval($item['venta_gravada']), 2),
                         'tributos' => null,
                         'psv' => 0,
                         'noGravado' => 0.0,
-                        'ivaItem' => floatval($item['iva_item']),
+                        'ivaItem' => round(floatval($item['iva_item']), 2),
                     ];
                 }, $calculos['items'], array_keys($calculos['items'])),
                 'resumen' => [
-                    'totalNoSuj' => floatval($calculos['totales']['total_no_sujeto']),
-                    'totalExenta' => floatval($calculos['totales']['total_exenta']),
-                    'totalGravada' => floatval($calculos['totales']['total_gravada']),
-                    'subTotalVentas' => floatval($calculos['totales']['sub_total_ventas']),
+                    'totalNoSuj' => round(floatval($calculos['totales']['total_no_sujeto']), 2),
+                    'totalExenta' => round(floatval($calculos['totales']['total_exenta']), 2),
+                    'totalGravada' => round(floatval($calculos['totales']['total_gravada']), 2),
+                    'subTotalVentas' => round(floatval($calculos['totales']['sub_total_ventas']), 2),
                     'descuNoSuj' => 0.0,
                     'descuExenta' => 0.0,
-                    'descuGravada' => floatval($calculos['totales']['total_descuento']),
+                    'descuGravada' => round(floatval($calculos['totales']['total_descuento']), 2),
                     'porcentajeDescuento' => 0.0,
-                    'totalDescu' => floatval($calculos['totales']['total_descuento']),
+                    'totalDescu' => round(floatval($calculos['totales']['total_descuento']), 2),
                     'tributos' => null,
-                    'subTotal' => floatval($calculos['totales']['sub_total']),
+                    'subTotal' => round($calculos['totales']['sub_total'], 2),
                     // Los totales ya vienen correctamente calculados desde calcularTotalesItemsConTasa
-                    'totalIva' => floatval($calculos['totales']['total_iva']),
+                    'totalIva' => round($calculos['totales']['total_iva'], 2),
                     'ivaRete1' => 0.0,
                     'reteRenta' => 0.0,
-                    'montoTotalOperacion' => floatval($calculos['totales']['monto_total_operacion']),
+                    'montoTotalOperacion' => round($calculos['totales']['monto_total_operacion'], 2),
                     'totalNoGravado' => 0.0,
                     'saldoFavor' => 0.0,
-                    'totalPagar' => floatval($calculos['totales']['total_pagar']),
+                    'totalPagar' => round($calculos['totales']['total_pagar'], 2),
                     'totalLetras' => $totalLetras,
                     'condicionOperacion' => (int) ($datos['condicion_operacion'] ?? 1),
                     'numPagoElectronico' => '1',
@@ -933,16 +934,16 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
                         'numItem' => $index + 1,
                         'tipoItem' => intval($item['tipo_item'] ?? 1),  // Usar tipo_item enviado por usuario, por defecto 1 (bien)
                         'numeroDocumento' => null,
-                        'cantidad' => floatval($item['cantidad']),
+                        'cantidad' => round(floatval($item['cantidad']), 2),
                         'codigo' => $item['codigo'],
                         'codTributo' => null,  // NO se usa array en CCF, va null
                         'uniMedida' => (int) ($item['uni_medida'] ?? 59),
                         'descripcion' => $item['descripcion'],
-                        'precioUni' => floatval($item['precio_unitario']),
-                        'montoDescu' => $montoDescuEnviar,  // IMPORTANTE: Convertido a términos SIN IVA
+                        'precioUni' => round(floatval($item['precio_unitario']), 2),
+                        'montoDescu' => round(floatval($item['monto_descuento'] ?? 0), 2),
                         'ventaNoSuj' => 0.0,
                         'ventaExenta' => 0.0,
-                        'ventaGravada' => floatval($item['venta_gravada']),
+                        'ventaGravada' => round(floatval($item['venta_gravada']), 2),
                         'tributos' => ['20'],  // En CCF es array simple de strings, no objetos
                         'psv' => 0.0,
                         'noGravado' => 0.0,
@@ -956,32 +957,32 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
                     'subTotalVentas' => floatval($calculos['totales']['total_gravada']),
                     'descuNoSuj' => 0.0,
                     'descuExenta' => 0.0,
-                    'descuGravada' => floatval($calculos['totales']['total_descuento']),
+                    'descuGravada' => round(floatval($calculos['totales']['total_descuento']), 2),
                     'porcentajeDescuento' => 0.0,
-                    'totalDescu' => floatval($calculos['totales']['total_descuento']),
+                    'totalDescu' => round(floatval($calculos['totales']['total_descuento']), 2),
                     'tributos' => [  // En CCF el IVA total va en tributos
                         [
                             'codigo' => '20',
                             'descripcion' => 'Impuesto al Valor Agregado 13%',
-                            'valor' => $totalIva,
+                            'valor' => round($totalIva, 2),
                         ]
                     ],
-                    'subTotal' => floatval($calculos['totales']['total_gravada']),
-                    'totalIva' => $totalIva,  // Guardamos para BD (aunque no se envía al MH en este campo)
+                    'subTotal' => round($calculos['totales']['total_gravada'], 2),
+                    'totalIva' => round($totalIva, 2),  // Guardamos para BD (aunque no se envía al MH en este campo)
                     'ivaRete1' => 0.0,  // Requerido en CCF
                     'ivaPerci1' => 0.0,  // Requerido en CCF
                     'reteRenta' => 0.0,  // Requerido en CCF
-                    'montoTotalOperacion' => $totalPagar,
+                    'montoTotalOperacion' => round($totalPagar, 2),
                     'totalNoGravado' => 0.0,
                     'saldoFavor' => 0.0,
-                    'totalPagar' => $totalPagar,
+                    'totalPagar' => round($totalPagar, 2),
                     'totalLetras' => $totalLetras,
                     'condicionOperacion' => (int) ($datos['condicion_operacion'] ?? 1),
                     'numPagoElectronico' => '1',
                     'pagos' => [
                         [
                             'codigo' => $datos['forma_pago'] ?? '01',
-                            'montoPago' => $totalPagar,
+                            'montoPago' => round($totalPagar, 2),
                             'referencia' => $datos['referencia_pago'] ?? null,
                             'plazo' => null,
                             'periodo' => null,
@@ -1033,7 +1034,7 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
 
         // IMPORTANTE: En DTE-05 el montoTotalOperacion SÍ incluye el IVA (igual que facturas)
         // Aunque es una nota de crédito, el MH valida que el total incluya IVA
-        $totalPagar = $calculos['totales']['total_gravada'] + $totalIva;
+        $totalPagar = round($calculos['totales']['total_gravada'] + $totalIva, 2);
         $totalLetras = $this->numeroALetras($totalPagar);
 
         // Determinar versión (DTE-05 = versión 3 según especificaciones MH)
@@ -1144,16 +1145,16 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
                             'numItem' => $numItem,
                             'tipoItem' => 2,  // DTE-05 usa tipoItem=2 igual que version 3
                             'numeroDocumento' => $numeroDocRelacionado, // REQUERIDO por MH
-                            'cantidad' => floatval($item['cantidad']),
+                            'cantidad' => round(floatval($item['cantidad']), 2),
                             'codigo' => $item['codigo'],
                             'codTributo' => null,  // Requerido por MH
                             'uniMedida' => (int) ($item['uni_medida'] ?? 59),
                             'descripcion' => $descripcion,
-                            'precioUni' => $precioUnitarioFinal,  // Precio sin IVA
-                            'montoDescu' => floatval($item['monto_descuento'] ?? 0),
+                            'precioUni' => round($precioUnitarioFinal, 2),  // Precio sin IVA
+                            'montoDescu' => round(floatval($item['monto_descuento'] ?? 0), 2),
                             'ventaNoSuj' => 0.0,  // Requerido por MH
                             'ventaExenta' => 0.0,  // Requerido por MH
-                            'ventaGravada' => floatval($item['venta_gravada']),  // Base sin IVA
+                            'ventaGravada' => round(floatval($item['venta_gravada']), 2),  // Base sin IVA
                             'tributos' => ['20'],  // Array simple de códigos igual que CCF
                             // psv y noGravado NO permitidos en DTE-05
                         ];
@@ -1185,26 +1186,26 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
                     return $items;
                 })(),
                 'resumen' => [
-                    'totalNoSuj' => floatval($calculos['totales']['total_no_sujeto']),
-                    'totalExenta' => floatval($calculos['totales']['total_exenta']),
-                    'totalGravada' => floatval($calculos['totales']['total_gravada']),
-                    'subTotalVentas' => floatval($calculos['totales']['sub_total_ventas']),
+                    'totalNoSuj' => round(floatval($calculos['totales']['total_no_sujeto']), 2),
+                    'totalExenta' => round(floatval($calculos['totales']['total_exenta']), 2),
+                    'totalGravada' => round(floatval($calculos['totales']['total_gravada']), 2),
+                    'subTotalVentas' => round(floatval($calculos['totales']['sub_total_ventas']), 2),
                     'descuNoSuj' => 0.0,
                     'descuExenta' => 0.0,
-                    'descuGravada' => floatval($calculos['totales']['total_descuento']),
-                    'totalDescu' => floatval($calculos['totales']['total_descuento']),
+                    'descuGravada' => round(floatval($calculos['totales']['total_descuento']), 2),
+                    'totalDescu' => round(floatval($calculos['totales']['total_descuento']), 2),
                     'tributos' => [  // REQUERIDO por esquema DTE-05 (igual que CCF)
                         [
                             'codigo' => '20',
                             'descripcion' => 'IVA',
-                            'valor' => $totalIva,
+                            'valor' => round($totalIva, 2),
                         ]
                     ],
-                    'subTotal' => floatval($calculos['totales']['total_gravada']),  // Igual que totalGravada (sin IVA)
+                    'subTotal' => round($calculos['totales']['total_gravada'], 2),  // Igual que totalGravada (sin IVA)
                     'ivaRete1' => 0.0,
                     'ivaPerci1' => 0.0, // REQUERIDO por esquema DTE-05
                     'reteRenta' => 0.0, // REQUERIDO por esquema DTE-05
-                    'montoTotalOperacion' => $totalPagar,
+                    'montoTotalOperacion' => round($totalPagar, 2),
                     // totalPagar NO permitido en DTE-05 según esquema MH
                     'totalLetras' => $totalLetras,
                     'condicionOperacion' => (int) ($datos['condicion_operacion'] ?? 1),
@@ -1259,11 +1260,11 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
             $items[] = [
                 'numItem' => $index + 1,
                 'tipoItem' => 2, // 2 = Bienes
-                'cantidad' => $cantidad,
+                'cantidad' => round($cantidad, 2),
                 'codigo' => $item['codigo'] ?? null,
                 'uniMedida' => (int) ($item['uni_medida'] ?? 59),
                 'descripcion' => $item['descripcion'],
-                'precioUni' => $precioUnitario,
+                'precioUni' => round($precioUnitario, 2),
                 'montoDescu' => $montoDescu,
                 'compra' => $compra, // Campo requerido para DTE-14
             ];
@@ -1334,19 +1335,19 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
                 ],
                 'cuerpoDocumento' => $items,
                 'resumen' => [
-                    'totalCompra' => $totalCompra,
-                    'descu' => $totalDescuento,
-                    'totalDescu' => $totalDescuento,
-                    'subTotal' => $totalCompra - $totalDescuento,
+                    'totalCompra' => round($totalCompra, 2),
+                    'descu' => round($totalDescuento, 2),
+                    'totalDescu' => round($totalDescuento, 2),
+                    'subTotal' => round($totalCompra - $totalDescuento, 2),
                     'ivaRete1' => 0,
                     'reteRenta' => 0,
-                    'totalPagar' => $totalPagar,
+                    'totalPagar' => round($totalPagar, 2),
                     'totalLetras' => $totalLetras,
                     'condicionOperacion' => (int) ($datos['condicion_operacion'] ?? 1),
                     'pagos' => [
                         [
                             'codigo' => $datos['forma_pago'] ?? '01',
-                            'montoPago' => $totalPagar,
+                            'montoPago' => round($totalPagar, 2),
                             'referencia' => $datos['referencia_pago'] ?? null,
                             'plazo' => null,
                             'periodo' => null,
