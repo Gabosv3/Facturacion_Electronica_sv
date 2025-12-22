@@ -6,6 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Comprobante de Crédito Fiscal - DTE El Salvador</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="{{ asset('js/catalogo-municipios.js') }}"></script>
 </head>
 <body class="bg-gray-100">
@@ -75,7 +76,13 @@
                             </div>
 
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">NIT (14 dígitos) *</label>
+                                <div class="flex justify-between items-center mb-2">
+                                    <label class="block text-sm font-medium text-gray-700" id="labelNit">NIT (14 dígitos) *</label>
+                                    <div class="flex items-center gap-2 bg-blue-50 px-2 py-1 rounded border border-blue-100">
+                                        <input type="checkbox" id="nitHomologado" class="rounded text-blue-600 focus:ring-blue-500 h-4 w-4">
+                                        <label for="nitHomologado" class="text-xs text-blue-800 cursor-pointer select-none font-medium">NIT Homologado (DUI)</label>
+                                    </div>
+                                </div>
                                 <div class="relative">
                                     <input type="text" id="receptor_num_documento" name="receptor_num_documento" placeholder="06142302881449" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required value="{{ old('receptor_num_documento') }}">
                                     <div id="busquedaLoader" style="display:none;" class="absolute right-3 top-3">
@@ -511,27 +518,55 @@
         const authToken = @json(session('auth_token'));
         const motorApiUrl = @json(config('services.motor_api.url'));
 
-        // Validación de NIT
+        // Validación de NIT / DUI Homologado
         const numDocInput = document.querySelector('input[name="receptor_num_documento"]');
         const nitHelp = document.getElementById('nitHelp');
+        const nitHomologadoCheck = document.getElementById('nitHomologado');
+        const labelNit = document.getElementById('labelNit');
+
+        // Listener para el checkbox de NIT Homologado
+        nitHomologadoCheck.addEventListener('change', function() {
+            const isHomologado = this.checked;
+            
+            // Limpiar input y resetear estado
+            numDocInput.value = '';
+            nitHelp.textContent = isHomologado ? 'DUI: 9 dígitos sin guiones' : 'NIT: 14 dígitos sin guiones';
+            nitHelp.className = 'text-xs text-gray-500 mt-1';
+            
+            // Actualizar label y placeholder
+            if (isHomologado) {
+                labelNit.textContent = 'NIT Homologado (9 dígitos) *';
+                numDocInput.placeholder = '000000000';
+                numDocInput.maxLength = 9;
+            } else {
+                labelNit.textContent = 'NIT (14 dígitos) *';
+                numDocInput.placeholder = '06142302881449';
+                numDocInput.maxLength = 14;
+            }
+            
+            // Ocultar resultados de búsqueda previos
+            document.getElementById('resultadoBusqueda').classList.add('hidden');
+        });
 
         numDocInput.addEventListener('input', function() {
             let valor = this.value.replace(/[^0-9]/g, ''); // Solo números
+            const isHomologado = nitHomologadoCheck.checked;
+            const maxLen = isHomologado ? 9 : 14;
 
-            if (valor.length > 14) {
-                valor = valor.substring(0, 14);
+            if (valor.length > maxLen) {
+                valor = valor.substring(0, maxLen);
             }
             this.value = valor;
 
             // Validación visual
-            if (valor.length === 14) {
-                nitHelp.textContent = '✓ NIT válido';
+            if (valor.length === maxLen) {
+                nitHelp.textContent = isHomologado ? '✓ NIT Homologado válido' : '✓ NIT válido';
                 nitHelp.className = 'text-xs text-green-600 mt-1 font-medium';
             } else if (valor.length > 0) {
-                nitHelp.textContent = `Faltan ${14 - valor.length} dígitos`;
+                nitHelp.textContent = `Faltan ${maxLen - valor.length} dígitos`;
                 nitHelp.className = 'text-xs text-orange-600 mt-1 font-medium';
             } else {
-                nitHelp.textContent = 'NIT: 14 dígitos sin guiones';
+                nitHelp.textContent = isHomologado ? 'DUI: 9 dígitos sin guiones' : 'NIT: 14 dígitos sin guiones';
                 nitHelp.className = 'text-xs text-gray-500 mt-1';
             }
         });
@@ -539,10 +574,13 @@
         // Validación antes de enviar
         document.getElementById('facturaForm').addEventListener('submit', function(e) {
             const numDoc = numDocInput.value.replace(/[^0-9]/g, '');
+            const isHomologado = document.getElementById('nitHomologado').checked;
+            const requiredLen = isHomologado ? 9 : 14;
 
-            if (numDoc.length !== 14) {
+            if (numDoc.length !== requiredLen) {
                 e.preventDefault();
-                alert('El NIT debe tener exactamente 14 dígitos.\n\nActual: ' + numDoc.length + ' dígitos\nRequerido: 14 dígitos');
+                const tipoDoc = isHomologado ? 'NIT Homologado' : 'NIT';
+                alert(`El ${tipoDoc} debe tener exactamente ${requiredLen} dígitos.\n\nActual: ${numDoc.length} dígitos\nRequerido: ${requiredLen} dígitos`);
                 numDocInput.focus();
                 return false;
             }
@@ -594,8 +632,10 @@
         docInput.addEventListener('blur', function() {
             clearTimeout(timeoutBusqueda);
             const documento = this.value.trim();
+            const isHomologado = document.getElementById('nitHomologado').checked;
+            const minLen = isHomologado ? 9 : 14;
 
-            if (!documento || documento.length < 14) {
+            if (!documento || documento.length < minLen) {
                 resultadoBusqueda.classList.add('hidden');
                 return;
             }
@@ -609,11 +649,13 @@
 
             // Limpiar caracteres especiales del documento
             const documentoLimpio = documento.replace(/[^0-9]/g, '');
+            const isHomologado = document.getElementById('nitHomologado').checked;
+            const requiredLen = isHomologado ? 9 : 14;
 
             // Validar que no esté vacío después de limpiar
-            if (!documentoLimpio || documentoLimpio.length < 14) {
+            if (!documentoLimpio || documentoLimpio.length < requiredLen) {
                 busquedaLoader.style.display = 'none';
-                resultadoBusqueda.textContent = '✗ NIT inválido (debe tener 14 dígitos)';
+                resultadoBusqueda.textContent = `✗ ${isHomologado ? 'NIT Homologado' : 'NIT'} inválido (debe tener ${requiredLen} dígitos)`;
                 resultadoBusqueda.className = 'text-xs text-red-600 mt-1 font-medium';
                 resultadoBusqueda.classList.remove('hidden');
                 return;
@@ -1054,8 +1096,10 @@
             return productos;
         }
 
-        // Agregar listener al submit del formulario - ANTES de cualquier otra cosa
+        // Agregar listener al submit del formulario
         document.getElementById('facturaForm').addEventListener('submit', function(e) {
+            if (e.defaultPrevented) return;
+
             console.log('=== SUBMIT INICIADO ===');
             
             // Validar todos los items antes de enviar
@@ -1085,7 +1129,12 @@
             
             if (hayErrores) {
                 e.preventDefault();
-                alert('⚠️ Por favor corrija los errores en los items antes de continuar');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Errores en el formulario',
+                    text: 'Por favor corrija los errores en los items antes de continuar.',
+                    confirmButtonColor: '#d33'
+                });
                 return false;
             }
             
@@ -1096,7 +1145,24 @@
                 const jsonProductos = JSON.stringify(productos);
                 document.getElementById('motorClientesIds').value = jsonProductos;
             }
-        }, true); // Usar captura en lugar de burbuja
+
+            // Confirmación
+            e.preventDefault();
+            Swal.fire({
+                title: '¿Estás seguro?',
+                text: "Estás a punto de emitir un Comprobante de Crédito Fiscal. Verifica que todos los datos sean correctos.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Sí, emitir CCF',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    this.submit();
+                }
+            });
+        });
     </script>
 </body>
 </html>

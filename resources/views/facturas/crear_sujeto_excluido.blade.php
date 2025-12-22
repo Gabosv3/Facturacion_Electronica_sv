@@ -6,6 +6,8 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Generar Factura Sujeto Excluido - DTE-14</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="{{ asset('js/catalogo-municipios.js') }}"></script>
 </head>
 <body class="bg-gray-100">
     @include('components.navbar')
@@ -154,9 +156,8 @@
                     <div class="mb-8">
                         <div class="flex justify-between items-center mb-4">
                             <h2 class="text-xl font-semibold text-gray-700">Productos/Servicios</h2>
-                            <div class="flex items-center gap-2">
-                                <input type="checkbox" id="precioIncluyeIva" name="precio_incluye_iva" value="1" checked class="rounded">
-                                <label for="precioIncluyeIva" class="text-sm text-gray-700">Precio incluye IVA</label>
+                            <div class="bg-orange-100 px-3 py-1 rounded-lg">
+                                <p class="text-xs text-orange-700 font-semibold">SIN IVA</p>
                             </div>
                         </div>
                         
@@ -166,45 +167,42 @@
                                 <div class="grid grid-cols-1 md:grid-cols-7 gap-4">
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-2">Tipo *</label>
-                                        <select name="items[0][tipo_item]" class="tipo-item w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" data-item-index="0" required>
+                                        <select name="items[0][tipo_item]" class="tipo-item tipo-select w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" data-item-index="0" required>
                                             <option value="">Seleccionar</option>
                                             <option value="1">Bien</option>
                                             <option value="2">Servicio</option>
                                         </select>
+                                        <p class="tipo-error text-xs text-red-600 mt-1 hidden">⚠️ Debe seleccionar un tipo</p>
                                     </div>
 
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-2">Código *</label>
-                                        <div class="relative">
-                                            <input type="text" name="items[0][codigo]" data-item-index="0" class="codigo-producto w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
-                                            <div class="loader-producto hidden absolute right-3 top-3">
-                                                <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                </svg>
-                                            </div>
-                                        </div>
-                                        <p class="resultado-producto text-xs mt-1 hidden"></p>
+                                        <input type="text" name="items[0][codigo]" class="codigo-item w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+                                        <p class="codigo-error text-xs text-red-600 mt-1 hidden">⚠️ El código no puede estar vacío</p>
                                     </div>
 
                                     <div class="md:col-span-2">
                                         <label class="block text-sm font-medium text-gray-700 mb-2">Descripción *</label>
-                                        <input type="text" name="items[0][descripcion]" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+                                        <input type="text" name="items[0][descripcion]" class="descripcion-item w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+                                        <p class="descripcion-error text-xs text-red-600 mt-1 hidden">⚠️ La descripción no puede estar vacía</p>
                                     </div>
 
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-2">Cantidad *</label>
                                         <input type="number" step="1" name="items[0][cantidad]" class="cantidad w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required min="1">
+                                        <p class="cantidad-error text-xs text-red-600 mt-1 hidden">⚠️ Debe ser un número entero positivo (ej: 1, 2, 3...)</p>
                                     </div>
 
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-2">Precio Unit. *</label>
                                         <input type="number" step="0.01" name="items[0][precio_unitario]" class="precio w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required min="0">
+                                        <p class="precio-error text-xs text-red-600 mt-1 hidden">⚠️ El precio debe ser un número positivo</p>
                                     </div>
 
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-2">Descuento</label>
                                         <input type="number" step="0.01" name="items[0][monto_descuento]" value="0" class="descuento w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" min="0">
+                                        <p class="descuento-error text-xs text-red-600 mt-1 hidden">⚠️ El descuento no puede ser mayor que el precio unitario</p>
                                     </div>
                                 </div>
                             </div>
@@ -256,16 +254,8 @@
                     <div class="bg-blue-50 p-6 rounded-lg mb-6">
                         <h3 class="text-lg font-semibold text-gray-700 mb-4">Resumen</h3>
                         <div class="space-y-2">
-                            <div class="flex justify-between">
-                                <span class="text-gray-600">Subtotal (sin IVA):</span>
-                                <span class="font-semibold" id="subtotal">$0.00</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-gray-600">IVA (13%):</span>
-                                <span class="font-semibold" id="iva">$0.00</span>
-                            </div>
                             <div class="flex justify-between text-xl font-bold text-blue-600 border-t pt-2">
-                                <span>Total:</span>
+                                <span>Total (sin IVA):</span>
                                 <span id="total">$0.00</span>
                             </div>
                         </div>
@@ -287,7 +277,6 @@
 
     <script>
         let itemCount = 1;
-        let servicioCount = 1;
 
         // Agregar nuevo item
         document.getElementById('addItem').addEventListener('click', function() {
@@ -299,119 +288,37 @@
                 <div class="grid grid-cols-1 md:grid-cols-7 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Tipo *</label>
-                        <select name="items[${itemCount}][tipo_item]" class="tipo-item w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" data-item-index="${itemCount}" required>
+                        <select name="items[${itemCount}][tipo_item]" class="tipo-item tipo-select w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" data-item-index="${itemCount}" required>
                             <option value="">Seleccionar</option>
                             <option value="1">Bien</option>
                             <option value="2">Servicio</option>
                         </select>
+                        <p class="tipo-error text-xs text-red-600 mt-1 hidden">⚠️ Debe seleccionar un tipo</p>
                     </div>
-
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Código *</label>
-                        <div class="relative">
-                            <input type="text" name="items[${itemCount}][codigo]" data-item-index="${itemCount}" class="codigo-producto w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
-                            <div class="loader-producto hidden absolute right-3 top-3">
-                                <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                            </div>
-                        </div>
-                        <p class="resultado-producto text-xs mt-1 hidden"></p>
+                        <input type="text" name="items[${itemCount}][codigo]" class="codigo-item w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+                        <p class="codigo-error text-xs text-red-600 mt-1 hidden">⚠️ El código no puede estar vacío</p>
                     </div>
-
                     <div class="md:col-span-2">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Descripción *</label>
-                        <input type="text" name="items[${itemCount}][descripcion]" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+                        <input type="text" name="items[${itemCount}][descripcion]" class="descripcion-item w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+                        <p class="descripcion-error text-xs text-red-600 mt-1 hidden">⚠️ La descripción no puede estar vacía</p>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Cantidad *</label>
                         <input type="number" step="1" name="items[${itemCount}][cantidad]" class="cantidad w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required min="1">
+                        <p class="cantidad-error text-xs text-red-600 mt-1 hidden">⚠️ Debe ser un número entero positivo (ej: 1, 2, 3...)</p>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Precio Unit. *</label>
                         <input type="number" step="0.01" name="items[${itemCount}][precio_unitario]" class="precio w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required min="0">
+                        <p class="precio-error text-xs text-red-600 mt-1 hidden">⚠️ El precio debe ser un número positivo</p>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Descuento</label>
                         <input type="number" step="0.01" name="items[${itemCount}][monto_descuento]" value="0" class="descuento w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" min="0">
-                    </div>
-                </div>
-                <button type="button" class="removeItem mt-2 text-red-500 hover:text-red-700 text-sm">Eliminar</button>
-            `;
-            container.appendChild(newItem);
-            
-            const tipoItemSelect = newItem.querySelector('.tipo-item');
-            const codigoInput = newItem.querySelector('.codigo-producto');
-            
-            // Listener para cambios en tipo_item
-            tipoItemSelect.addEventListener('change', function() {
-                aplicarLogicaTipo(this, codigoInput);
-            });
-            
-            // Si es edición inicial, setup búsqueda
-            setupProductSearch(codigoInput);
-            
-            itemCount++;
-            attachCalculateEvents();
-        });
-
-        // Aplicar lógica según el tipo seleccionado
-        function aplicarLogicaTipo(tipoSelect, codigoInput) {
-            const tipo = tipoSelect.value;
-            
-            if (tipo === '2') {
-                // SERVICIO: código auto-generado
-                const servicioCode = 'SERV-' + String(servicioCount).padStart(3, '0');
-                servicioCount++;
-                
-                codigoInput.value = servicioCode;
-                codigoInput.readOnly = true;
-                codigoInput.classList.add('bg-gray-200');
-                codigoInput.style.cursor = 'not-allowed';
-                
-                // Remover evento de búsqueda
-                codigoInput.removeEventListener('blur', function() {});
-            } else if (tipo === '1') {
-                // BIEN: código manual con búsqueda
-                codigoInput.value = '';
-                codigoInput.readOnly = false;
-                codigoInput.classList.remove('bg-gray-200');
-                codigoInput.style.cursor = 'auto';
-                
-                // Re-agregar búsqueda si no está
-                setupProductSearch(codigoInput);
-            }
-        }
-
-        // Eliminar item
-        document.addEventListener('click', function(e) {
-            if (e.target.classList.contains('removeItem')) {
-                e.target.closest('.item-row').remove();
-                calcularTotales();
-            }
-        });
-
-        // Setup del primer item (item 0)
-        const primerTipoItem = document.querySelector('select[name="items[0][tipo_item]"]');
-        const primerCodigoInput = document.querySelector('input[name="items[0][codigo]"]');
-        
-        if (primerTipoItem) {
-            primerTipoItem.addEventListener('change', function() {
-                aplicarLogicaTipo(this, primerCodigoInput);
-            });
-        }
-
-        if (primerCodigoInput) {
-            setupProductSearch(primerCodigoInput);
-        }
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Precio Unit. *</label>
-                        <input type="number" step="0.01" name="items[${itemCount}][precio_unitario]" class="precio w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required min="0">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Descuento</label>
-                        <input type="number" step="0.01" name="items[${itemCount}][monto_descuento]" value="0" class="descuento w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" min="0">
+                        <p class="descuento-error text-xs text-red-600 mt-1 hidden">⚠️ El descuento no puede ser mayor que el precio unitario</p>
                     </div>
                 </div>
                 <button type="button" class="removeItem mt-2 text-red-500 hover:text-red-700 text-sm">Eliminar</button>
@@ -429,39 +336,20 @@
             }
         });
 
-        // Calcular totales según fórmula del Ministerio de Hacienda
+        // Calcular totales para DTE-14 (SIN IVA - Sujeto Excluido)
         function calcularTotales() {
-            const precioIncluyeIva = document.getElementById('precioIncluyeIva').checked;
-            let subtotal = 0;
-            let totalIva = 0;
+            let total = 0;
             
             document.querySelectorAll('.item-row').forEach(row => {
                 const cantidad = parseFloat(row.querySelector('.cantidad').value) || 0;
                 const precio = parseFloat(row.querySelector('.precio').value) || 0;
                 const descuento = parseFloat(row.querySelector('.descuento').value) || 0;
                 
-                if (precioIncluyeIva) {
-                    // Precio INCLUYE IVA - Aplicar fórmula del MH: [(total)/1.13*0.13]
-                    const totalConIva = (cantidad * precio) - descuento;
-                    const ventaGravada = totalConIva / 1.13;
-                    const iva = ventaGravada * 0.13;
-                    
-                    subtotal += ventaGravada;
-                    totalIva += iva;
-                } else {
-                    // Precio NO incluye IVA
-                    const ventaGravada = (cantidad * precio) - descuento;
-                    const iva = ventaGravada * 0.13;
-                    
-                    subtotal += ventaGravada;
-                    totalIva += iva;
-                }
+                // Simple: cantidad * precio - descuento (SIN IVA)
+                const subtotal = (cantidad * precio) - descuento;
+                total += subtotal;
             });
             
-            const total = subtotal + totalIva;
-            
-            document.getElementById('subtotal').textContent = '$' + subtotal.toFixed(2);
-            document.getElementById('iva').textContent = '$' + totalIva.toFixed(2);
             document.getElementById('total').textContent = '$' + total.toFixed(2);
         }
 
@@ -470,8 +358,209 @@
                 input.removeEventListener('input', calcularTotales);
                 input.addEventListener('input', calcularTotales);
             });
-            
-            document.getElementById('precioIncluyeIva').addEventListener('change', calcularTotales);
+
+            // Agregar validaciones en tiempo real
+            attachFieldValidations();
+            attachDiscountValidation();
+        }
+
+        // Validaciones en tiempo real para campos de producto/servicio
+        function attachFieldValidations() {
+            document.querySelectorAll('.item-row').forEach(row => {
+                const tipoSelect = row.querySelector('.tipo-select');
+                const codigoInput = row.querySelector('.codigo-item');
+                const descripcionInput = row.querySelector('.descripcion-item');
+                const cantidadInput = row.querySelector('.cantidad');
+                const precioInput = row.querySelector('.precio');
+
+                const tipoError = row.querySelector('.tipo-error');
+                const codigoError = row.querySelector('.codigo-error');
+                const descripcionError = row.querySelector('.descripcion-error');
+                const cantidadError = row.querySelector('.cantidad-error');
+                const precioError = row.querySelector('.precio-error');
+
+                // Validar Tipo
+                if (tipoSelect) {
+                    tipoSelect.addEventListener('change', function() {
+                        if (this.value.trim() === '') {
+                            this.classList.add('border-red-500', 'bg-red-50');
+                            this.classList.remove('border-gray-300');
+                            tipoError.classList.remove('hidden');
+                        } else {
+                            this.classList.remove('border-red-500', 'bg-red-50');
+                            this.classList.add('border-gray-300');
+                            tipoError.classList.add('hidden');
+                        }
+                    });
+                }
+
+                // Validar Código
+                if (codigoInput) {
+                    codigoInput.addEventListener('blur', function() {
+                        if (this.value.trim() === '') {
+                            this.classList.add('border-red-500', 'bg-red-50');
+                            this.classList.remove('border-gray-300');
+                            codigoError.classList.remove('hidden');
+                        } else {
+                            this.classList.remove('border-red-500', 'bg-red-50');
+                            this.classList.add('border-gray-300');
+                            codigoError.classList.add('hidden');
+                        }
+                    });
+
+                    codigoInput.addEventListener('input', function() {
+                        if (this.value.trim() === '') {
+                            this.classList.add('border-red-500', 'bg-red-50');
+                            this.classList.remove('border-gray-300');
+                            codigoError.classList.remove('hidden');
+                        } else {
+                            this.classList.remove('border-red-500', 'bg-red-50');
+                            this.classList.add('border-gray-300');
+                            codigoError.classList.add('hidden');
+                        }
+                    });
+                }
+
+                // Validar Descripción
+                if (descripcionInput) {
+                    descripcionInput.addEventListener('blur', function() {
+                        if (this.value.trim() === '') {
+                            this.classList.add('border-red-500', 'bg-red-50');
+                            this.classList.remove('border-gray-300');
+                            descripcionError.classList.remove('hidden');
+                        } else {
+                            this.classList.remove('border-red-500', 'bg-red-50');
+                            this.classList.add('border-gray-300');
+                            descripcionError.classList.add('hidden');
+                        }
+                    });
+
+                    descripcionInput.addEventListener('input', function() {
+                        if (this.value.trim() === '') {
+                            this.classList.add('border-red-500', 'bg-red-50');
+                            this.classList.remove('border-gray-300');
+                            descripcionError.classList.remove('hidden');
+                        } else {
+                            this.classList.remove('border-red-500', 'bg-red-50');
+                            this.classList.add('border-gray-300');
+                            descripcionError.classList.add('hidden');
+                        }
+                    });
+                }
+
+                // Validar Cantidad (entero positivo)
+                if (cantidadInput) {
+                    cantidadInput.addEventListener('input', function() {
+                        const valor = this.value;
+                        const numero = parseFloat(valor);
+
+                        // Verificar si es vacío o no es número
+                        if (valor === '' || isNaN(numero)) {
+                            this.classList.add('border-red-500', 'bg-red-50');
+                            this.classList.remove('border-gray-300');
+                            cantidadError.classList.remove('hidden');
+                            return;
+                        }
+
+                        // Verificar si es positivo
+                        if (numero <= 0) {
+                            this.classList.add('border-red-500', 'bg-red-50');
+                            this.classList.remove('border-gray-300');
+                            cantidadError.classList.remove('hidden');
+                            return;
+                        }
+
+                        // Verificar si es entero
+                        if (!Number.isInteger(numero)) {
+                            this.classList.add('border-red-500', 'bg-red-50');
+                            this.classList.remove('border-gray-300');
+                            cantidadError.classList.remove('hidden');
+                            return;
+                        }
+
+                        // Si es válido
+                        this.classList.remove('border-red-500', 'bg-red-50');
+                        this.classList.add('border-gray-300');
+                        cantidadError.classList.add('hidden');
+                        calcularTotales();
+                    });
+                }
+
+                // Validar Precio (número positivo)
+                if (precioInput) {
+                    precioInput.addEventListener('input', function() {
+                        const valor = this.value;
+                        const numero = parseFloat(valor);
+
+                        // Verificar si es vacío o no es número
+                        if (valor === '' || isNaN(numero)) {
+                            this.classList.add('border-red-500', 'bg-red-50');
+                            this.classList.remove('border-gray-300');
+                            precioError.classList.remove('hidden');
+                            return;
+                        }
+
+                        // Verificar si es positivo
+                        if (numero <= 0) {
+                            this.classList.add('border-red-500', 'bg-red-50');
+                            this.classList.remove('border-gray-300');
+                            precioError.classList.remove('hidden');
+                            return;
+                        }
+
+                        // Si es válido
+                        this.classList.remove('border-red-500', 'bg-red-50');
+                        this.classList.add('border-gray-300');
+                        precioError.classList.add('hidden');
+                        calcularTotales();
+                    });
+                }
+            });
+        }
+
+        // Validar que el descuento no sea mayor que el precio unitario
+        function attachDiscountValidation() {
+            document.querySelectorAll('.item-row').forEach(row => {
+                const precioInput = row.querySelector('.precio');
+                const descuentoInput = row.querySelector('.descuento');
+                const errorMsg = row.querySelector('.descuento-error');
+
+                function validateDiscount() {
+                    const precio = parseFloat(precioInput.value) || 0;
+                    const descuento = parseFloat(descuentoInput.value) || 0;
+
+                    // Validación 1: Verificar que el descuento sea positivo
+                    if (descuento < 0) {
+                        descuentoInput.classList.add('border-red-500', 'bg-red-50');
+                        descuentoInput.classList.remove('border-gray-300');
+                        errorMsg.classList.remove('hidden');
+                        errorMsg.textContent = '⚠️ El descuento debe ser un número positivo o cero';
+                        return false;
+                    }
+
+                    // Validación 2: Verificar que no sea mayor que el precio
+                    if (descuento > precio) {
+                        // Descuento inválido
+                        descuentoInput.classList.add('border-red-500', 'bg-red-50');
+                        descuentoInput.classList.remove('border-gray-300');
+                        errorMsg.classList.remove('hidden');
+                        errorMsg.textContent = '⚠️ El descuento no puede ser mayor que el precio unitario';
+                        return false;
+                    } else {
+                        // Descuento válido
+                        descuentoInput.classList.remove('border-red-500', 'bg-red-50');
+                        descuentoInput.classList.add('border-gray-300');
+                        errorMsg.classList.add('hidden');
+                        return true;
+                    }
+                }
+
+                // Validar cuando cambia el precio o el descuento
+                if (precioInput && descuentoInput) {
+                    precioInput.addEventListener('input', validateDiscount);
+                    descuentoInput.addEventListener('input', validateDiscount);
+                }
+            });
         }
 
         attachCalculateEvents();
@@ -620,6 +709,103 @@
                 numDocInput.focus();
                 return false;
             }
+
+            // Validar items de productos/servicios
+            let erroresItems = [];
+
+            document.querySelectorAll('.item-row').forEach((row, index) => {
+                const tipoItem = row.querySelector('.tipo-select').value.trim();
+                const codigo = row.querySelector('.codigo-item').value.trim();
+                const descripcion = row.querySelector('.descripcion-item').value.trim();
+                const cantidad = row.querySelector('.cantidad').value;
+                const precio = row.querySelector('.precio').value;
+                const descuento = parseFloat(row.querySelector('.descuento').value) || 0;
+
+                let errorItem = `Item ${index + 1}:`;
+                let tieneError = false;
+
+                // Validar campos vacíos
+                if (tipoItem === '') {
+                    errorItem += '\n  - Debe seleccionar un tipo (Bien/Servicio)';
+                    tieneError = true;
+                }
+                if (codigo === '') {
+                    errorItem += '\n  - El código no puede estar vacío';
+                    tieneError = true;
+                }
+                if (descripcion === '') {
+                    errorItem += '\n  - La descripción no puede estar vacía';
+                    tieneError = true;
+                }
+
+                // Validar cantidad (entero positivo)
+                if (cantidad === '' || isNaN(cantidad)) {
+                    errorItem += '\n  - La cantidad debe ser un número';
+                    tieneError = true;
+                } else if (parseFloat(cantidad) <= 0) {
+                    errorItem += '\n  - La cantidad debe ser positiva';
+                    tieneError = true;
+                } else if (!Number.isInteger(parseFloat(cantidad))) {
+                    errorItem += '\n  - La cantidad debe ser un número entero (sin decimales)';
+                    tieneError = true;
+                }
+
+                // Validar precio (positivo)
+                if (precio === '' || isNaN(precio)) {
+                    errorItem += '\n  - El precio debe ser un número';
+                    tieneError = true;
+                } else if (parseFloat(precio) <= 0) {
+                    errorItem += '\n  - El precio debe ser positivo';
+                    tieneError = true;
+                }
+
+                // Validar descuento (positivo y no mayor que precio)
+                if (descuento < 0) {
+                    errorItem += '\n  - El descuento debe ser positivo o cero';
+                    tieneError = true;
+                } else if (parseFloat(precio) > 0 && descuento > parseFloat(precio)) {
+                    errorItem += '\n  - El descuento no puede ser mayor que el precio unitario';
+                    tieneError = true;
+                }
+
+                if (tieneError) {
+                    erroresItems.push(errorItem);
+                }
+            });
+
+            if (erroresItems.length > 0) {
+                e.preventDefault();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Errores en los Productos/Servicios',
+                    html: '<pre style="text-align: left; font-size: 0.8rem;">' + erroresItems.join('\n\n') + '</pre>'
+                });
+                return false;
+            }
+
+            // Validar que al menos haya un item
+            if (document.querySelectorAll('.item-row').length === 0) {
+                e.preventDefault();
+                Swal.fire('Error', 'Debe agregar al menos un producto o servicio', 'error');
+                return false;
+            }
+
+            // Confirmación antes de enviar
+            e.preventDefault();
+            Swal.fire({
+                title: '¿Estás seguro?',
+                text: "Estás a punto de emitir una Factura de Sujeto Excluido. Verifica que todos los datos sean correctos.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Sí, emitir documento',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    this.submit();
+                }
+            });
         });
 
         // Función para formatear teléfono con guion 7777-7777
@@ -640,6 +826,5 @@
             input.value = valor;
         }
     </script>
-    <script src="{{ asset('js/catalogo-municipios.js') }}"></script>
 </body>
 </html>

@@ -455,9 +455,9 @@
                     </div>
                     @endif
 
-                    @if($factura->total_iva > 0)
+                    @if($factura->total_iva > 0 && $factura->tipo_dte !== '01' && $factura->tipo_dte !== '14')
                     <div class="total-row">
-                        <span class="total-label">IVA ({{ $factura->tipo_dte == '01' ? '11.5%' : '13%' }}):</span>
+                        <span class="total-label">IVA (13%):</span>
                         <span class="total-value">${{ number_format($factura->total_iva, 2) }}</span>
                     </div>
                     @endif

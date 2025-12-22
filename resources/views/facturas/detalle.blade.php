@@ -327,7 +327,15 @@
                                     <td class="px-4 py-3 text-sm text-right text-gray-700">{{ number_format($item->cantidad, 2) }}</td>
                                     <td class="px-4 py-3 text-sm text-right text-gray-700">${{ number_format($item->precio_unitario, 2) }}</td>
                                     <td class="px-4 py-3 text-sm text-right text-gray-700">${{ number_format($item->monto_descuento, 2) }}</td>
-                                    <td class="px-4 py-3 text-sm text-right font-semibold text-gray-700">${{ number_format($item->venta_gravada, 2) }}</td>
+                                    <td class="px-4 py-3 text-sm text-right font-semibold text-gray-700">
+                                        @if($factura->tipo_dte === '01' || $factura->tipo_dte === '14')
+                                            {{-- DTE-01 y DTE-14: Mostrar total CON IVA (lo que se cobra) --}}
+                                            ${{ number_format(($item->cantidad * $item->precio_unitario) - $item->monto_descuento, 2) }}
+                                        @else
+                                            {{-- DTE-03 y otros: Mostrar venta_gravada (sin IVA) --}}
+                                            ${{ number_format($item->venta_gravada, 2) }}
+                                        @endif
+                                    </td>
                                 </tr>
                                 @endforeach
                             </tbody>
@@ -350,16 +358,20 @@
                                     <span class="font-semibold text-red-600">-${{ number_format($factura->total_descuento, 2) }}</span>
                                 </div>
                                 @endif
+                                
+                                @if($factura->tipo_dte !== '01' && $factura->tipo_dte !== '14')
                                 <div class="flex justify-between">
                                     <span class="text-gray-600">IVA
                                         @if($factura->tipo_dte === '03' || $factura->tipo_dte === '05')
                                             (13%)
                                         @else
-                                            (13% .)
+                                            (13%)
                                         @endif:
                                     </span>
                                     <span class="font-semibold">${{ number_format($factura->total_iva, 2) }}</span>
                                 </div>
+                                @endif
+
                                 <div class="flex justify-between text-xl font-bold text-blue-600 border-t pt-2">
                                     <span>TOTAL:</span>
                                     <span>${{ number_format($factura->total_pagar, 2) }}</span>

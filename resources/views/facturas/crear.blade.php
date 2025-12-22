@@ -6,6 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Generar Factura - DTE El Salvador</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="{{ asset('js/catalogo-municipios.js') }}"></script>
 </head>
 <body class="bg-gray-100">
@@ -265,7 +266,7 @@
                                 <span class="text-gray-600">Subtotal (sin IVA):</span>
                                 <span class="font-semibold" id="subtotal">$0.00</span>
                             </div>
-                            <div class="flex justify-between">
+                            <div class="flex justify-between" style="display: none">
                                 <span class="text-gray-600">IVA (13%):</span>
                                 <span class="font-semibold" id="iva">$0.00</span>
                             </div>
@@ -1076,6 +1077,27 @@
             } else {
             }
         }, true); // Usar captura en lugar de burbuja
+
+        // Confirmación final
+        document.getElementById('facturaForm').addEventListener('submit', function(e) {
+            if (e.defaultPrevented) return; // Si ya hubo error, no mostrar confirmación
+
+            e.preventDefault(); // Detener envío
+            Swal.fire({
+                title: '¿Estás seguro?',
+                text: "Estás a punto de emitir una Factura. Verifica que todos los datos sean correctos.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Sí, emitir factura',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    this.submit();
+                }
+            });
+        });
     </script>
 </body>
 </html>
