@@ -153,7 +153,8 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
     public function calcularTotalesItemsConTasa(array $items, float $tasaIva, bool $precioIncluyeIva = true, string $tipoDte = '01'): array
     {
         // Separar lógica según tipo de DTE para evitar conflictos
-        if ($tipoDte === '03') {
+        // DTE-03 (CCF) y DTE-05 (Nota de Crédito) deben desglosar IVA
+        if ($tipoDte === '03' || $tipoDte === '05') {
             return $this->calcularTotalesCCF($items, $tasaIva, $precioIncluyeIva);
         }
 
@@ -1322,7 +1323,12 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
             ];
         }
 
-        $totalPagar = $totalCompra;
+        // CÁLCULO DE RETENCIÓN (10% sobre el total de la compra)
+        // En Sujeto Excluido, el emisor retiene el 10% de Renta
+        $reteRenta = round($totalCompra * 0.10, 2);
+
+        // Total a pagar es la compra menos la retención
+        $totalPagar = round($totalCompra - $reteRenta, 2);
         $totalLetras = $this->numeroALetras($totalPagar);
 
         // Formatear número de documento del receptor (DTE-14 requiere sin guión)
@@ -1390,9 +1396,9 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
                     'totalCompra' => round($totalCompra, 2),
                     'descu' => round($totalDescuento, 2),
                     'totalDescu' => round($totalDescuento, 2),
-                    'subTotal' => round($totalCompra - $totalDescuento, 2),
+                    'subTotal' => round($totalCompra, 2), // totalCompra ya es neto
                     'ivaRete1' => 0,
-                    'reteRenta' => 0,
+                    'reteRenta' => $reteRenta, // Retención del 10%
                     'totalPagar' => round($totalPagar, 2),
                     'totalLetras' => $totalLetras,
                     'condicionOperacion' => (int) ($datos['condicion_operacion'] ?? 1),
@@ -1419,6 +1425,7 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
                 'total_descuento' => $totalDescuento,
                 'sub_total' => $totalCompra,
                 'total_iva' => 0.0, // SIEMPRE 0
+                'retencion_renta' => $reteRenta,
                 'monto_total_operacion' => $totalPagar,
                 'total_pagar' => $totalPagar,
             ],

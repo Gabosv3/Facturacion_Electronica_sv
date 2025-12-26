@@ -78,8 +78,17 @@
 
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Número de Documento *</label>
-                                <input type="text" name="receptor_num_documento" placeholder="DUI: 12345678-9 / NIT: 1234-567890-123-4" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required value="{{ old('receptor_num_documento') }}">
+                                <div class="relative">
+                                    <input type="text" id="receptor_num_documento" name="receptor_num_documento" placeholder="DUI: 12345678-9 / NIT: 1234-567890-123-4" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required value="{{ old('receptor_num_documento') }}">
+                                    <div id="busquedaLoader" style="display:none;" class="absolute right-3 top-3">
+                                        <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                    </div>
+                                </div>
                                 <p class="text-xs text-gray-500 mt-1">DUI: 8 dígitos-1 dígito / NIT: 14 dígitos con guiones</p>
+                                <p id="resultadoBusqueda" class="text-xs mt-1 hidden"></p>
                             </div>
 
                             <div class="md:col-span-2">
@@ -177,7 +186,16 @@
 
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-2">Código *</label>
-                                        <input type="text" name="items[0][codigo]" class="codigo-item w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+                                        <div class="relative">
+                                            <input type="text" name="items[0][codigo]" class="codigo-item w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+                                            <div class="loader-producto hidden absolute right-3 top-3">
+                                                <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                </svg>
+                                            </div>
+                                        </div>
+                                        <p class="resultado-producto text-xs mt-1 hidden"></p>
                                         <p class="codigo-error text-xs text-red-600 mt-1 hidden">⚠️ El código no puede estar vacío</p>
                                     </div>
 
@@ -222,7 +240,7 @@
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Condición *</label>
                                 <select name="condicion_operacion" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
                                     <option value="1">Contado</option>
-                                    <option value="2">Crédito</option>
+                                    <!-- <option value="2">Crédito</option> -->
                                     <option value="3">Otro</option>
                                 </select>
                             </div>
@@ -254,8 +272,16 @@
                     <div class="bg-blue-50 p-6 rounded-lg mb-6">
                         <h3 class="text-lg font-semibold text-gray-700 mb-4">Resumen</h3>
                         <div class="space-y-2">
+                            <div class="flex justify-between text-gray-600">
+                                <span>Subtotal:</span>
+                                <span id="subtotal">$0.00</span>
+                            </div>
+                            <div class="flex justify-between text-red-600">
+                                <span>(-) Retención Renta (10%):</span>
+                                <span id="retencion">$0.00</span>
+                            </div>
                             <div class="flex justify-between text-xl font-bold text-blue-600 border-t pt-2">
-                                <span>Total (sin IVA):</span>
+                                <span>Total a Pagar:</span>
                                 <span id="total">$0.00</span>
                             </div>
                         </div>
@@ -277,6 +303,30 @@
 
     <script>
         let itemCount = 1;
+        let servicioCount = 1;
+        
+        // Obtener token de autenticación del servidor
+        const authToken = @json(session('auth_token'));
+        const motorApiUrl = @json(config('services.motor_api.url'));
+
+        // Función para manejar errores de autenticación (Token expirado)
+        function handleAuthError(error) {
+            if (error.message.includes('HTTP 401') || error.message.includes('Token expirado')) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Sesión expirada',
+                    text: 'Tu sesión de conexión con el API ha expirado. Por favor recarga la página.',
+                    confirmButtonText: 'Recargar página',
+                    allowOutsideClick: false
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.reload();
+                    }
+                });
+                return true;
+            }
+            return false;
+        }
 
         // Agregar nuevo item
         document.getElementById('addItem').addEventListener('click', function() {
@@ -297,7 +347,16 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Código *</label>
-                        <input type="text" name="items[${itemCount}][codigo]" class="codigo-item w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+                        <div class="relative">
+                            <input type="text" name="items[${itemCount}][codigo]" class="codigo-item w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+                            <div class="loader-producto hidden absolute right-3 top-3">
+                                <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <p class="resultado-producto text-xs mt-1 hidden"></p>
                         <p class="codigo-error text-xs text-red-600 mt-1 hidden">⚠️ El código no puede estar vacío</p>
                     </div>
                     <div class="md:col-span-2">
@@ -324,9 +383,52 @@
                 <button type="button" class="removeItem mt-2 text-red-500 hover:text-red-700 text-sm">Eliminar</button>
             `;
             container.appendChild(newItem);
+            
+            // Setup búsqueda y lógica de tipo
+            const codigoInput = newItem.querySelector('.codigo-item');
+            const tipoSelect = newItem.querySelector('.tipo-item');
+            
+            setupProductSearch(codigoInput);
+            
+            tipoSelect.addEventListener('change', function() {
+                aplicarLogicaTipo(this, codigoInput);
+            });
+            
             itemCount++;
             attachCalculateEvents();
         });
+
+        // Aplicar lógica según el tipo seleccionado
+        function aplicarLogicaTipo(tipoSelect, codigoInput) {
+            const tipo = tipoSelect.value;
+            
+            if (tipo === '2') {
+                // SERVICIO: código auto-generado
+                const servicioCode = 'SERV-' + String(servicioCount).padStart(3, '0');
+                servicioCount++;
+                
+                codigoInput.value = servicioCode;
+                codigoInput.readOnly = true;
+                codigoInput.classList.add('bg-gray-200');
+                codigoInput.style.cursor = 'not-allowed';
+                
+                // Remover evento de búsqueda (clonar para limpiar listeners)
+                const newCodigoInput = codigoInput.cloneNode(true);
+                codigoInput.parentNode.replaceChild(newCodigoInput, codigoInput);
+                // Re-asignar referencia para que funcione el resto del código si fuera necesario
+                // Pero en este caso, como es readOnly, no necesitamos re-asignar setupProductSearch
+                
+            } else if (tipo === '1') {
+                // BIEN: código manual con búsqueda
+                codigoInput.value = '';
+                codigoInput.readOnly = false;
+                codigoInput.classList.remove('bg-gray-200');
+                codigoInput.style.cursor = 'auto';
+                
+                // Re-agregar búsqueda
+                setupProductSearch(codigoInput);
+            }
+        }
 
         // Eliminar item
         document.addEventListener('click', function(e) {
@@ -338,7 +440,7 @@
 
         // Calcular totales para DTE-14 (SIN IVA - Sujeto Excluido)
         function calcularTotales() {
-            let total = 0;
+            let subtotalGeneral = 0;
             
             document.querySelectorAll('.item-row').forEach(row => {
                 const cantidad = parseFloat(row.querySelector('.cantidad').value) || 0;
@@ -346,11 +448,24 @@
                 const descuento = parseFloat(row.querySelector('.descuento').value) || 0;
                 
                 // Simple: cantidad * precio - descuento (SIN IVA)
-                const subtotal = (cantidad * precio) - descuento;
-                total += subtotal;
+                const subtotalItem = (cantidad * precio) - descuento;
+                subtotalGeneral += subtotalItem;
             });
+
+            // Calcular Retención del 10% sobre el subtotal
+            const retencionRenta = subtotalGeneral * 0.10;
+            const totalPagar = subtotalGeneral - retencionRenta;
             
-            document.getElementById('total').textContent = '$' + total.toFixed(2);
+            // Actualizar DOM
+            if(document.getElementById('subtotal')) {
+                document.getElementById('subtotal').textContent = '$' + subtotalGeneral.toFixed(2);
+            }
+            
+            if(document.getElementById('retencion')) {
+                document.getElementById('retencion').textContent = '$' + retencionRenta.toFixed(2);
+            }
+
+            document.getElementById('total').textContent = '$' + totalPagar.toFixed(2);
         }
 
         function attachCalculateEvents() {
@@ -824,6 +939,245 @@
             }
 
             input.value = valor;
+        }
+
+        // ==========================================
+        // Búsqueda de cliente por DUI/NIT
+        // ==========================================
+        const docInput = document.getElementById('receptor_num_documento');
+        const busquedaLoader = document.getElementById('busquedaLoader');
+        const resultadoBusqueda = document.getElementById('resultadoBusqueda');
+        let timeoutBusqueda;
+
+        if (docInput) {
+            docInput.addEventListener('blur', function() {
+                clearTimeout(timeoutBusqueda);
+                const documento = this.value.trim();
+
+                if (!documento || documento.length < 8) {
+                    resultadoBusqueda.classList.add('hidden');
+                    return;
+                }
+
+                busquedaCliente(documento);
+            });
+        }
+
+        function busquedaCliente(documento) {
+            busquedaLoader.style.display = 'block';
+            resultadoBusqueda.classList.add('hidden');
+
+            // Limpiar caracteres especiales del documento
+            const documentoLimpio = documento.replace(/[^0-9]/g, '');
+
+            // Validar que no esté vacío después de limpiar
+            if (!documentoLimpio || documentoLimpio.length < 8) {
+                busquedaLoader.style.display = 'none';
+                resultadoBusqueda.textContent = '✗ Documento inválido';
+                resultadoBusqueda.className = 'text-xs text-red-600 mt-1 font-medium';
+                resultadoBusqueda.classList.remove('hidden');
+                return;
+            }
+
+            // Consumir el endpoint de Motors González desde .env con autenticación
+            fetch(`${motorApiUrl}/clientes/buscar/${documentoLimpio}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${authToken}`,
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => {
+                // Verificar si la respuesta es válida
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                busquedaLoader.style.display = 'none';
+
+                // La API puede devolver data directamente o dentro de data.data
+                const cliente = data.data || data;
+
+                // Verificar si hay datos del cliente
+                if (cliente && cliente.nombre) {
+                    // Rellenar nombre completo (nombre + apellido)
+                    let nombreCompleto = cliente.nombre || '';
+                    if (cliente.apellido) {
+                        nombreCompleto += ' ' + cliente.apellido;
+                    }
+                    if (nombreCompleto) {
+                        document.querySelector('input[name="receptor_nombre"]').value = nombreCompleto.toUpperCase();
+                    }
+
+                    // Rellenar teléfono
+                    if (cliente.telefono) {
+                        document.querySelector('input[name="receptor_telefono"]').value = cliente.telefono;
+                    }
+
+                    // Rellenar correo
+                    if (cliente.email) {
+                        document.querySelector('input[name="receptor_correo"]').value = cliente.email;
+                    }
+
+                    // Rellenar dirección
+                    if (cliente.direccion) {
+                        document.querySelector('textarea[name="receptor_complemento"]').value = cliente.direccion;
+                    }
+
+                    // Rellenar departamento si es posible
+                    if (cliente.departamento) {
+                        const depSelect = document.querySelector('select[name="receptor_departamento"]');
+                        // Intentar mapear el código del departamento
+                        for (let option of depSelect.options) {
+                            if (option.textContent.toLowerCase().includes(cliente.departamento.toLowerCase())) {
+                                depSelect.value = option.value;
+                                // Disparar evento change para cargar municipios
+                                depSelect.dispatchEvent(new Event('change'));
+                                break;
+                            }
+                        }
+                    }
+
+                    resultadoBusqueda.textContent = '✓ Datos del cliente cargados correctamente';
+                    resultadoBusqueda.className = 'text-xs text-green-600 mt-1 font-medium';
+                    resultadoBusqueda.classList.remove('hidden');
+
+                    // Limpiar mensaje después de 3 segundos
+                    setTimeout(() => {
+                        resultadoBusqueda.classList.add('hidden');
+                    }, 3000);
+                } else {
+                    // Si no hay datos, mostrar el mensaje de error del servidor
+                    const errorMsg = data.message || 'Cliente no encontrado';
+                    resultadoBusqueda.textContent = '✗ ' + errorMsg;
+                    resultadoBusqueda.className = 'text-xs text-orange-600 mt-1 font-medium';
+                    resultadoBusqueda.classList.remove('hidden');
+                }
+            })
+            .catch(error => {
+                busquedaLoader.style.display = 'none';
+                
+                // Mostrar más detalles del error
+                let errorMsg = 'Error al buscar cliente';
+                if (error.message.includes('HTTP 401')) {
+                    errorMsg = 'Token expirado o inválido';
+                } else if (error.message.includes('HTTP 404')) {
+                    errorMsg = 'Cliente no encontrado';
+                } else if (error.message.includes('HTTP 500')) {
+                    errorMsg = 'Error del servidor de Motors González';
+                }
+                
+                resultadoBusqueda.textContent = '✗ ' + errorMsg;
+                resultadoBusqueda.className = 'text-xs text-red-600 mt-1 font-medium';
+                resultadoBusqueda.classList.remove('hidden');
+            });
+        }
+
+        // ==========================================
+        // Búsqueda de productos por código
+        // ==========================================
+        function setupProductSearch(codigoInput) {
+            codigoInput.addEventListener('blur', function() {
+                const codigo = this.value.trim();
+                if (!codigo) {
+                    return;
+                }
+                buscarProducto(codigo, this);
+            });
+        }
+
+        function buscarProducto(codigo, inputElement) {
+            const itemRow = inputElement.closest('.item-row');
+            if (!itemRow) {
+                return;
+            }
+            
+            const indexAttr = inputElement.getAttribute('data-item-index');
+            const loader = itemRow.querySelector('.loader-producto');
+            const resultadoMsg = itemRow.querySelector('.resultado-producto');
+
+            if (loader) loader.classList.remove('hidden');
+            if (resultadoMsg) resultadoMsg.classList.add('hidden');
+
+            fetch(`${motorApiUrl}/productos/buscar/${codigo}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${authToken}`,
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (loader) loader.classList.add('hidden');
+                const producto = data.data || data;
+
+                if (producto && producto.codigo) {
+                    // Capturar producto_id si existe
+                    if (producto.id || producto.producto_id) {
+                        const productoId = producto.id || producto.producto_id;
+                        const productoIdInput = itemRow.querySelector('.producto-id');
+                        if (productoIdInput) {
+                            productoIdInput.value = productoId;
+                        }
+                    }
+
+                    inputElement.value = producto.codigo;
+                    
+                    const descInput = itemRow.querySelector('.descripcion-item');
+                    if (descInput) {
+                        descInput.value = producto.nombre_completo || producto.nombre || '';
+                    }
+
+                    const precioInput = itemRow.querySelector('.precio');
+                    if (precioInput && producto.Precio_unitario) {
+                        precioInput.value = producto.Precio_unitario;
+                    }
+
+                    calcularTotales();
+                    
+                    if (resultadoMsg) {
+                        resultadoMsg.textContent = '✓ Producto encontrado';
+                        resultadoMsg.className = 'resultado-producto text-xs mt-1 font-medium text-green-600';
+                        resultadoMsg.classList.remove('hidden');
+                        setTimeout(() => resultadoMsg.classList.add('hidden'), 3000);
+                    }
+                } else {
+                    // NO LIMPIAR EL CAMPO, MOSTRAR MENSAJE TEMPORAL
+                    if (resultadoMsg) {
+                        resultadoMsg.textContent = '⚠️ Producto no encontrado (ingrese datos manualmente)';
+                        resultadoMsg.className = 'resultado-producto text-xs mt-1 font-medium text-orange-600';
+                        resultadoMsg.classList.remove('hidden');
+                    }
+                }
+            })
+            .catch(error => {
+                if (loader) loader.classList.add('hidden');
+                // NO LIMPIAR EL CAMPO, MOSTRAR ERROR
+                if (resultadoMsg) {
+                    resultadoMsg.textContent = '⚠️ Error al buscar producto';
+                    resultadoMsg.className = 'resultado-producto text-xs mt-1 font-medium text-red-600';
+                    resultadoMsg.classList.remove('hidden');
+                }
+            });
+        }
+
+        // Setup inicial
+        const primerCodigoInput = document.querySelector('.codigo-item');
+        const primerTipoSelect = document.querySelector('.tipo-item');
+        
+        setupProductSearch(primerCodigoInput);
+        
+        if (primerTipoSelect) {
+            primerTipoSelect.addEventListener('change', function() {
+                aplicarLogicaTipo(this, primerCodigoInput);
+            });
         }
     </script>
 </body>

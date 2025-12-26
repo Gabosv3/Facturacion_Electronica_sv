@@ -372,6 +372,18 @@
                                 </div>
                                 @endif
 
+                                @if($factura->tipo_dte === '14')
+                                    @php
+                                        $retencionRenta = $factura->dte_json['dteJson']['resumen']['reteRenta'] ?? 0;
+                                    @endphp
+                                    @if($retencionRenta > 0)
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">(-) Retención Renta (10%):</span>
+                                        <span class="font-semibold text-red-600">-${{ number_format($retencionRenta, 2) }}</span>
+                                    </div>
+                                    @endif
+                                @endif
+
                                 <div class="flex justify-between text-xl font-bold text-blue-600 border-t pt-2">
                                     <span>TOTAL:</span>
                                     <span>${{ number_format($factura->total_pagar, 2) }}</span>

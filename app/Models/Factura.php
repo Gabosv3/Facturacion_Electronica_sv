@@ -197,52 +197,60 @@ class Factura extends Model
      * @param int $size Tamaño del QR en píxeles (default: 200)
      * @return string|null Base64 del código QR o null si falla
      */
+    /**
+     * Genera código QR en base64 usando librería local SimpleQRCode (instalada en composer.json)
+     * 
+     * @param int $size Tamaño del QR en píxeles (default: 200)
+     * @return string|null Base64 del código QR o null si falla
+     */
     public function getQrCodeLocalBase64(int $size = 200): ?string
     {
         try {
-            // Verificar si la librería está disponible
-            if (!class_exists('Endroid\QrCode\QrCode')) {
+            // Usar SimpleQRCode que está en composer.json
+            if (!class_exists('SimpleSoftwareIO\QrCode\Facades\QrCode')) {
                 return null;
             }
 
-            $qrCode = new \Endroid\QrCode\QrCode(
-                data: $this->getUrlConsultaPublica(),
-                size: $size,
-                margin: 10,
-                encoding: new \Endroid\QrCode\Encoding\Encoding('UTF-8'),
-            );
+            $qrData = \SimpleSoftwareIO\QrCode\Facades\QrCode::format('png')
+                ->size($size)
+                ->margin(1)
+                ->generate($this->getUrlConsultaPublica());
 
-            $writer = new \Endroid\QrCode\Writer\PngWriter();
-            $result = $writer->write($qrCode);
-            $dataUri = $result->getDataUri();
-
-            return str_replace('data:image/png;base64,', '', $dataUri);
+            return base64_encode($qrData);
         } catch (\Exception $e) {
-            \Log::error('Error generando QR code local: ' . $e->getMessage());
+            \Log::error('Error generando QR code local (SimpleQRCode): ' . $e->getMessage());
             return null;
         }
     }
 
     /**
-     * Genera código QR en base64 usando Chart.js Google Charts API
-     * Esta es una alternativa que genera el QR en base64
+     * Genera código QR en base64 usando API externa como fallback
      *
      * @param int $size Tamaño del QR en píxeles (default: 200)
-     * @return string|null Base64 del código QR o null si falla
+     * @return string|null Base64 del código QR (SOLO el string base64)
      */
     public function getQrCodeBase64(int $size = 200): ?string
     {
         try {
             $url = $this->getQrCodeUrl($size);
-            $imageData = @file_get_contents($url);
+            
+            // Usar Guzzle o file_get_contents
+            $ctx = stream_context_create([
+                "http" => [
+                    "timeout" => 5,
+                    "ignore_errors" => true
+                ]
+            ]);
+            
+            $imageData = @file_get_contents($url, false, $ctx);
 
-            if ($imageData === false) {
+            if ($imageData === false || empty($imageData)) {
                 return null;
             }
 
-            return 'data:image/png;base64,' . base64_encode($imageData);
+            return base64_encode($imageData);
         } catch (\Exception $e) {
-            \Log::error('Error generando QR code base64: ' . $e->getMessage());
+            \Log::error('Error generando QR code base64 (API): ' . $e->getMessage());
             return null;
         }
     }

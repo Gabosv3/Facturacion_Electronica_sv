@@ -323,7 +323,7 @@
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Condición de Operación *</label>
                                 <select name="condicion_operacion" class="w-full border border-gray-300 rounded-lg px-4 py-2" required>
                                     <option value="1">Contado</option>
-                                    <option value="2">Crédito</option>
+                                    <!-- <option value="2">Crédito</option> -->
                                     <option value="3">Otro</option>
                                 </select>
                             </div>
@@ -368,11 +368,31 @@
 
     <script>
         let itemCount = 1;
+        let servicioCount = 1;
         let currentFacturaItems = [];
         
         // Obtener token de autenticación del servidor
         const authToken = @json(session('auth_token'));
         const motorApiUrl = @json(config('services.motor_api.url'));
+
+        // Función para manejar errores de autenticación (Token expirado)
+        function handleAuthError(error) {
+            if (error.message.includes('HTTP 401') || error.message.includes('Token expirado')) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Sesión expirada',
+                    text: 'Tu sesión de conexión con el API ha expirado. Por favor recarga la página.',
+                    confirmButtonText: 'Recargar página',
+                    allowOutsideClick: false
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.reload();
+                    }
+                });
+                return true;
+            }
+            return false;
+        }
 
         // Auto-llenar datos del receptor cuando se selecciona un documento
         document.getElementById('documentoRelacionado')?.addEventListener('change', function() {
@@ -624,7 +644,10 @@
             
             // Show loader if exists
             const loader = inputElement.parentElement.querySelector('.loader-producto');
+            const resultadoMsg = itemRow.querySelector('.resultado-producto');
+
             if(loader) loader.classList.remove('hidden');
+            if(resultadoMsg) resultadoMsg.classList.add('hidden');
 
             fetch(`${motorApiUrl}/productos/buscar/${codigo}`, {
                 method: 'GET',
@@ -658,11 +681,31 @@
                     
                     // Trigger validation/calculation if needed
                     validarCampoItem(inputElement);
+
+                    if (resultadoMsg) {
+                        resultadoMsg.textContent = '✓ Producto encontrado';
+                        resultadoMsg.className = 'resultado-producto text-xs mt-1 font-medium text-green-600';
+                        resultadoMsg.classList.remove('hidden');
+                        setTimeout(() => resultadoMsg.classList.add('hidden'), 3000);
+                    }
+                } else {
+                    // NO LIMPIAR EL CAMPO, MOSTRAR MENSAJE TEMPORAL
+                    if (resultadoMsg) {
+                        resultadoMsg.textContent = '⚠️ Producto no encontrado (ingrese datos manualmente)';
+                        resultadoMsg.className = 'resultado-producto text-xs mt-1 font-medium text-orange-600';
+                        resultadoMsg.classList.remove('hidden');
+                    }
                 }
             })
             .catch(error => {
                 if(loader) loader.classList.add('hidden');
                 console.error('Error buscando producto:', error);
+                // NO LIMPIAR EL CAMPO, MOSTRAR ERROR
+                if (resultadoMsg) {
+                    resultadoMsg.textContent = '⚠️ Error al buscar producto';
+                    resultadoMsg.className = 'resultado-producto text-xs mt-1 font-medium text-red-600';
+                    resultadoMsg.classList.remove('hidden');
+                }
             });
         }
 

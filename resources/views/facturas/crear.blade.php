@@ -230,7 +230,7 @@
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Condición *</label>
                                 <select name="condicion_operacion" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
                                     <option value="1">Contado</option>
-                                    <option value="2">Crédito</option>
+                                    <!-- <option value="2">Crédito</option> -->
                                     <option value="3">Otro</option>
                                 </select>
                             </div>
@@ -604,6 +604,25 @@
         // Obtener token de autenticación del servidor
         const authToken = @json(session('auth_token'));
         const motorApiUrl = @json(config('services.motor_api.url'));
+
+        // Función para manejar errores de autenticación (Token expirado)
+        function handleAuthError(error) {
+            if (error.message.includes('HTTP 401') || error.message.includes('Token expirado')) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Sesión expirada',
+                    text: 'Tu sesión de conexión con el API ha expirado. Por favor recarga la página.',
+                    confirmButtonText: 'Recargar página',
+                    allowOutsideClick: false
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.reload();
+                    }
+                });
+                return true;
+            }
+            return false;
+        }
 
         tipoDocSelect.addEventListener('change', function() {
             const tipo = this.value;
@@ -980,6 +999,11 @@
             }
             
             const indexAttr = inputElement.getAttribute('data-item-index');
+            const loader = itemRow.querySelector('.loader-producto');
+            const resultadoMsg = itemRow.querySelector('.resultado-producto');
+
+            if (loader) loader.classList.remove('hidden');
+            if (resultadoMsg) resultadoMsg.classList.add('hidden');
 
             fetch(`${motorApiUrl}/productos/buscar/${codigo}`, {
                 method: 'GET',
@@ -995,6 +1019,7 @@
                 return response.json();
             })
             .then(data => {
+                if (loader) loader.classList.add('hidden');
                 const producto = data.data || data;
 
                 if (producto && producto.codigo) {
@@ -1030,16 +1055,30 @@
                     }
 
                     calcularTotales();
+                    
+                    if (resultadoMsg) {
+                        resultadoMsg.textContent = '✓ Producto encontrado';
+                        resultadoMsg.className = 'resultado-producto text-xs mt-1 font-medium text-green-600';
+                        resultadoMsg.classList.remove('hidden');
+                        setTimeout(() => resultadoMsg.classList.add('hidden'), 3000);
+                    }
                 } else {
-                    // Limpiar el campo si no encuentra el producto
-                    inputElement.value = '';
-                    inputElement.focus();
+                    // NO LIMPIAR EL CAMPO, MOSTRAR MENSAJE TEMPORAL
+                    if (resultadoMsg) {
+                        resultadoMsg.textContent = '⚠️ Producto no encontrado (ingrese datos manualmente)';
+                        resultadoMsg.className = 'resultado-producto text-xs mt-1 font-medium text-orange-600';
+                        resultadoMsg.classList.remove('hidden');
+                    }
                 }
             })
             .catch(error => {
-                // Limpiar el campo en caso de error
-                inputElement.value = '';
-                inputElement.focus();
+                if (loader) loader.classList.add('hidden');
+                // NO LIMPIAR EL CAMPO, MOSTRAR ERROR
+                if (resultadoMsg) {
+                    resultadoMsg.textContent = '⚠️ Error al buscar producto';
+                    resultadoMsg.className = 'resultado-producto text-xs mt-1 font-medium text-red-600';
+                    resultadoMsg.classList.remove('hidden');
+                }
             });
         }
 
