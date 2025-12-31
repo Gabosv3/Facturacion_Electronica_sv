@@ -962,45 +962,53 @@ public function calcularTotalesItems(array $items, bool $precioIncluyeIva = true
                 ],
                 'ventaTercero' => null,
                 'cuerpoDocumento' => array_map(function ($item, $index) {
-                    // IMPORTANTE: Para CCF, el montoDescu debe estar en términos SIN IVA
-                    // Si el montoDescu vino CON IVA (cantidad × precioUni con IVA), hay que dividirlo entre 1.13
-                    $divisor = 1.13; // IVA rate para CCF
-                    $montoDescuEnviar = round(floatval($item['monto_descuento'] ?? 0) / $divisor, 2);
+                    // IMPORTANTE: Para CCF, los valores en $item ya vienen SIN IVA desde calcularTotalesItemsConTasa
                     
+                    $cantidad = floatval($item['cantidad']);
+                    $montoDescu = floatval($item['monto_descuento'] ?? 0);
+                    $ventaGravada = floatval($item['venta_gravada']);
+                    
+                    // Recalcular precio unitario con alta precisión para asegurar que cuadre con la venta gravada
+                    // Fórmula: precio = (ventaGravada + montoDescu) / cantidad
+                    if ($cantidad > 0) {
+                        $precioUniCalculado = ($ventaGravada + $montoDescu) / $cantidad;
+                    } else {
+                        $precioUniCalculado = floatval($item['precio_unitario']);
+                    }
+
                     // Validar: ventaGravada debe cumplir: (cantidad × precioUni) - montoDescu
-                    $ventaGravadaValidacion = round((floatval($item['cantidad']) * floatval($item['precio_unitario'])) - $montoDescuEnviar, 2);
+                    // Usamos el precio calculado para la validación
+                    $ventaGravadaValidacion = round(($cantidad * $precioUniCalculado) - $montoDescu, 2);
                     
-                    \Log::debug('📦 ITEM PARA JSON CCF', [
+                    \Log::debug('📦 ITEM PARA JSON CCF (Recalculado)', [
                         'numItem' => $index + 1,
-                        'cantidad' => floatval($item['cantidad']),
-                        'precioUni_sin_iva' => floatval($item['precio_unitario']),
-                        'montoDescu_original' => floatval($item['monto_descuento'] ?? 0),
-                        'montoDescu_sin_iva' => $montoDescuEnviar,
-                        'ventaGravada_en_item' => floatval($item['venta_gravada']),
+                        'cantidad' => $cantidad,
+                        'precioUni_original' => floatval($item['precio_unitario']),
+                        'precioUni_recalculado' => $precioUniCalculado,
+                        'montoDescu' => $montoDescu,
+                        'ventaGravada_en_item' => $ventaGravada,
                         'ventaGravada_validacion' => $ventaGravadaValidacion,
-                        'coinciden' => $ventaGravadaValidacion == floatval($item['venta_gravada']),
+                        'coinciden' => abs($ventaGravadaValidacion - $ventaGravada) < 0.001,
                     ]);
                     
-                    $ivaItem = round(floatval($item['venta_gravada']) * 0.13, 2);
-
                     return [
                         'numItem' => $index + 1,
-                        'tipoItem' => intval($item['tipo_item'] ?? 1),  // Usar tipo_item enviado por usuario, por defecto 1 (bien)
+                        'tipoItem' => intval($item['tipo_item'] ?? 1),
                         'numeroDocumento' => null,
-                        'cantidad' => round(floatval($item['cantidad']), 2),
+                        'cantidad' => round($cantidad, 2),
                         'codigo' => $item['codigo'],
-                        'codTributo' => null,  // NO se usa array en CCF, va null
+                        'codTributo' => null,
                         'uniMedida' => (int) ($item['uni_medida'] ?? 59),
                         'descripcion' => $item['descripcion'],
-                        'precioUni' => round(floatval($item['precio_unitario']), 2),
-                        'montoDescu' => round(floatval($item['monto_descuento'] ?? 0), 2),
+                        // Enviamos precio con hasta 8 decimales para precisión
+                        'precioUni' => round($precioUniCalculado, 8),
+                        'montoDescu' => round($montoDescu, 2),
                         'ventaNoSuj' => 0.0,
                         'ventaExenta' => 0.0,
-                        'ventaGravada' => round(floatval($item['venta_gravada']), 2),
-                        'tributos' => ['20'],  // En CCF es array simple de strings, no objetos
+                        'ventaGravada' => round($ventaGravada, 2),
+                        'tributos' => ['20'],
                         'psv' => 0.0,
                         'noGravado' => 0.0,
-                        // NO incluir ivaItem en CCF
                     ];
                 }, $calculos['items'], array_keys($calculos['items'])),
                 'resumen' => [
