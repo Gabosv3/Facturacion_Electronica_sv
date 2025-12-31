@@ -619,93 +619,116 @@ class FacturaController extends Controller
                             }
                             
                             if (is_array($productosArray) && !empty($productosArray)) {
-                                Log::info('✅ Array válido con ' . count($productosArray) . ' productos');
+                                Log::info('✅ Array válido con ' . count($productosArray) . ' items totales');
                                 
-                                // Construir items para Motors González
+                                // Construir items para Motors González (productos y servicios)
                                 $itemsMotorsGonzalez = [];
                                 
                                 foreach ($productosArray as $prod) {
-                                    $itemsMotorsGonzalez[] = [
-                                        'producto_id' => (int)($prod['producto_id'] ?? 0),
-                                        'cantidad' => (float)($prod['cantidad'] ?? 0),
-                                        'precio_unitario' => (float)($prod['precio_unitario'] ?? 0),
-                                    ];
-                                }
-
-                                $payloadMotorsGonzalez = [
-                                    'numero_factura' => $factura->numero_control,
-                                    'cliente_id' => $esClientesVarios ? null : (int) $clienteId,
-                                    'cliente' => $factura->receptor_nombre,
-                                    'es_clientes_varios' => $esClientesVarios,
-                                    'fecha' => $factura->fecha_emision->format('Y-m-d'),
-                                    'items' => $itemsMotorsGonzalez,
-                                ];
-
-                                // Log detallado del payload
-                                Log::info('🚀 PAYLOAD MOTORS GONZÁLEZ', [
-                                    'numero_factura' => $payloadMotorsGonzalez['numero_factura'],
-                                    'cliente_id' => $payloadMotorsGonzalez['cliente_id'],
-                                    'cliente' => $payloadMotorsGonzalez['cliente'],
-                                    'es_clientes_varios' => $payloadMotorsGonzalez['es_clientes_varios'],
-                                    'fecha' => $payloadMotorsGonzalez['fecha'],
-                                    'cantidad_items' => count($itemsMotorsGonzalez),
-                                    'items' => $itemsMotorsGonzalez,
-                                ]);
-
-                                Log::info('📊 JSON COMPLETO', ['payload' => json_encode($payloadMotorsGonzalez, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)]);
-
-                                // Hacer POST a Motors González
-                                $authToken = Session::get('auth_token');
-                                Log::info('🔐 Token disponible', ['tiene_token' => !empty($authToken), 'token_length' => strlen($authToken ?? '')]);
-                                
-                                if ($authToken) {
-                                    $urlPost = config('services.motor_api.url') . '/facturas';
-                                    Log::info('📤 Enviando POST', [
-                                        'url' => $urlPost,
-                                        'metodo' => 'POST',
-                                        'headers' => [
-                                            'Authorization' => 'Bearer ****' . substr($authToken, -10),
-                                            'Accept' => 'application/json',
-                                            'Content-Type' => 'application/json',
-                                        ]
-                                    ]);
+                                    // Enviar todos los items:
+                                    // - Productos: producto_id es numérico (ej: 5)
+                                    // - Servicios: producto_id es string (ej: "serv-001")
+                                    $productoId = $prod['producto_id'] ?? null;
                                     
-                                    $response = Http::timeout(10)
-                                        ->withHeaders([
-                                            'Authorization' => 'Bearer ' . $authToken,
-                                            'Accept' => 'application/json',
-                                            'Content-Type' => 'application/json',
-                                        ])
-                                        ->post($urlPost, $payloadMotorsGonzalez);
-
-                                    Log::info('📥 RESPUESTA RECIBIDA', [
-                                        'status_code' => $response->status(),
-                                        'successful' => $response->successful(),
-                                        'headers' => $response->headers(),
-                                        'body' => $response->body(),
-                                    ]);
-
-                                    if ($response->successful()) {
-                                        $responseData = $response->json();
-                                        Log::info('✅ RESPUESTA JSON PARSEADA', ['data' => $responseData]);
+                                    if ($productoId !== null) {
+                                        $itemsMotorsGonzalez[] = [
+                                            'producto_id' => $productoId, // Se mantiene el tipo (numérico o string)
+                                            'cantidad' => (float)($prod['cantidad'] ?? 0),
+                                            'precio_unitario' => (float)($prod['precio_unitario'] ?? 0),
+                                        ];
                                         
-                                        if (isset($responseData['success']) && $responseData['success'] === true) {
-                                            Log::info('✅ ✅ Descargo registrado exitosamente en Motors González', [
-                                                'factura_id' => $factura->id,
-                                                'numero_control' => $factura->numero_control,
-                                                'cliente_id' => $clienteId,
-                                            ]);
-                                        } else {
-                                            Log::warning('⚠️ Respuesta no exitosa de Motors González', ['response' => $responseData]);
-                                        }
-                                    } else {
-                                        Log::error('❌ ERROR HTTP en Motors González', [
-                                            'status' => $response->status(),
-                                            'body' => $response->body(),
+                                        $tipo = is_numeric($productoId) ? 'Producto' : 'Servicio';
+                                        Log::info('✅ ' . $tipo . ' incluido en descargo', [
+                                            'producto_id' => $productoId,
+                                            'descripcion' => $prod['descripcion'] ?? 'N/A',
                                         ]);
                                     }
+                                }
+
+                                // Solo proceder si hay productos válidos (no solo servicios)
+                                if (!empty($itemsMotorsGonzalez)) {
+                                    Log::info('✅ Se enviarán ' . count($itemsMotorsGonzalez) . ' productos a Motors González');
+
+                                    $payloadMotorsGonzalez = [
+                                        'numero_factura' => $factura->numero_control,
+                                        'cliente_id' => $esClientesVarios ? null : (int) $clienteId,
+                                        'cliente' => $factura->receptor_nombre,
+                                        'es_clientes_varios' => $esClientesVarios,
+                                        'fecha' => $factura->fecha_emision->format('Y-m-d'),
+                                        'items' => $itemsMotorsGonzalez,
+                                    ];
+
+                                    // Log detallado del payload
+                                    Log::info('🚀 PAYLOAD MOTORS GONZÁLEZ', [
+                                        'numero_factura' => $payloadMotorsGonzalez['numero_factura'],
+                                        'cliente_id' => $payloadMotorsGonzalez['cliente_id'],
+                                        'cliente' => $payloadMotorsGonzalez['cliente'],
+                                        'es_clientes_varios' => $payloadMotorsGonzalez['es_clientes_varios'],
+                                        'fecha' => $payloadMotorsGonzalez['fecha'],
+                                        'cantidad_items' => count($itemsMotorsGonzalez),
+                                        'items' => $itemsMotorsGonzalez,
+                                    ]);
+
+                                    Log::info('📊 JSON COMPLETO', ['payload' => json_encode($payloadMotorsGonzalez, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)]);
+
+                                    // Hacer POST a Motors González
+                                    $authToken = Session::get('auth_token');
+                                    Log::info('🔐 Token disponible', ['tiene_token' => !empty($authToken), 'token_length' => strlen($authToken ?? '')]);
+                                    
+                                    if ($authToken) {
+                                        $urlPost = config('services.motor_api.url') . '/facturas';
+                                        Log::info('📤 Enviando POST', [
+                                            'url' => $urlPost,
+                                            'metodo' => 'POST',
+                                            'headers' => [
+                                                'Authorization' => 'Bearer ****' . substr($authToken, -10),
+                                                'Accept' => 'application/json',
+                                                'Content-Type' => 'application/json',
+                                            ]
+                                        ]);
+                                        
+                                        $response = Http::timeout(10)
+                                            ->withHeaders([
+                                                'Authorization' => 'Bearer ' . $authToken,
+                                                'Accept' => 'application/json',
+                                                'Content-Type' => 'application/json',
+                                            ])
+                                            ->post($urlPost, $payloadMotorsGonzalez);
+
+                                        Log::info('📥 RESPUESTA RECIBIDA', [
+                                            'status_code' => $response->status(),
+                                            'successful' => $response->successful(),
+                                            'headers' => $response->headers(),
+                                            'body' => $response->body(),
+                                        ]);
+
+                                        if ($response->successful()) {
+                                            $responseData = $response->json();
+                                            Log::info('✅ RESPUESTA JSON PARSEADA', ['data' => $responseData]);
+                                            
+                                            if (isset($responseData['success']) && $responseData['success'] === true) {
+                                                Log::info('✅ ✅ Descargo registrado exitosamente en Motors González', [
+                                                    'factura_id' => $factura->id,
+                                                    'numero_control' => $factura->numero_control,
+                                                    'cliente_id' => $clienteId,
+                                                ]);
+                                            } else {
+                                                Log::warning('⚠️ Respuesta no exitosa de Motors González', ['response' => $responseData]);
+                                            }
+                                        } else {
+                                            Log::error('❌ ERROR HTTP en Motors González', [
+                                                'status' => $response->status(),
+                                                'body' => $response->body(),
+                                            ]);
+                                        }
+                                    } else {
+                                        Log::warning('⚠️ NO HAY TOKEN - No se envió a Motors González');
+                                    }
                                 } else {
-                                    Log::warning('⚠️ NO HAY TOKEN - No se envió a Motors González');
+                                    Log::info('ℹ️ No hay productos válidos para descargo (solo servicios)', [
+                                        'items_solicitados' => count($productosArray),
+                                        'productos_válidos' => count($itemsMotorsGonzalez),
+                                    ]);
                                 }
                             } else {
                                 Log::warning('❌ Array vacío o inválido', [
