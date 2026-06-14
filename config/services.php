@@ -31,4 +31,8 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'motor_api' => [
+        'url' => env('MOTOR_API_URL', 'https://Prueba.motorsgonzalez.com/api'),
+    ],
+
 ];

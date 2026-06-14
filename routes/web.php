@@ -43,6 +43,8 @@ Route::prefix('facturas')->name('facturas.')->group(function () {
     Route::get('/{factura}', [FacturaController::class, 'show'])->name('show');
     Route::delete('/{factura}', [FacturaController::class, 'destroy'])->name('destroy');
     Route::post('/{factura}/enviar-email', [FacturaController::class, 'enviarEmail'])->name('enviarEmail');
+    Route::get('/{factura}/descargar-json', [FacturaController::class, 'descargarJSON'])->name('descargarJSON');
+    Route::post('/{factura}/enviar-json', [FacturaController::class, 'enviarJSON'])->name('enviarJSON');
 });
 
 // Rutas de administración de tokens

@@ -6,6 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Generar Factura - DTE El Salvador</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="{{ asset('js/catalogo-municipios.js') }}"></script>
 </head>
 <body class="bg-gray-100">
@@ -168,8 +169,17 @@
                         <div id="itemsContainer">
                             <div class="item-row bg-gray-50 p-4 rounded-lg mb-4">
                                 <input type="hidden" name="items[0][producto_id]" class="producto-id" value="">
-                                <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
-                                    <div class="md:col-span-1">
+                                <div class="grid grid-cols-1 md:grid-cols-7 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Tipo *</label>
+                                        <select name="items[0][tipo_item]" class="tipo-item w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" data-item-index="0" required>
+                                            <option value="">Seleccionar</option>
+                                            <option value="1">Bien</option>
+                                            <option value="2">Servicio</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-2">Código *</label>
                                         <div class="relative">
                                             <input type="text" name="items[0][codigo]" data-item-index="0" class="codigo-producto w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
@@ -220,7 +230,7 @@
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Condición *</label>
                                 <select name="condicion_operacion" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
                                     <option value="1">Contado</option>
-                                    <option value="2">Crédito</option>
+                                    <!-- <option value="2">Crédito</option> -->
                                     <option value="3">Otro</option>
                                 </select>
                             </div>
@@ -256,7 +266,7 @@
                                 <span class="text-gray-600">Subtotal (sin IVA):</span>
                                 <span class="font-semibold" id="subtotal">$0.00</span>
                             </div>
-                            <div class="flex justify-between">
+                            <div class="flex justify-between" style="display: none">
                                 <span class="text-gray-600">IVA (13%):</span>
                                 <span class="font-semibold" id="iva">$0.00</span>
                             </div>
@@ -283,6 +293,7 @@
 
     <script>
         let itemCount = 1;
+        let servicioCount = 1;
 
         // ==========================================
         // Manejo de Clientes Varios
@@ -347,8 +358,6 @@
         }
 
         // Event listener para el checkbox
-        clientesVariosCheckbox.addEventListener('change', toggleClientesVarios);
-
         // Estado inicial
         toggleClientesVarios();
 
@@ -357,10 +366,20 @@
             const container = document.getElementById('itemsContainer');
             const newItem = document.createElement('div');
             newItem.className = 'item-row bg-gray-50 p-4 rounded-lg mb-4';
+            
             newItem.innerHTML = `
                 <input type="hidden" name="items[${itemCount}][producto_id]" class="producto-id" value="">
-                <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
-                    <div class="md:col-span-1">
+                <div class="grid grid-cols-1 md:grid-cols-7 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Tipo *</label>
+                        <select name="items[${itemCount}][tipo_item]" class="tipo-item w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" data-item-index="${itemCount}" required>
+                            <option value="">Seleccionar</option>
+                            <option value="1">Bien</option>
+                            <option value="2">Servicio</option>
+                        </select>
+                    </div>
+
+                    <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Código *</label>
                         <div class="relative">
                             <input type="text" name="items[${itemCount}][codigo]" data-item-index="${itemCount}" class="codigo-producto w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
@@ -394,13 +413,72 @@
             `;
             container.appendChild(newItem);
             
-            const newCodigoInput = newItem.querySelector('.codigo-producto');
-            setupProductSearch(newCodigoInput);
+            const tipoItemSelect = newItem.querySelector('.tipo-item');
+            const codigoInput = newItem.querySelector('.codigo-producto');
+            
+            // Listener para cambios en tipo_item
+            tipoItemSelect.addEventListener('change', function() {
+                aplicarLogicaTipo(this, codigoInput);
+            });
+            
+            // Si es edición inicial, setup búsqueda
+            setupProductSearch(codigoInput);
             
             itemCount++;
             attachCalculateEvents();
             verificarEstadoFormulario();
         });
+
+        // Aplicar lógica según el tipo seleccionado
+        function aplicarLogicaTipo(tipoSelect, codigoInput) {
+            const tipo = tipoSelect.value;
+            
+            if (tipo === '2') {
+                // SERVICIO: código auto-generado
+                const servicioCode = 'SERV-' + String(servicioCount).padStart(3, '0');
+                servicioCount++;
+                
+                codigoInput.value = servicioCode;
+                codigoInput.readOnly = true;
+                codigoInput.classList.add('bg-gray-200');
+                codigoInput.style.cursor = 'not-allowed';
+                
+                // Remover evento de búsqueda
+                codigoInput.removeEventListener('blur', function() {});
+            } else if (tipo === '1') {
+                // BIEN: código manual con búsqueda
+                codigoInput.value = '';
+                codigoInput.readOnly = false;
+                codigoInput.classList.remove('bg-gray-200');
+                codigoInput.style.cursor = 'auto';
+                
+                // Re-agregar búsqueda si no está
+                setupProductSearch(codigoInput);
+            }
+        }
+
+        // Estado inicial
+        toggleClientesVarios();
+        clientesVariosCheckbox.addEventListener('change', toggleClientesVarios);
+
+        // Setup del primer item (item 0)
+        const primerTipoItem = document.querySelector('select[name="items[0][tipo_item]"]');
+        const primerCodigoInput = document.querySelector('input[name="items[0][codigo]"]');
+        
+        if (primerTipoItem) {
+            primerTipoItem.addEventListener('change', function() {
+                aplicarLogicaTipo(this, primerCodigoInput);
+            });
+        }
+
+        if (primerCodigoInput) {
+            setupProductSearch(primerCodigoInput);
+        }
+
+        // Agregar nuevo item (original - NO ELIMINAR, ahora es DUPLICATE arriba)
+        // document.getElementById('addItem').addEventListener('click', function() {
+        //     ... REEMPLAZADO ARRIBA ...
+        // });
 
         // Eliminar item
         document.addEventListener('click', function(e) {
@@ -520,10 +598,31 @@
         // Validación y formateo de documentos
         const tipoDocSelect = document.querySelector('select[name="receptor_tipo_documento"]');
         const numDocInput = document.querySelector('input[name="receptor_num_documento"]');
+        const nrcInput = document.querySelector('input[name="receptor_nrc"]');
         const helpText = numDocInput.nextElementSibling;
         
         // Obtener token de autenticación del servidor
         const authToken = @json(session('auth_token'));
+        const motorApiUrl = @json(config('services.motor_api.url'));
+
+        // Función para manejar errores de autenticación (Token expirado)
+        function handleAuthError(error) {
+            if (error.message.includes('HTTP 401') || error.message.includes('Token expirado')) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Sesión expirada',
+                    text: 'Tu sesión de conexión con el API ha expirado. Por favor recarga la página.',
+                    confirmButtonText: 'Recargar página',
+                    allowOutsideClick: false
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.reload();
+                    }
+                });
+                return true;
+            }
+            return false;
+        }
 
         tipoDocSelect.addEventListener('change', function() {
             const tipo = this.value;
@@ -534,31 +633,50 @@
                     numDocInput.placeholder = 'Ej: 12345678-9 o 123456789';
                     helpText.textContent = 'DUI: 9 dígitos (formato: ########-#) - Solo para personas naturales sin IVA';
                     helpText.className = 'text-xs text-blue-600 mt-1 font-medium';
+                    // Bloquear campo NRC para DUI (personas naturales sin IVA no tienen NRC)
+                    nrcInput.disabled = true;
+                    nrcInput.value = '';
+                    nrcInput.classList.add('bg-gray-200', 'cursor-not-allowed');
                     break;
                 case '36': // NIT - Contribuyente IVA
                     numDocInput.placeholder = 'Ej: 06142302881449';
                     helpText.textContent = 'NIT: 14 dígitos sin guiones - Para contribuyentes inscritos en IVA';
                     helpText.className = 'text-xs text-blue-600 mt-1 font-medium';
+                    // Desbloquear campo NRC para NIT
+                    nrcInput.disabled = false;
+                    nrcInput.classList.remove('bg-gray-200', 'cursor-not-allowed');
                     break;
                 case '02': // Carnet de residente
                     numDocInput.placeholder = 'Número de carnet de residente';
                     helpText.textContent = 'Ingrese el número de carnet de residente';
                     helpText.className = 'text-xs text-gray-500 mt-1';
+                    // Desbloquear campo NRC
+                    nrcInput.disabled = false;
+                    nrcInput.classList.remove('bg-gray-200', 'cursor-not-allowed');
                     break;
                 case '03': // Pasaporte
                     numDocInput.placeholder = 'Número de pasaporte';
                     helpText.textContent = 'Ingrese el número de pasaporte';
                     helpText.className = 'text-xs text-gray-500 mt-1';
+                    // Desbloquear campo NRC
+                    nrcInput.disabled = false;
+                    nrcInput.classList.remove('bg-gray-200', 'cursor-not-allowed');
                     break;
                 case '37': // Otro
                     numDocInput.placeholder = 'Otro documento de identificación';
                     helpText.textContent = 'Ingrese el número de documento';
                     helpText.className = 'text-xs text-gray-500 mt-1';
+                    // Desbloquear campo NRC
+                    nrcInput.disabled = false;
+                    nrcInput.classList.remove('bg-gray-200', 'cursor-not-allowed');
                     break;
                 default:
                     numDocInput.placeholder = 'Seleccione primero el tipo de documento';
                     helpText.textContent = 'Seleccione el tipo de documento';
                     helpText.className = 'text-xs text-gray-500 mt-1';
+                    // Desbloquear campo NRC por defecto
+                    nrcInput.disabled = false;
+                    nrcInput.classList.remove('bg-gray-200', 'cursor-not-allowed');
             }
         });
 
@@ -682,8 +800,8 @@
                 return;
             }
 
-            // Consumir directamente el endpoint de Motors González con autenticación
-            fetch(`https://motorsgonzalez.com/api/clientes/buscar/${documentoLimpio}`, {
+            // Consumir el endpoint de Motors González desde .env con autenticación
+            fetch(`${motorApiUrl}/clientes/buscar/${documentoLimpio}`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${authToken}`,
@@ -735,13 +853,16 @@
                         document.querySelector('textarea[name="receptor_complemento"]').value = cliente.direccion;
                     }
 
-                    // Capturar NRC si existe en la API
-                    if (cliente.nrc) {
+                    // Verificar el tipo de documento seleccionado
+                    const tipoDocumento = document.querySelector('select[name="receptor_tipo_documento"]').value;
+
+                    // Capturar NRC solo si NO es DUI
+                    if (cliente.nrc && tipoDocumento !== '13') {
                         document.querySelector('input[name="receptor_nrc"]').value = cliente.nrc;
                     }
 
-                    // Capturar categoría económica si existe en la API
-                    if (cliente.categoria_economica) {
+                    // Capturar categoría económica solo si NO es DUI
+                    if (cliente.categoria_economica && tipoDocumento !== '13') {
                         // Si es un objeto con codigo y descripcion
                         if (typeof cliente.categoria_economica === 'object') {
                             if (cliente.categoria_economica.codigo) {
@@ -878,9 +999,13 @@
             }
             
             const indexAttr = inputElement.getAttribute('data-item-index');
-            const authToken = '{{ session("auth_token") }}';
+            const loader = itemRow.querySelector('.loader-producto');
+            const resultadoMsg = itemRow.querySelector('.resultado-producto');
 
-            fetch(`https://motorsgonzalez.com/api/productos/buscar/${codigo}`, {
+            if (loader) loader.classList.remove('hidden');
+            if (resultadoMsg) resultadoMsg.classList.add('hidden');
+
+            fetch(`${motorApiUrl}/productos/buscar/${codigo}`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${authToken}`,
@@ -894,6 +1019,7 @@
                 return response.json();
             })
             .then(data => {
+                if (loader) loader.classList.add('hidden');
                 const producto = data.data || data;
 
                 if (producto && producto.codigo) {
@@ -929,16 +1055,30 @@
                     }
 
                     calcularTotales();
+                    
+                    if (resultadoMsg) {
+                        resultadoMsg.textContent = '✓ Producto encontrado';
+                        resultadoMsg.className = 'resultado-producto text-xs mt-1 font-medium text-green-600';
+                        resultadoMsg.classList.remove('hidden');
+                        setTimeout(() => resultadoMsg.classList.add('hidden'), 3000);
+                    }
                 } else {
-                    // Limpiar el campo si no encuentra el producto
-                    inputElement.value = '';
-                    inputElement.focus();
+                    // NO LIMPIAR EL CAMPO, MOSTRAR MENSAJE TEMPORAL
+                    if (resultadoMsg) {
+                        resultadoMsg.textContent = '⚠️ Producto no encontrado (ingrese datos manualmente)';
+                        resultadoMsg.className = 'resultado-producto text-xs mt-1 font-medium text-orange-600';
+                        resultadoMsg.classList.remove('hidden');
+                    }
                 }
             })
             .catch(error => {
-                // Limpiar el campo en caso de error
-                inputElement.value = '';
-                inputElement.focus();
+                if (loader) loader.classList.add('hidden');
+                // NO LIMPIAR EL CAMPO, MOSTRAR ERROR
+                if (resultadoMsg) {
+                    resultadoMsg.textContent = '⚠️ Error al buscar producto';
+                    resultadoMsg.className = 'resultado-producto text-xs mt-1 font-medium text-red-600';
+                    resultadoMsg.classList.remove('hidden');
+                }
             });
         }
 
@@ -976,6 +1116,27 @@
             } else {
             }
         }, true); // Usar captura en lugar de burbuja
+
+        // Confirmación final
+        document.getElementById('facturaForm').addEventListener('submit', function(e) {
+            if (e.defaultPrevented) return; // Si ya hubo error, no mostrar confirmación
+
+            e.preventDefault(); // Detener envío
+            Swal.fire({
+                title: '¿Estás seguro?',
+                text: "Estás a punto de emitir una Factura. Verifica que todos los datos sean correctos.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Sí, emitir factura',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    this.submit();
+                }
+            });
+        });
     </script>
 </body>
 </html>

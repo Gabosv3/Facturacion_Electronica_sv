@@ -12,496 +12,679 @@
         }
 
         body {
-            font-family: 'Arial', sans-serif;
-            font-size: 12px;
-            line-height: 1.4;
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-size: 11px;
+            line-height: 1.3;
             color: #333;
-            padding: 20px;
+            padding: 30px;
             background: white;
         }
 
         .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: white;
-        }
-
-        .header {
-            border-bottom: 3px solid #2563eb;
-            padding-bottom: 15px;
-            margin-bottom: 20px;
-        }
-
-        .header-top {
-            display: table;
             width: 100%;
-            margin-bottom: 10px;
+            margin: 0 auto;
         }
 
-        .header-left {
-            display: table-cell;
-            width: 60%;
-            vertical-align: top;
+        /* Header Styles */
+        .header-table {
+            width: 100%;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #1e3a8a; /* Dark Blue */
+            padding-bottom: 10px;
         }
 
-        .header-right {
-            display: table-cell;
-            width: 40%;
-            text-align: right;
+        .company-logo-box {
+            width: 120px;
+            height: 80px;
+            background-color: #f3f4f6;
+            text-align: center;
+            line-height: 80px;
+            color: #9ca3af;
+            font-weight: bold;
+            border: 1px dashed #d1d5db;
+        }
+
+        .company-info {
+            padding-left: 15px;
             vertical-align: top;
         }
 
         .company-name {
-            font-size: 18px;
-            font-weight: bold;
-            color: #1f2937;
-            margin-bottom: 5px;
-        }
-
-        .company-info {
-            font-size: 10px;
-            color: #6b7280;
-            line-height: 1.6;
-        }
-
-        .document-title {
             font-size: 16px;
             font-weight: bold;
-            color: #2563eb;
-            margin-bottom: 5px;
+            color: #1e3a8a;
+            text-transform: uppercase;
+            margin-bottom: 4px;
         }
 
-        .document-type {
-            font-size: 11px;
-            color: #6b7280;
+        .company-details {
+            font-size: 10px;
+            color: #4b5563;
         }
 
-        .info-section {
-            margin-bottom: 20px;
-        }
-
-        .section-title {
-            font-size: 13px;
-            font-weight: bold;
-            color: #1f2937;
-            margin-bottom: 8px;
-            border-bottom: 1px solid #e5e7eb;
-            padding-bottom: 3px;
-        }
-
-        .info-grid {
-            display: table;
-            width: 100%;
-        }
-
-        .info-col {
-            display: table-cell;
-            width: 50%;
+        .invoice-box {
+            width: 280px;
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+            padding: 10px;
+            background-color: #f9fafb;
             vertical-align: top;
-            padding-right: 10px;
         }
 
-        .info-row {
+        .invoice-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #1e3a8a;
+            text-align: center;
             margin-bottom: 5px;
+            text-transform: uppercase;
         }
 
-        .info-label {
+        .invoice-subtitle {
+            font-size: 10px;
+            text-align: center;
+            color: #6b7280;
+            margin-bottom: 8px;
+            font-family: monospace;
+        }
+
+        .invoice-details-table {
+            width: 100%;
+            font-size: 9px;
+        }
+
+        .invoice-details-table td {
+            padding: 2px 0;
+        }
+
+        .label {
             font-weight: bold;
             color: #4b5563;
-            font-size: 10px;
         }
 
-        .info-value {
-            color: #1f2937;
-            font-size: 11px;
+        .value {
+            text-align: right;
+            font-family: monospace;
+            color: #111827;
         }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
+        /* Client Section */
+        .section-box {
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+            padding: 10px;
             margin-bottom: 15px;
         }
 
-        table thead {
-            background-color: #f3f4f6;
-        }
-
-        table th {
-            padding: 8px 5px;
-            text-align: left;
+        .section-title {
             font-size: 10px;
             font-weight: bold;
-            color: #374151;
-            border-bottom: 2px solid #d1d5db;
-        }
-
-        table th.right {
-            text-align: right;
-        }
-
-        table td {
-            padding: 6px 5px;
-            font-size: 10px;
+            color: #1e3a8a;
+            text-transform: uppercase;
+            margin-bottom: 8px;
             border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 2px;
         }
 
-        table td.right {
+        .client-table {
+            width: 100%;
+            font-size: 10px;
+        }
+
+        .client-table td {
+            padding: 2px 5px;
+            vertical-align: top;
+        }
+
+        /* Items Table */
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-size: 10px;
+        }
+
+        .items-table th {
+            background-color: #1e3a8a;
+            color: white;
+            padding: 6px 4px;
+            text-align: left;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 9px;
+        }
+
+        .items-table th.text-right {
             text-align: right;
         }
 
-        .totals-section {
-            margin-top: 15px;
-            border-top: 2px solid #2563eb;
-            padding-top: 10px;
+        .items-table th.text-center {
+            text-align: center;
         }
 
-        .totals-grid {
-            display: table;
+        .items-table td {
+            border-bottom: 1px solid #e5e7eb;
+            padding: 6px 4px;
+            color: #374151;
+        }
+
+        .items-table tr:nth-child(even) {
+            background-color: #f9fafb;
+        }
+
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .font-mono { font-family: monospace; }
+
+        /* Totals Section */
+        .totals-container {
             width: 100%;
+            margin-top: 10px;
+            page-break-inside: avoid;
         }
 
-        .totals-left {
-            display: table-cell;
-            width: 60%;
+        .totals-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .totals-table td {
+            padding: 3px 0;
             vertical-align: top;
         }
 
-        .totals-right {
-            display: table-cell;
-            width: 40%;
-            vertical-align: top;
+        .amount-words {
+            font-size: 9px;
+            font-style: italic;
+            color: #4b5563;
+            padding-right: 20px;
+            width: 50%;
         }
 
-        .total-row {
-            display: table;
+        .totals-box {
+            width: 50%;
+        }
+
+        /* Reemplazamos flex por tabla interna para mejor compatibilidad PDF */
+        .totals-inner-table {
             width: 100%;
-            margin-bottom: 5px;
+            border-collapse: collapse;
         }
 
-        .total-label {
-            display: table-cell;
+        .totals-inner-table td {
+            padding: 2px 0;
+            font-size: 10px;
+        }
+
+        .totals-label {
+            color: #4b5563;
             text-align: right;
             padding-right: 10px;
-            font-size: 11px;
-            color: #4b5563;
+            width: 70%;
         }
 
-        .total-value {
-            display: table-cell;
+        .totals-value {
             text-align: right;
-            font-size: 11px;
+            font-family: monospace;
+            font-weight: 600;
+            width: 30%;
+        }
+
+        .totals-row-final td {
+            border-top: 2px solid #1e3a8a;
+            padding-top: 5px;
             font-weight: bold;
-            width: 100px;
-        }
-
-        .grand-total {
-            background-color: #2563eb;
-            color: white;
-            padding: 8px;
-            margin-top: 5px;
-        }
-
-        .grand-total .total-label {
-            color: white;
             font-size: 12px;
-            font-weight: bold;
+            color: #1e3a8a;
         }
 
-        .grand-total .total-value {
-            color: white;
-            font-size: 14px;
-        }
-
-        .total-words {
-            font-size: 10px;
-            color: #6b7280;
-            font-style: italic;
-            margin-top: 5px;
-            padding: 5px;
-            background-color: #f9fafb;
-        }
-
+        /* Footer */
         .footer {
             margin-top: 30px;
-            padding-top: 15px;
             border-top: 1px solid #e5e7eb;
-            text-align: center;
-            font-size: 9px;
-            color: #6b7280;
-        }
-
-        .qr-section {
-            margin-top: 20px;
-            padding: 10px;
-            background-color: #f9fafb;
-            border: 1px solid #e5e7eb;
+            padding-top: 10px;
+            font-size: 8px;
+            color: #9ca3af;
             text-align: center;
         }
 
-        .qr-section img {
-            max-width: 150px;
-            margin: 10px auto;
+        .qr-container {
+            text-align: center;
+            margin-top: 10px;
         }
 
-        .status-badge {
-            display: inline-block;
-            padding: 5px 10px;
-            border-radius: 3px;
-            font-size: 10px;
-            font-weight: bold;
-        }
-
-        .status-enviado {
-            background-color: #d1fae5;
-            color: #065f46;
-        }
-
-        .status-firmado {
-            background-color: #dbeafe;
-            color: #1e40af;
-        }
-
-        @media print {
-            body {
-                padding: 0;
-            }
-            .no-print {
-                display: none !important;
-            }
+        .qr-img {
+            width: 100px;
+            height: 100px;
         }
     </style>
 </head>
 <body>
+    @php
+        $resumen = $factura->dte_json['dteJson']['resumen'] ?? [];
+        
+        // Extracción segura de valores del JSON
+        $totalGravada = $resumen['totalGravada'] ?? 0;
+        $totalExenta = $resumen['totalExenta'] ?? 0;
+        $totalNoSujeta = $resumen['totalNoSujeta'] ?? 0;
+        
+        // Suma total de operaciones (Gravadas + Exentas + No Sujetas)
+        $sumaOperaciones = $totalGravada + $totalExenta + $totalNoSujeta;
+        
+        $descuentoNoSujeta = $resumen['descuentoNoSujeta'] ?? 0;
+        $descuentoExenta = $resumen['descuentoExenta'] ?? 0;
+        $descuentoGravada = $resumen['descuentoGravada'] ?? 0;
+        
+        $subTotal = $resumen['subTotal'] ?? 0;
+        $ivaPercibido = $resumen['ivaPerci1'] ?? 0;
+        $ivaRetenido = $resumen['ivaRete1'] ?? 0;
+        $reteRenta = $resumen['reteRenta'] ?? 0;
+        $montoTotalOperacion = $resumen['montoTotalOperacion'] ?? 0;
+        $totalNoGravado = $resumen['totalNoGravado'] ?? 0;
+        $totalPagar = $resumen['totalPagar'] ?? 0;
+        
+        // IVA (puede venir en tributos o calculado)
+        $totalIva = $factura->total_iva;
+
+        // Datos adicionales del JSON
+        $condicionOperacion = $resumen['condicionOperacion'] ?? 1;
+        $condicionTxt = match((int)$condicionOperacion) {
+            1 => 'Contado',
+            2 => 'Crédito',
+            3 => 'Otro',
+            default => 'Contado'
+        };
+        
+        $pagos = $factura->dte_json['dteJson']['pagos'] ?? [];
+        $formaPagoCodigo = count($pagos) > 0 ? ($pagos[0]['codigo'] ?? '') : '';
+
+        // Catálogos MH
+        $catDepartamentos = [
+            '00' => 'OTRO (PARA EXTRANJEROS)',
+            '01' => 'AHUACHAPÁN',
+            '02' => 'SANTA ANA',
+            '03' => 'SONSONATE',
+            '04' => 'CHALATENANGO',
+            '05' => 'LA LIBERTAD',
+            '06' => 'SAN SALVADOR',
+            '07' => 'CUSCATLÁN',
+            '08' => 'LA PAZ',
+            '09' => 'CABAÑAS',
+            '10' => 'SAN VICENTE',
+            '11' => 'USULUTÁN',
+            '12' => 'SAN MIGUEL',
+            '13' => 'MORAZÁN',
+            '14' => 'LA UNIÓN',
+        ];
+
+        $catMunicipios = [
+            '01' => [ // Ahuachapán
+                '13' => 'AHUACHAPAN NORTE',
+                '14' => 'AHUACHAPAN CENTRO',
+                '15' => 'AHUACHAPAN SUR',
+            ],
+            '02' => [ // Santa Ana
+                '14' => 'SANTA ANA NORTE',
+                '15' => 'SANTA ANA CENTRO',
+                '16' => 'SANTA ANA ESTE',
+                '17' => 'SANTA ANA OESTE',
+            ],
+            '03' => [ // Sonsonate
+                '17' => 'SONSONATE NORTE',
+                '18' => 'SONSONATE CENTRO',
+                '19' => 'SONSONATE ESTE',
+                '20' => 'SONSONATE OESTE',
+            ],
+            '04' => [ // Chalatenango
+                '34' => 'CHALATENANGO NORTE',
+                '35' => 'CHALATENANGO CENTRO',
+                '36' => 'CHALATENANGO SUR',
+            ],
+            '05' => [ // La Libertad
+                '23' => 'LA LIBERTAD NORTE',
+                '24' => 'LA LIBERTAD CENTRO',
+                '25' => 'LA LIBERTAD OESTE',
+                '26' => 'LA LIBERTAD ESTE',
+                '27' => 'LA LIBERTAD COSTA',
+                '28' => 'LA LIBERTAD SUR',
+            ],
+            '06' => [ // San Salvador
+                '20' => 'SAN SALVADOR NORTE',
+                '21' => 'SAN SALVADOR OESTE',
+                '22' => 'SAN SALVADOR ESTE',
+                '23' => 'SAN SALVADOR CENTRO',
+                '24' => 'SAN SALVADOR SUR',
+            ],
+            '07' => [ // Cuscatlán
+                '17' => 'CUSCATLAN NORTE',
+                '18' => 'CUSCATLAN SUR',
+            ],
+            '08' => [ // La Paz
+                '23' => 'LA PAZ OESTE',
+                '24' => 'LA PAZ CENTRO',
+                '25' => 'LA PAZ ESTE',
+            ],
+            '09' => [ // Cabañas
+                '10' => 'CABAÑAS OESTE',
+                '11' => 'CABAÑAS ESTE',
+            ],
+            '10' => [ // San Vicente
+                '14' => 'SAN VICENTE NORTE',
+                '15' => 'SAN VICENTE SUR',
+            ],
+            '11' => [ // Usulután
+                '24' => 'USULUTAN NORTE',
+                '25' => 'USULUTAN ESTE',
+                '26' => 'USULUTAN OESTE',
+            ],
+            '12' => [ // San Miguel
+                '21' => 'SAN MIGUEL NORTE',
+                '22' => 'SAN MIGUEL CENTRO',
+                '23' => 'SAN MIGUEL OESTE',
+            ],
+            '13' => [ // Morazán
+                '27' => 'MORAZAN NORTE',
+                '28' => 'MORAZAN SUR',
+            ],
+            '14' => [ // La Unión
+                '19' => 'LA UNION NORTE',
+                '20' => 'LA UNION SUR',
+            ],
+        ];
+
+        $catEstablecimiento = [
+            '01' => 'Sucursal',
+            '02' => 'Casa Matriz',
+            '04' => 'Bodega',
+            '07' => 'Patio',
+        ];
+    @endphp
+
     <div class="container">
         <!-- Header -->
-        <div class="header">
-            <div class="header-top">
-                <div class="header-left">
-                    <div class="company-name">{{ config('dte.emisor.nombre_comercial') }}</div>
-                    <div class="company-info">
-                        {{ config('dte.emisor.nombre') }}<br>
-                        NIT: {{ config('dte.emisor.nit') }} | NRC: {{ config('dte.emisor.nrc') }}<br>
-                        Tel: {{ config('dte.emisor.telefono') }} | Email: {{ config('dte.emisor.correo') }}
+        <table class="header-table">
+            <tr>
+                <td style="width: 130px; vertical-align: top;">
+                    <div class="company-logo-box" style="background: transparent; border: none;">
+                        <img src="{{ public_path('images/logo.jpg') }}" alt="LOGO" style="max-width: 100%; max-height: 80px;">
                     </div>
-                </div>
-                <div class="header-right">
-                    <div class="document-title">
-                        @if($factura->tipo_dte == '01')
-                            FACTURA ELECTRÓNICA
-                        @elseif($factura->tipo_dte == '03')
-                            COMPROBANTE DE CRÉDITO FISCAL
-                        @elseif($factura->tipo_dte == '05')
-                            NOTA DE CRÉDITO
-                        @elseif($factura->tipo_dte == '14')
-                            FACTURA DE SUJETO EXCLUIDO
-                        @endif
+                </td>
+                <td class="company-info">
+                    @php
+                        $emisor = $factura->dte_json['dteJson']['emisor'] ?? [];
+                        $direccionEmisor = $emisor['direccion'] ?? [];
+                        
+                        $deptEmisor = $direccionEmisor['departamento'] ?? '';
+                        $muniEmisor = $direccionEmisor['municipio'] ?? '';
+                        $nombreDeptEmisor = $catDepartamentos[$deptEmisor] ?? $deptEmisor;
+                        $nombreMuniEmisor = $catMunicipios[$deptEmisor][$muniEmisor] ?? $muniEmisor;
+                        
+                        $tipoEstablecimiento = $emisor['tipoEstablecimiento'] ?? '';
+                        $nombreTipoEstablecimiento = $catEstablecimiento[$tipoEstablecimiento] ?? 'Sucursal';
+                    @endphp
+                    <div class="company-name">{{ $emisor['nombreComercial'] ?? config('dte.emisor.nombre_comercial') }}</div>
+                    <div class="company-details">
+                        {{ $emisor['nombre'] ?? config('dte.emisor.nombre') }}<br>
+                        <strong>NIT:</strong> {{ $emisor['nit'] ?? config('dte.emisor.nit') }} | <strong>NRC:</strong> {{ $emisor['nrc'] ?? config('dte.emisor.nrc') }}<br>
+                        {{ $direccionEmisor['complemento'] ?? config('dte.emisor.direccion.complemento') }}<br>
+                        {{ $nombreMuniEmisor }}, {{ $nombreDeptEmisor }}<br>
+                        <strong>Tel:</strong> {{ $emisor['telefono'] ?? config('dte.emisor.telefono') }} | <strong>Email:</strong> {{ $emisor['correo'] ?? config('dte.emisor.correo') }}<br>
+                        {{ $emisor['descActividad'] ?? config('dte.emisor.actividad_economica_desc') }}<br>
+                        <strong>{{ $nombreTipoEstablecimiento }}:</strong> {{ $emisor['codEstableMH'] ?? $emisor['codEstable'] ?? '' }} | <strong>Punto Venta:</strong> {{ $emisor['codPuntoVentaMH'] ?? $emisor['codPuntoVenta'] ?? '' }}
                     </div>
-                    <div class="document-type">DTE-{{ $factura->tipo_dte }}</div>
-                    @if($factura->estado == 'enviado_mh')
-                        <div style="margin-top: 5px;">
-                            <span class="status-badge status-enviado">✓ PROCESADO MH</span>
+                </td>
+                <td style="width: 290px; vertical-align: top;">
+                    <div class="invoice-box">
+                        <div class="invoice-title">
+                            @if($factura->tipo_dte == '01') FACTURA ELECTRÓNICA
+                            @elseif($factura->tipo_dte == '03') COMPROBANTE DE CRÉDITO FISCAL
+                            @elseif($factura->tipo_dte == '05') NOTA DE CRÉDITO
+                            @elseif($factura->tipo_dte == '14') FACTURA DE SUJETO EXCLUIDO
+                            @else DOCUMENTO TRIBUTARIO ELECTRÓNICO @endif
                         </div>
-                    @elseif($factura->estado == 'firmado')
-                        <div style="margin-top: 5px;">
-                            <span class="status-badge status-firmado">✓ FIRMADO</span>
-                        </div>
-                    @endif
-                </div>
-            </div>
-        </div>
-
-        <!-- Document Info -->
-        <div class="info-section">
-            <div class="section-title">INFORMACIÓN DEL DOCUMENTO</div>
-            <div class="info-grid">
-                <div class="info-col">
-                    <div class="info-row">
-                        <span class="info-label">Número de Control:</span>
-                        <span class="info-value">{{ $factura->numero_control }}</span>
+                        <div class="invoice-subtitle">DTE-{{ $factura->tipo_dte }}</div>
+                        
+                        <table class="invoice-details-table">
+                            <tr>
+                                <td class="label">CÓDIGO GENERACIÓN:</td>
+                            </tr>
+                            <tr>
+                                <td class="value" style="font-size: 8px; padding-bottom: 4px;">{{ $factura->codigo_generacion }}</td>
+                            </tr>
+                            <tr>
+                                <td class="label">NÚMERO DE CONTROL:</td>
+                                <td class="value">{{ $factura->numero_control }}</td>
+                            </tr>
+                            <tr>
+                                <td class="label">SELLO DE RECEPCIÓN:</td>
+                            </tr>
+                            <tr>
+                                <td class="value" style="font-size: 8px;">
+                                    @php
+                                        $selloRecepcion = 'PENDIENTE';
+                                        if ($factura->respuesta_mh) {
+                                            $respuestaMH = json_decode($factura->respuesta_mh, true);
+                                            if (is_array($respuestaMH)) {
+                                                $selloRecepcion = $respuestaMH['envio_mh']['selloRecibido'] 
+                                                    ?? $respuestaMH['selloRecibido'] 
+                                                    ?? $respuestaMH['data']['selloRecibido'] 
+                                                    ?? 'PENDIENTE';
+                                            }
+                                        }
+                                    @endphp
+                                    {{ $selloRecepcion }}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="label">FECHA EMISIÓN:</td>
+                                <td class="value">{{ $factura->fecha_emision->format('d/m/Y') }}</td>
+                            </tr>
+                            <tr>
+                                <td class="label">HORA EMISIÓN:</td>
+                                <td class="value">{{ $factura->hora_emision }}</td>
+                            </tr>
+                            <tr>
+                                <td class="label">CONDICIÓN OPERACIÓN:</td>
+                                <td class="value">{{ $condicionTxt }}</td>
+                            </tr>
+                            @if($formaPagoCodigo)
+                            <tr>
+                                <td class="label">FORMA DE PAGO:</td>
+                                <td class="value">{{ $formaPagoCodigo }}</td>
+                            </tr>
+                            @endif
+                        </table>
                     </div>
-                    <div class="info-row">
-                        <span class="info-label">Código de Generación:</span>
-                        <span class="info-value" style="font-size: 9px;">{{ $factura->codigo_generacion }}</span>
-                    </div>
-                </div>
-                <div class="info-col">
-                    <div class="info-row">
-                        <span class="info-label">Fecha de Emisión:</span>
-                        <span class="info-value">{{ $factura->fecha_emision->format('d/m/Y') }}</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Hora:</span>
-                        <span class="info-value">{{ $factura->hora_emision }}</span>
-                    </div>
-                </div>
-            </div>
-        </div>
+                </td>
+            </tr>
+        </table>
 
         <!-- Client Info -->
-        <div class="info-section">
-            <div class="section-title">DATOS DEL CLIENTE</div>
-            <div class="info-grid">
-                <div class="info-col">
-                    <div class="info-row">
-                        <span class="info-label">Nombre:</span>
-                        <span class="info-value">{{ $factura->receptor_nombre }}</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Documento:</span>
-                        <span class="info-value">{{ $factura->receptor_num_documento }}</span>
-                    </div>
-                    @if($factura->receptor_nrc)
-                    <div class="info-row">
-                        <span class="info-label">NRC:</span>
-                        <span class="info-value">{{ $factura->receptor_nrc }}</span>
-                    </div>
-                    @endif
-                </div>
-                <div class="info-col">
-                    @if($factura->receptor_telefono)
-                    <div class="info-row">
-                        <span class="info-label">Teléfono:</span>
-                        <span class="info-value">{{ $factura->receptor_telefono }}</span>
-                    </div>
-                    @endif
-                    @if($factura->receptor_correo)
-                    <div class="info-row">
-                        <span class="info-label">Email:</span>
-                        <span class="info-value">{{ $factura->receptor_correo }}</span>
-                    </div>
-                    @endif
-                    @if($factura->receptor_direccion)
-                    <div class="info-row">
-                        <span class="info-label">Dirección:</span>
-                        <span class="info-value">
-                            @php
-                                $direccion = $factura->receptor_direccion;
-                                // Si es JSON string, decodificar
-                                if (is_string($direccion)) {
-                                    $direccion = json_decode($direccion, true);
-                                }
-                                // Mostrar el complemento (dirección formateada)
-                                if (is_array($direccion) && isset($direccion['complemento'])) {
-                                    echo $direccion['complemento'];
-                                } else {
-                                    echo $factura->receptor_direccion;
-                                }
-                            @endphp
-                        </span>
-                    </div>
-                    @endif
-                </div>
-            </div>
-        </div>
-
-        <!-- Items Table -->
-        <div class="info-section">
-            <div class="section-title">DETALLE DE PRODUCTOS/SERVICIOS</div>
-            <table>
-                <thead>
-                    <tr>
-                        <th style="width: 5%;">#</th>
-                        <th style="width: 10%;">Código</th>
-                        <th style="width: 40%;">Descripción</th>
-                        <th class="right" style="width: 10%;">Cant.</th>
-                        <th class="right" style="width: 12%;">P. Unit.</th>
-                        <th class="right" style="width: 10%;">Desc.</th>
-                        <th class="right" style="width: 13%;">Total</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($factura->items as $item)
-                    <tr>
-                        <td>{{ $item->num_item }}</td>
-                        <td>{{ $item->codigo }}</td>
-                        <td>{{ $item->descripcion }}</td>
-                        <td class="right">{{ number_format($item->cantidad, 2) }}</td>
-                        <td class="right">${{ number_format($item->precio_unitario, 2) }}</td>
-                        <td class="right">${{ number_format($item->monto_descuento, 2) }}</td>
-                        <td class="right"><strong>${{ number_format($item->venta_gravada, 2) }}</strong></td>
-                    </tr>
-                    @endforeach
-                </tbody>
+        <div class="section-box">
+            <div class="section-title">DATOS DEL RECEPTOR</div>
+            @php
+                $receptor = $factura->dte_json['dteJson']['receptor'] ?? [];
+                $direccionReceptor = $receptor['direccion'] ?? [];
+                // Decodificar si viene como string JSON (caso legacy)
+                if (is_string($direccionReceptor)) $direccionReceptor = json_decode($direccionReceptor, true);
+                
+                $deptReceptor = $direccionReceptor['departamento'] ?? '';
+                $muniReceptor = $direccionReceptor['municipio'] ?? '';
+                $nombreDeptReceptor = $catDepartamentos[$deptReceptor] ?? $deptReceptor;
+                $nombreMuniReceptor = $catMunicipios[$deptReceptor][$muniReceptor] ?? $muniReceptor;
+            @endphp
+            <table class="client-table">
+                <tr>
+                    <td style="width: 15%; font-weight: bold; color: #4b5563;">NOMBRE:</td>
+                    <td style="width: 45%;">{{ $receptor['nombre'] ?? $factura->receptor_nombre }}</td>
+                    <td style="width: 15%; font-weight: bold; color: #4b5563;">DOCUMENTO:</td>
+                    <td style="width: 25%;">{{ $receptor['numDocumento'] ?? $factura->receptor_num_documento }}</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: bold; color: #4b5563;">DIRECCIÓN:</td>
+                    <td>
+                        {{ $direccionReceptor['complemento'] ?? $factura->receptor_direccion }}
+                        @if($nombreMuniReceptor || $nombreDeptReceptor)
+                            <br><span style="font-size: 9px; color: #666;">{{ $nombreMuniReceptor }}, {{ $nombreDeptReceptor }}</span>
+                        @endif
+                    </td>
+                    <td style="font-weight: bold; color: #4b5563;">TELÉFONO:</td>
+                    <td>{{ $receptor['telefono'] ?? $factura->receptor_telefono }}</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: bold; color: #4b5563;">NRC:</td>
+                    <td>{{ $receptor['nrc'] ?? $factura->receptor_nrc }}</td>
+                    <td style="font-weight: bold; color: #4b5563;">EMAIL:</td>
+                    <td>{{ $receptor['correo'] ?? $factura->receptor_correo }}</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: bold; color: #4b5563;">GIRO:</td>
+                    <td colspan="3">
+                        {{ $receptor['descActividad'] ?? $factura->receptor_actividad_economica }}
+                        @if(isset($receptor['codActividad']))
+                            <span style="color: #6b7280;">(Cód: {{ $receptor['codActividad'] }})</span>
+                        @endif
+                    </td>
+                </tr>
             </table>
         </div>
 
-        <!-- Totals -->
-        <div class="totals-section">
-            <div class="totals-grid">
-                <div class="totals-left">
-                    <div class="total-words">
-                        <strong>Son:</strong> {{ $factura->total_letras }}
-                    </div>
-                </div>
-                <div class="totals-right">
-                    @if($factura->total_gravada > 0)
-                    <div class="total-row">
-                        <span class="total-label">Subtotal Gravado:</span>
-                        <span class="total-value">${{ number_format($factura->total_gravada, 2) }}</span>
-                    </div>
-                    @endif
+        <!-- Items Table -->
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th style="width: 5%;" class="text-center">CANT</th>
+                    <th style="width: 10%;">UNIDAD</th>
+                    <th style="width: 45%;">DESCRIPCIÓN</th>
+                    <th style="width: 10%;" class="text-right">PRECIO UNIT.</th>
+                    <th style="width: 10%;" class="text-right">DESC.</th>
+                    <th style="width: 10%;" class="text-right">NO SUJETA</th>
+                    <th style="width: 10%;" class="text-right">EXENTA</th>
+                    <th style="width: 10%;" class="text-right">GRAVADA</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($factura->items as $item)
+                <tr>
+                    <td class="text-center font-mono">{{ number_format($item->cantidad, 2) }}</td>
+                    <td style="font-size: 9px;">{{ $item->unidad_medida ?? 'Unidad' }}</td>
+                    <td>
+                        {{ $item->descripcion }}
+                        @if($item->codigo)<br><span style="color: #6b7280; font-size: 8px;">COD: {{ $item->codigo }}</span>@endif
+                    </td>
+                    <td class="text-right font-mono">${{ number_format($item->precio_unitario, 2) }}</td>
+                    <td class="text-right font-mono">{{ $item->monto_descuento > 0 ? '$'.number_format($item->monto_descuento, 2) : '' }}</td>
+                    <td class="text-right font-mono">{{ $item->venta_nosujeta > 0 ? '$'.number_format($item->venta_nosujeta, 2) : '' }}</td>
+                    <td class="text-right font-mono">{{ $item->venta_exenta > 0 ? '$'.number_format($item->venta_exenta, 2) : '' }}</td>
+                    <td class="text-right font-mono font-bold">
+                        @if($factura->tipo_dte === '01' || $factura->tipo_dte === '14')
+                            ${{ number_format(($item->cantidad * $item->precio_unitario) - $item->monto_descuento, 2) }}
+                        @else
+                            ${{ number_format($item->venta_gravada, 2) }}
+                        @endif
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
 
-                    @if($factura->total_exenta > 0)
-                    <div class="total-row">
-                        <span class="total-label">Subtotal Exento:</span>
-                        <span class="total-value">${{ number_format($factura->total_exenta, 2) }}</span>
+        <!-- Totals Section -->
+        <table class="totals-table">
+            <tr>
+                <td class="amount-words">
+                    <strong>SON:</strong><br>
+                    {{ $factura->total_letras }}
+                    
+                    <div class="qr-container" style="margin-top: 15px;">
+                        @php
+                            // Intentar obtener QR localmente primero (SimpleQRCode), luego API externa
+                            $qrBase64 = $factura->getQrCodeLocalBase64(150);
+                            if (!$qrBase64) {
+                                $qrBase64 = $factura->getQrCodeBase64(150);
+                            }
+                        @endphp
+                        @if($qrBase64)
+                            {{-- Usamos una etiqueta img simple sin clases para evitar conflictos --}}
+                            <img src="data:image/png;base64,{{ $qrBase64 }}" width="100" height="100" style="display: block; margin: 0 auto;">
+                            <div style="font-size: 7px; margin-top: 4px; color: #666;">Sello de Validación Electrónica</div>
+                        @else
+                            <div style="border: 1px dashed #ccc; width: 100px; height: 100px; margin: 0 auto; line-height: 100px; font-size: 8px; color: #999; background: #f9fafb; text-align: center;">
+                                QR NO DISPONIBLE
+                            </div>
+                        @endif
+                        <div style="font-size: 8px; margin-top: 5px; font-family: monospace;">{{ $factura->codigo_generacion }}</div>
                     </div>
-                    @endif
+                </td>
+                <td class="totals-box">
+                    <table class="totals-inner-table">
+                        <tr>
+                            <td class="totals-label">Suma total de operaciones:</td>
+                            <td class="totals-value">${{ number_format($sumaOperaciones, 2) }}</td>
+                        </tr>
+                        <tr>
+                            <td class="totals-label">Monto global desc., rebajas y otros a Ventas No Sujetas:</td>
+                            <td class="totals-value">${{ number_format($descuentoNoSujeta, 2) }}</td>
+                        </tr>
+                        <tr>
+                            <td class="totals-label">Monto global desc., rebajas y otros a V. Ex.:</td>
+                            <td class="totals-value">${{ number_format($descuentoExenta, 2) }}</td>
+                        </tr>
+                        <tr>
+                            <td class="totals-label">Monto global desc., rebajas y otros a V. Gr.:</td>
+                            <td class="totals-value">${{ number_format($descuentoGravada, 2) }}</td>
+                        </tr>
+                        
+                        @if($factura->tipo_dte !== '01' && $factura->tipo_dte !== '14')
+                        <tr>
+                            <td class="totals-label">Impuesto al Valor Agregado 13%:</td>
+                            <td class="totals-value">${{ number_format($totalIva, 2) }}</td>
+                        </tr>
+                        @else
+                        <tr>
+                            <td class="totals-label">Impuesto al Valor Agregado 13%:</td>
+                            <td class="totals-value">$0.00</td>
+                        </tr>
+                        @endif
 
-                    @if($factura->total_descuento > 0)
-                    <div class="total-row">
-                        <span class="total-label">Descuento:</span>
-                        <span class="total-value">-${{ number_format($factura->total_descuento, 2) }}</span>
-                    </div>
-                    @endif
+                        <tr style="border-top: 1px solid #e5e7eb;">
+                            <td class="totals-label" style="font-weight: bold; padding-top: 4px;">Sub-total:</td>
+                            <td class="totals-value" style="font-weight: bold; padding-top: 4px;">${{ number_format($subTotal, 2) }}</td>
+                        </tr>
 
-                    @if($factura->total_iva > 0)
-                    <div class="total-row">
-                        <span class="total-label">IVA ({{ $factura->tipo_dte == '01' ? '11.5%' : '13%' }}):</span>
-                        <span class="total-value">${{ number_format($factura->total_iva, 2) }}</span>
-                    </div>
-                    @endif
-
-                    <div class="total-row grand-total">
-                        <span class="total-label">TOTAL A PAGAR:</span>
-                        <span class="total-value">${{ number_format($factura->total_pagar, 2) }}</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- QR Code (only if enviado_mh) -->
-        @if($factura->estado == 'enviado_mh')
-        <div class="qr-section">
-            <div style="font-size: 11px; font-weight: bold; margin-bottom: 5px;">
-                Código QR - Consulta Pública MH
-            </div>
-            @php
-                $qrBase64 = $factura->getQrCodeLocalBase64(150);
-                if (!$qrBase64) {
-                    $qrBase64 = $factura->getQrCodeBase64(150);
-                }
-            @endphp
-            @if($qrBase64)
-                <img src="data:image/png;base64,{{ $qrBase64 }}" alt="Código QR" style="max-width: 150px; height: auto;">
-            @else
-                <div style="padding: 20px; background: #f0f0f0; border: 1px solid #ddd; text-align: center;">
-                    <p style="font-size: 10px; color: #666;">No se pudo generar el código QR</p>
-                </div>
-            @endif
-            <div style="font-size: 8px; color: #6b7280; margin-top: 5px;">
-                Escanea para verificar en admin.factura.gob.sv
-            </div>
-            <div style="font-size: 8px; color: #9ca3af; margin-top: 3px; word-break: break-all;">
-                {{ $consultaUrl }}
-            </div>
-        </div>
-        @endif
+                        <tr>
+                            <td class="totals-label">IVA percibido:</td>
+                            <td class="totals-value">${{ number_format($ivaPercibido, 2) }}</td>
+                        </tr>
+                        <tr>
+                            <td class="totals-label">IVA retenido:</td>
+                            <td class="totals-value">${{ number_format($ivaRetenido, 2) }}</td>
+                        </tr>
+                        <tr>
+                            <td class="totals-label">Retención renta:</td>
+                            <td class="totals-value">${{ number_format($reteRenta, 2) }}</td>
+                        </tr>
+                        <tr>
+                            <td class="totals-label">Monto total de la operación:</td>
+                            <td class="totals-value">${{ number_format($montoTotalOperacion, 2) }}</td>
+                        </tr>
+                        <tr>
+                            <td class="totals-label">Total otros montos no afectos:</td>
+                            <td class="totals-value">${{ number_format($totalNoGravado, 2) }}</td>
+                        </tr>
+                        
+                        <tr class="totals-row-final">
+                            <td class="totals-label" style="color: #1e3a8a; font-weight: bold;">Total a pagar (USD):</td>
+                            <td class="totals-value" style="color: #1e3a8a; font-weight: bold;">${{ number_format($totalPagar, 2) }}</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
 
         <!-- Footer -->
         <div class="footer">
-            <p>Este documento es una representación impresa de la factura electrónica generada según Ley de Simplificación Aduanera.</p>
-            <p>Documento generado electrónicamente - No requiere firma autógrafa</p>
+            <p>Este documento es una representación gráfica de un Documento Tributario Electrónico (DTE) conforme a la legislación de El Salvador.</p>
+            <p>Responsable de la emisión: {{ config('dte.emisor.nombre') }}</p>
         </div>
     </div>
 </body>

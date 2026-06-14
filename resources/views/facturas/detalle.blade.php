@@ -327,7 +327,15 @@
                                     <td class="px-4 py-3 text-sm text-right text-gray-700">{{ number_format($item->cantidad, 2) }}</td>
                                     <td class="px-4 py-3 text-sm text-right text-gray-700">${{ number_format($item->precio_unitario, 2) }}</td>
                                     <td class="px-4 py-3 text-sm text-right text-gray-700">${{ number_format($item->monto_descuento, 2) }}</td>
-                                    <td class="px-4 py-3 text-sm text-right font-semibold text-gray-700">${{ number_format($item->venta_gravada, 2) }}</td>
+                                    <td class="px-4 py-3 text-sm text-right font-semibold text-gray-700">
+                                        @if($factura->tipo_dte === '01' || $factura->tipo_dte === '14')
+                                            {{-- DTE-01 y DTE-14: Mostrar total CON IVA (lo que se cobra) --}}
+                                            ${{ number_format(($item->cantidad * $item->precio_unitario) - $item->monto_descuento, 2) }}
+                                        @else
+                                            {{-- DTE-03 y otros: Mostrar venta_gravada (sin IVA) --}}
+                                            ${{ number_format($item->venta_gravada, 2) }}
+                                        @endif
+                                    </td>
                                 </tr>
                                 @endforeach
                             </tbody>
@@ -350,19 +358,55 @@
                                     <span class="font-semibold text-red-600">-${{ number_format($factura->total_descuento, 2) }}</span>
                                 </div>
                                 @endif
+                                
+                                @if($factura->tipo_dte !== '01' && $factura->tipo_dte !== '14')
                                 <div class="flex justify-between">
                                     <span class="text-gray-600">IVA
                                         @if($factura->tipo_dte === '03' || $factura->tipo_dte === '05')
                                             (13%)
                                         @else
-                                            (11.5%)
+                                            (13%)
                                         @endif:
                                     </span>
                                     <span class="font-semibold">${{ number_format($factura->total_iva, 2) }}</span>
                                 </div>
+                                @endif
+
+                                @if($factura->tipo_dte === '14')
+                                    @php
+                                        $retencionRenta = $factura->dte_json['dteJson']['resumen']['reteRenta'] ?? 0;
+                                    @endphp
+                                    @if($retencionRenta > 0)
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">(-) Retención Renta (10%):</span>
+                                        <span class="font-semibold text-red-600">-${{ number_format($retencionRenta, 2) }}</span>
+                                    </div>
+                                    @endif
+                                @endif
+
+                                @php
+                                    $dteResumen = is_array($factura->dte_json) ? ($factura->dte_json['dteJson']['resumen'] ?? []) : (json_decode($factura->dte_json, true)['dteJson']['resumen'] ?? []);
+                                    $ivaRete1 = floatval($dteResumen['ivaRete1'] ?? 0);
+                                    $montoTotalOperacion = floatval($dteResumen['montoTotalOperacion'] ?? 0);
+                                    $totalPagarFinal = isset($dteResumen['totalPagar']) ? floatval($dteResumen['totalPagar']) : $factura->total_pagar;
+                                @endphp
+                                @if($ivaRete1 > 0)
+                                <div class="flex justify-between border-t pt-2">
+                                    <span class="text-gray-600">Monto Total Operación:</span>
+                                    <span class="font-semibold">${{ number_format($montoTotalOperacion, 2) }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-orange-700 font-medium flex items-center gap-1">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                        Retención 1% (Gran Contribuyente):
+                                    </span>
+                                    <span class="font-semibold text-orange-700">-${{ number_format($ivaRete1, 2) }}</span>
+                                </div>
+                                @endif
+
                                 <div class="flex justify-between text-xl font-bold text-blue-600 border-t pt-2">
-                                    <span>TOTAL:</span>
-                                    <span>${{ number_format($factura->total_pagar, 2) }}</span>
+                                    <span>TOTAL{{ $ivaRete1 > 0 ? ' A PAGAR' : '' }}:</span>
+                                    <span>${{ number_format($totalPagarFinal, 2) }}</span>
                                 </div>
                                 <div class="text-sm text-gray-600 italic mt-2">
                                     Son: {{ $factura->total_letras }}
@@ -429,6 +473,18 @@
                     @endif
 
                     @if($factura->estado === 'enviado_mh')
+                        <form action="{{ route('facturas.enviarJSON', $factura) }}" method="POST" class="inline-block">
+                            @csrf
+                            <button type="submit"
+                                    class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-2 rounded-lg transition-colors inline-flex items-center gap-2"
+                                    onclick="return confirm('¿Enviar JSON para revisión interna?')">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2m0 0v-8m0 8l-6-4m6 4l6-4" />
+                                </svg>
+                                Enviar JSON
+                            </button>
+                        </form>
+
                         <!-- Botón para consultar estado en MH -->
                         <form action="{{ route('consultas.buscar') }}" method="POST" class="inline">
                             @csrf

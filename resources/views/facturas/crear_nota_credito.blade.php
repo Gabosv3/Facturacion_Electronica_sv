@@ -6,6 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Generar Nota de Crédito - DTE El Salvador</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="{{ asset('js/catalogo-municipios.js') }}"></script>
 </head>
 <body class="bg-gray-100">
@@ -154,6 +155,14 @@
 
                                 <!-- Explicación dinámica según tipo -->
                                 <div id="explicacionTipo" class="mt-3 p-3 rounded hidden"></div>
+
+                                <!-- Botón de Auto-llenado (Solo visible para Anulación) -->
+                                <button type="button" id="autoLlenarItems" class="hidden mt-3 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded flex items-center justify-center gap-2 transition-colors shadow-sm">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 5a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0v-1H3a1 1 0 010-2h1v-1a1 1 0 011-1zm5-5a1 1 0 011 1v1h1a1 1 0 010 2h-1v1a1 1 0 01-2 0v-1h-1a1 1 0 010-2h1V3a1 1 0 011-1zm0 5a1 1 0 011 1v1h1a1 1 0 010 2h-1v1a1 1 0 01-2 0v-1h-1a1 1 0 010-2h1v-1a1 1 0 011-1zM5 14a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0v-1H3a1 1 0 010-2h1v-1a1 1 0 011-1zm5 0a1 1 0 011 1v1h1a1 1 0 010 2h-1v1a1 1 0 01-2 0v-1h-1a1 1 0 010-2h1v-1a1 1 0 011-1z" clip-rule="evenodd" />
+                                    </svg>
+                                    ✨ Auto-llenar Items desde Factura Original
+                                </button>
                             </div>
 
                             <div class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
@@ -256,10 +265,29 @@
 
                         <div id="items-container">
                             <div class="item-row bg-gray-50 p-4 rounded-lg mb-4">
-                                <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
+                                <input type="hidden" name="items[0][producto_id]" class="producto-id" value="">
+                                <div class="grid grid-cols-1 md:grid-cols-7 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Tipo *</label>
+                                        <select name="items[0][tipo_item]" class="tipo-item w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" data-item-index="0" required>
+                                            <option value="">Seleccionar</option>
+                                            <option value="1">Bien</option>
+                                            <option value="2">Servicio</option>
+                                        </select>
+                                    </div>
+
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-2">Código</label>
-                                        <input type="text" name="items[0][codigo]" class="w-full border border-gray-300 rounded-lg px-4 py-2" required>
+                                        <div class="relative">
+                                            <input type="text" name="items[0][codigo]" data-item-index="0" class="codigo-producto w-full border border-gray-300 rounded-lg px-4 py-2" required>
+                                            <div class="loader-producto hidden absolute right-3 top-3">
+                                                <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                </svg>
+                                            </div>
+                                        </div>
+                                        <p class="resultado-producto text-xs mt-1 hidden"></p>
                                     </div>
                                     <div class="md:col-span-2">
                                         <label class="block text-sm font-medium text-gray-700 mb-2">Descripción</label>
@@ -295,7 +323,7 @@
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Condición de Operación *</label>
                                 <select name="condicion_operacion" class="w-full border border-gray-300 rounded-lg px-4 py-2" required>
                                     <option value="1">Contado</option>
-                                    <option value="2">Crédito</option>
+                                    <!-- <option value="2">Crédito</option> -->
                                     <option value="3">Otro</option>
                                 </select>
                             </div>
@@ -340,7 +368,31 @@
 
     <script>
         let itemCount = 1;
+        let servicioCount = 1;
         let currentFacturaItems = [];
+        
+        // Obtener token de autenticación del servidor
+        const authToken = @json(session('auth_token'));
+        const motorApiUrl = @json(config('services.motor_api.url'));
+
+        // Función para manejar errores de autenticación (Token expirado)
+        function handleAuthError(error) {
+            if (error.message.includes('HTTP 401') || error.message.includes('Token expirado')) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Sesión expirada',
+                    text: 'Tu sesión de conexión con el API ha expirado. Por favor recarga la página.',
+                    confirmButtonText: 'Recargar página',
+                    allowOutsideClick: false
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.reload();
+                    }
+                });
+                return true;
+            }
+            return false;
+        }
 
         // Auto-llenar datos del receptor cuando se selecciona un documento
         document.getElementById('documentoRelacionado')?.addEventListener('change', function() {
@@ -376,15 +428,27 @@
 
                 // Guardar items de la factura seleccionada
                 try {
-                    currentFacturaItems = JSON.parse(selectedOption.dataset.items || '[]');
-                    // Mostrar botón de auto-llenado si hay items
-                    if (currentFacturaItems.length > 0) {
-                        document.getElementById('autoLlenarItems').classList.remove('hidden');
+                    let itemsData = selectedOption.dataset.items;
+                    if (itemsData) {
+                        // Decodificar HTML entities (&quot; → ")
+                        const textarea = document.createElement('textarea');
+                        textarea.innerHTML = itemsData;
+                        const decodedItems = textarea.value;
+                        
+                        console.log('Items decodificados:', decodedItems);
+                        currentFacturaItems = JSON.parse(decodedItems);
+                        console.log('Items cargados:', currentFacturaItems);
+                    } else {
+                        currentFacturaItems = [];
                     }
                 } catch (e) {
                     console.error('Error parsing items:', e);
+                    console.log('Raw items data:', selectedOption.dataset.items);
                     currentFacturaItems = [];
                 }
+
+                // Verificar si mostrar botón (depende del tipo de nota de crédito)
+                verificarMostrarBotonAutoLlenar();
 
                 // ⚠️ VERIFICAR SI TIENE NOTA DE CRÉDITO EXISTENTE
                 const notaCreditoEstado = selectedOption.dataset.notaCreditoEstado;
@@ -441,6 +505,7 @@
         document.getElementById('tipoNotaCredito').addEventListener('change', function() {
             const tipo = this.value;
             const explicacionDiv = document.getElementById('explicacionTipo');
+            const btnAutoLlenar = document.getElementById('autoLlenarItems');
 
             const explicaciones = {
                 '1': {
@@ -468,8 +533,16 @@
                     <p class="text-sm mt-2">${exp.texto}</p>
                 `;
                 explicacionDiv.classList.remove('hidden');
+
+                // Mostrar botón solo si es Anulación (tipo 1)
+                if (tipo === '1') {
+                    btnAutoLlenar.classList.remove('hidden');
+                } else {
+                    btnAutoLlenar.classList.add('hidden');
+                }
             } else {
                 explicacionDiv.classList.add('hidden');
+                btnAutoLlenar.classList.add('hidden');
             }
         });
 
@@ -478,10 +551,29 @@
             const container = document.getElementById('items-container');
             const newItem = `
                 <div class="item-row bg-gray-50 p-4 rounded-lg mb-4">
-                    <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
+                    <input type="hidden" name="items[${itemCount}][producto_id]" class="producto-id" value="">
+                    <div class="grid grid-cols-1 md:grid-cols-7 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Tipo *</label>
+                            <select name="items[${itemCount}][tipo_item]" class="tipo-item w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" data-item-index="${itemCount}" required>
+                                <option value="">Seleccionar</option>
+                                <option value="1">Bien</option>
+                                <option value="2">Servicio</option>
+                            </select>
+                        </div>
+
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Código</label>
-                            <input type="text" name="items[${itemCount}][codigo]" class="w-full border border-gray-300 rounded-lg px-4 py-2" required>
+                            <div class="relative">
+                                <input type="text" name="items[${itemCount}][codigo]" data-item-index="${itemCount}" class="codigo-producto w-full border border-gray-300 rounded-lg px-4 py-2" required>
+                                <div class="loader-producto hidden absolute right-3 top-3">
+                                    <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <p class="resultado-producto text-xs mt-1 hidden"></p>
                         </div>
                         <div class="md:col-span-2">
                             <label class="block text-sm font-medium text-gray-700 mb-2">Descripción</label>
@@ -489,23 +581,161 @@
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Cantidad</label>
-                            <input type="number" name="items[${itemCount}][cantidad]" step="1" min="1" class="w-full border border-gray-300 rounded-lg px-4 py-2" required>
+                            <input type="number" name="items[${itemCount}][cantidad]" step="1" min="1" class="cantidad w-full border border-gray-300 rounded-lg px-4 py-2" required>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Precio Unit.</label>
-                            <input type="number" name="items[${itemCount}][precio_unitario]" step="0.01" min="0" class="w-full border border-gray-300 rounded-lg px-4 py-2" required>
+                            <input type="number" name="items[${itemCount}][precio_unitario]" step="0.01" min="0" class="precio w-full border border-gray-300 rounded-lg px-4 py-2" required>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Descuento</label>
-                            <input type="number" name="items[${itemCount}][monto_descuento]" step="0.01" min="0" value="0" class="w-full border border-gray-300 rounded-lg px-4 py-2">
+                            <input type="number" name="items[${itemCount}][monto_descuento]" step="0.01" min="0" value="0" class="descuento w-full border border-gray-300 rounded-lg px-4 py-2">
                         </div>
                     </div>
                     <button type="button" class="remove-item text-red-500 hover:text-red-700 mt-2">Eliminar</button>
                 </div>
             `;
             container.insertAdjacentHTML('beforeend', newItem);
+            
+            // Obtener referencias del nuevo item
+            const lastItem = container.querySelector('.item-row:last-child');
+            const tipoItemSelect = lastItem.querySelector('.tipo-item');
+            const codigoInput = lastItem.querySelector('.codigo-producto');
+            
+            // Listener para cambios en tipo_item
+            tipoItemSelect.addEventListener('change', function() {
+                aplicarLogicaTipo(this, codigoInput);
+            });
+            
+            // Setup búsqueda
+            setupProductSearch(codigoInput);
+            
+            // Adjuntar validación al nuevo item
+            attachItemValidation();
+            
             itemCount++;
         });
+
+        // Función para controlar cuándo mostrar el botón Auto-llenar Items
+        function verificarMostrarBotonAutoLlenar() {
+            const boton = document.getElementById('autoLlenarItems');
+            const tipoNota = document.getElementById('tipoNotaCredito').value;
+            const hayItems = currentFacturaItems && currentFacturaItems.length > 0;
+
+            if (tipoNota === '1' && hayItems) {
+                boton.classList.remove('hidden');
+            } else {
+                boton.classList.add('hidden');
+            }
+        }
+
+        // Búsqueda de productos
+        function setupProductSearch(input) {
+             input.addEventListener('blur', function() {
+                const codigo = this.value.trim();
+                if (!codigo) return;
+                buscarProducto(codigo, this);
+            });
+        }
+
+        function buscarProducto(codigo, inputElement) {
+            const itemRow = inputElement.closest('.item-row');
+            if (!itemRow) return;
+            
+            // Show loader if exists
+            const loader = inputElement.parentElement.querySelector('.loader-producto');
+            const resultadoMsg = itemRow.querySelector('.resultado-producto');
+
+            if(loader) loader.classList.remove('hidden');
+            if(resultadoMsg) resultadoMsg.classList.add('hidden');
+
+            fetch(`${motorApiUrl}/productos/buscar/${codigo}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${authToken}`,
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return response.json();
+            })
+            .then(data => {
+                if(loader) loader.classList.add('hidden');
+                const producto = data.data || data;
+
+                if (producto && producto.codigo) {
+                    // Fill fields
+                    if (producto.id || producto.producto_id) {
+                        const idInput = itemRow.querySelector('.producto-id');
+                        if(idInput) idInput.value = producto.id || producto.producto_id;
+                    }
+                    
+                    inputElement.value = producto.codigo;
+                    
+                    const descInput = itemRow.querySelector('input[name*="[descripcion]"]');
+                    if (descInput) descInput.value = producto.nombre_completo || producto.nombre || '';
+
+                    const precioInput = itemRow.querySelector('input[name*="[precio_unitario]"]');
+                    if (precioInput && producto.Precio_unitario) precioInput.value = producto.Precio_unitario;
+                    
+                    // Trigger validation/calculation if needed
+                    validarCampoItem(inputElement);
+
+                    if (resultadoMsg) {
+                        resultadoMsg.textContent = '✓ Producto encontrado';
+                        resultadoMsg.className = 'resultado-producto text-xs mt-1 font-medium text-green-600';
+                        resultadoMsg.classList.remove('hidden');
+                        setTimeout(() => resultadoMsg.classList.add('hidden'), 3000);
+                    }
+                } else {
+                    // NO LIMPIAR EL CAMPO, MOSTRAR MENSAJE TEMPORAL
+                    if (resultadoMsg) {
+                        resultadoMsg.textContent = '⚠️ Producto no encontrado (ingrese datos manualmente)';
+                        resultadoMsg.className = 'resultado-producto text-xs mt-1 font-medium text-orange-600';
+                        resultadoMsg.classList.remove('hidden');
+                    }
+                }
+            })
+            .catch(error => {
+                if(loader) loader.classList.add('hidden');
+                console.error('Error buscando producto:', error);
+                // NO LIMPIAR EL CAMPO, MOSTRAR ERROR
+                if (resultadoMsg) {
+                    resultadoMsg.textContent = '⚠️ Error al buscar producto';
+                    resultadoMsg.className = 'resultado-producto text-xs mt-1 font-medium text-red-600';
+                    resultadoMsg.classList.remove('hidden');
+                }
+            });
+        }
+
+        // Aplicar lógica según el tipo seleccionado
+        function aplicarLogicaTipo(tipoSelect, codigoInput) {
+            const tipo = tipoSelect.value;
+            
+            if (tipo === '2') {
+                // SERVICIO: código auto-generado
+                const servicioCode = 'SERV-' + String(servicioCount).padStart(3, '0');
+                servicioCount++;
+                
+                codigoInput.value = servicioCode;
+                codigoInput.readOnly = true;
+                codigoInput.classList.add('bg-gray-200');
+                codigoInput.style.cursor = 'not-allowed';
+                
+                // Remover evento de búsqueda
+                codigoInput.removeEventListener('blur', function() {});
+            } else if (tipo === '1') {
+                // BIEN: código manual con búsqueda
+                codigoInput.value = '';
+                codigoInput.readOnly = false;
+                codigoInput.classList.remove('bg-gray-200');
+                codigoInput.style.cursor = 'auto';
+                
+                // Re-agregar búsqueda si no está
+                setupProductSearch(codigoInput);
+            }
+        }
 
         // Eliminar item
         document.getElementById('items-container').addEventListener('click', function(e) {
@@ -514,16 +744,40 @@
             }
         });
 
+        // Setup del primer item (item 0)
+        const primerTipoItem = document.querySelector('select[name="items[0][tipo_item]"]');
+        const primerCodigoInput = document.querySelector('input[name="items[0][codigo]"]');
+        
+        if (primerTipoItem) {
+            primerTipoItem.addEventListener('change', function() {
+                aplicarLogicaTipo(this, primerCodigoInput);
+            });
+        }
+
+        if (primerCodigoInput) {
+            setupProductSearch(primerCodigoInput);
+        }
+
         // Auto-llenar items desde la factura original
         document.getElementById('autoLlenarItems')?.addEventListener('click', function() {
             if (currentFacturaItems.length === 0) {
-                alert('No hay items disponibles para auto-llenar');
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Sin items disponibles',
+                    text: 'No hay items disponibles para copiar. Selecciona primero una factura.',
+                    confirmButtonColor: '#3085d6'
+                });
                 return;
             }
 
             const tipoNota = document.getElementById('tipoNotaCredito').value;
             if (!tipoNota) {
-                alert('Por favor, selecciona primero el Tipo de Nota de Crédito');
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Tipo de Nota requerido',
+                    text: 'Por favor, selecciona primero el Tipo de Nota de Crédito',
+                    confirmButtonColor: '#3085d6'
+                });
                 return;
             }
 
@@ -532,53 +786,272 @@
                 ? `¿Auto-llenar con TODOS los ${currentFacturaItems.length} items de la factura original?\n(Anulación total)`
                 : `¿Auto-llenar con los ${currentFacturaItems.length} items de la factura original?\n(Luego puedes modificar cantidades/precios según necesites)`;
 
-            if (!confirm(confirmMsg)) {
-                return;
+            Swal.fire({
+                title: '¿Estás seguro?',
+                text: confirmMsg,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Sí, auto-llenar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Limpiar items existentes
+                    document.getElementById('items-container').innerHTML = '';
+                    itemCount = 0;
+
+                    // Agregar cada item de la factura
+                    currentFacturaItems.forEach((item, index) => {
+                        const newItem = `
+                            <div class="item-row bg-gray-50 p-4 rounded-lg mb-4">
+                                <input type="hidden" name="items[${index}][producto_id]" class="producto-id" value="${item.producto_id || ''}">
+                                <div class="grid grid-cols-1 md:grid-cols-7 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Tipo *</label>
+                                        <select name="items[${index}][tipo_item]" class="tipo-item w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+                                            <option value="1" ${item.tipo_item == 1 ? 'selected' : ''}>Bien</option>
+                                            <option value="2" ${item.tipo_item == 2 ? 'selected' : ''}>Servicio</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Código</label>
+                                        <input type="text" name="items[${index}][codigo]" value="${item.codigo || ''}" class="codigo-producto w-full border border-gray-300 rounded-lg px-4 py-2" required>
+                                    </div>
+
+                                    <div class="md:col-span-2">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Descripción</label>
+                                        <input type="text" name="items[${index}][descripcion]" value="${item.descripcion || ''}" class="w-full border border-gray-300 rounded-lg px-4 py-2" required>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Cantidad</label>
+                                        <input type="number" name="items[${index}][cantidad]" value="${item.cantidad || ''}" step="1" min="1" class="cantidad w-full border border-gray-300 rounded-lg px-4 py-2" required>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Precio Unit.</label>
+                                        <input type="number" name="items[${index}][precio_unitario]" value="${item.precio_unitario || ''}" step="0.01" min="0" class="precio w-full border border-gray-300 rounded-lg px-4 py-2" required>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Descuento</label>
+                                        <input type="number" name="items[${index}][monto_descuento]" value="${item.monto_descuento || 0}" step="0.01" min="0" class="descuento w-full border border-gray-300 rounded-lg px-4 py-2">
+                                    </div>
+                                </div>
+                                <button type="button" class="remove-item text-red-500 hover:text-red-700 mt-2 text-sm font-medium">Eliminar Item</button>
+                            </div>
+                        `;
+                        document.getElementById('items-container').insertAdjacentHTML('beforeend', newItem);
+                        itemCount++;
+                    });
+                    
+                    // Re-attach validation events
+                    attachItemValidation();
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: '✨ Items copiados',
+                        text: `Se copiaron ${currentFacturaItems.length} item(s) de la factura.`,
+                        confirmButtonColor: '#10b981'
+                    });
+                }
+            });
+        });
+
+        // VALIDACIÓN EN TIEMPO REAL DE ITEMS (IDÉNTICA A DTE-01 Y CCF)
+        // Validar campo de item
+        function validarCampoItem(input, tipoValidacion = 'default') {
+            const itemRow = input.closest('.item-row');
+            const campoNombre = input.name.match(/\[([^\]]+)\]/)?.[1] || '';
+            const valor = input.value.trim();
+            let esValido = true;
+            let mensaje = '';
+
+            // Campos obligatorios no deben estar vacíos
+            const camposObligatorios = ['tipo_item', 'codigo', 'descripcion', 'cantidad', 'precio_unitario'];
+            
+            if (camposObligatorios.includes(campoNombre)) {
+                if (!valor) {
+                    esValido = false;
+                    mensaje = 'Este campo es obligatorio';
+                }
             }
 
-            // Limpiar items existentes
-            document.getElementById('items-container').innerHTML = '';
-            itemCount = 0;
+            // Campos de moneda (precio y descuento) deben ser positivos
+            const camposMoneda = ['precio_unitario', 'monto_descuento'];
+            if (camposMoneda.includes(campoNombre) && valor) {
+                const numeroValor = parseFloat(valor);
+                if (isNaN(numeroValor) || numeroValor < 0) {
+                    esValido = false;
+                    mensaje = 'Solo se permiten números positivos';
+                } else if (numeroValor === 0 && campoNombre === 'precio_unitario') {
+                    esValido = false;
+                    mensaje = 'El precio debe ser mayor a 0';
+                }
+            }
 
-            // Agregar cada item de la factura
-            currentFacturaItems.forEach((item, index) => {
-                const newItem = `
-                    <div class="item-row bg-gray-50 p-4 rounded-lg mb-4">
-                        <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Código</label>
-                                <input type="text" name="items[${index}][codigo]" value="${item.codigo || ''}" class="w-full border border-gray-300 rounded-lg px-4 py-2" required>
-                            </div>
-                            <div class="md:col-span-2">
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Descripción</label>
-                                <input type="text" name="items[${index}][descripcion]" value="${item.descripcion || ''}" class="w-full border border-gray-300 rounded-lg px-4 py-2" required>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Cantidad</label>
-                                <input type="number" name="items[${index}][cantidad]" value="${item.cantidad || ''}" step="1" min="1" class="w-full border border-gray-300 rounded-lg px-4 py-2" required>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Precio Unit.</label>
-                                <input type="number" name="items[${index}][precio_unitario]" value="${item.precio_unitario || ''}" step="0.01" min="0" class="w-full border border-gray-300 rounded-lg px-4 py-2" required>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Descuento</label>
-                                <input type="number" name="items[${index}][monto_descuento]" value="${item.monto_descuento || 0}" step="0.01" min="0" class="w-full border border-gray-300 rounded-lg px-4 py-2">
-                            </div>
-                        </div>
-                        <button type="button" class="remove-item text-red-500 hover:text-red-700 mt-2">Eliminar</button>
-                    </div>
-                `;
-                document.getElementById('items-container').insertAdjacentHTML('beforeend', newItem);
-                itemCount++;
+            // Campo cantidad debe ser positivo
+            if (campoNombre === 'cantidad' && valor) {
+                const numeroValor = parseInt(valor);
+                if (isNaN(numeroValor) || numeroValor <= 0) {
+                    esValido = false;
+                    mensaje = 'La cantidad debe ser mayor a 0';
+                }
+            }
+
+            // Validar descuento no sea mayor al subtotal
+            if (campoNombre === 'monto_descuento' && valor) {
+                const cantidadInput = itemRow.querySelector('input[name*="cantidad"]');
+                const precioInput = itemRow.querySelector('input[name*="precio_unitario"]');
+                
+                if (cantidadInput && precioInput && cantidadInput.value && precioInput.value) {
+                    const subtotal = parseFloat(cantidadInput.value) * parseFloat(precioInput.value);
+                    const descuento = parseFloat(valor);
+                    
+                    if (descuento > subtotal) {
+                        esValido = false;
+                        mensaje = `Descuento no puede ser mayor al subtotal ($${subtotal.toFixed(2)})`;
+                    }
+                }
+            }
+
+            // Aplicar estilos visual
+            if (esValido && valor) {
+                input.classList.remove('border-red-500', 'bg-red-50', 'error-field');
+                input.classList.add('border-green-500');
+                // Remover mensaje de error si existe
+                const existentMsg = itemRow.querySelector(`[data-error-for="${input.name}"]`);
+                if (existentMsg) existentMsg.remove();
+            } else if (!esValido) {
+                input.classList.remove('border-green-500');
+                input.classList.add('border-red-500', 'bg-red-50', 'error-field');
+                
+                // Mostrar/actualizar mensaje de error
+                let msgElement = itemRow.querySelector(`[data-error-for="${input.name}"]`);
+                if (!msgElement) {
+                    msgElement = document.createElement('p');
+                    msgElement.setAttribute('data-error-for', input.name);
+                    msgElement.className = 'text-red-600 text-xs mt-1 font-semibold';
+                    input.parentElement.appendChild(msgElement);
+                }
+                msgElement.textContent = mensaje;
+            } else {
+                input.classList.remove('border-red-500', 'bg-red-50', 'error-field', 'border-green-500');
+            }
+
+            return esValido;
+        }
+
+        // Attach validación a todos los inputs de items existentes
+        function attachItemValidation() {
+            document.querySelectorAll('.item-row input, .item-row select').forEach(input => {
+                // Remover listeners anteriores (si existen)
+                input.removeEventListener('blur', handleItemBlur);
+                input.removeEventListener('change', handleItemChange);
+                input.removeEventListener('input', handleItemInput);
+                
+                // Agregar nuevos listeners
+                input.addEventListener('blur', handleItemBlur);
+                input.addEventListener('change', handleItemChange);
+                input.addEventListener('input', handleItemInput);
             });
+        }
 
-            // Mostrar mensaje de éxito
-            const mensaje = tipoNota === '1'
-                ? `✅ ${currentFacturaItems.length} items auto-llenados para ANULACIÓN TOTAL`
-                : `✅ ${currentFacturaItems.length} items auto-llenados. Ajusta cantidades/precios según necesites.`;
+        // Handlers para validación
+        function handleItemBlur(e) {
+            validarCampoItem(e.target, 'blur');
+        }
 
-            alert(mensaje);
+        function handleItemChange(e) {
+            validarCampoItem(e.target, 'change');
+        }
+
+        function handleItemInput(e) {
+            // Solo validar en tiempo real para campos numéricos
+            if (['precio_unitario', 'monto_descuento', 'cantidad'].includes(e.target.name.match(/\[([^\]]+)\]/)?.[1])) {
+                validarCampoItem(e.target, 'input');
+            }
+        }
+
+        // Inicializar validación en items existentes
+        attachItemValidation();
+
+        // Agregar listener al submit del formulario para validación final
+        document.getElementById('facturaForm').addEventListener('submit', function(e) {
+            console.log('=== SUBMIT INICIADO ===');
+            
+            // Validar todos los items antes de enviar
+            let hayErrores = false;
+            document.querySelectorAll('.item-row').forEach(itemRow => {
+                // Validar campos obligatorios
+                const tipoInput = itemRow.querySelector('select[name*="tipo_item"]');
+                const codigoInput = itemRow.querySelector('input[name*="codigo"]');
+                const descInput = itemRow.querySelector('input[name*="descripcion"]');
+                const cantidadInput = itemRow.querySelector('input[name*="cantidad"]');
+                const precioInput = itemRow.querySelector('input[name*="precio_unitario"]');
+                
+                [tipoInput, codigoInput, descInput, cantidadInput, precioInput].forEach(input => {
+                    if (input && !validarCampoItem(input)) {
+                        hayErrores = true;
+                    }
+                });
+                
+                // Validar descuento si existe
+                const descuentoInput = itemRow.querySelector('input[name*="monto_descuento"]');
+                if (descuentoInput && descuentoInput.value) {
+                    if (!validarCampoItem(descuentoInput)) {
+                        hayErrores = true;
+                    }
+                }
+            });
+            
+            if (hayErrores) {
+                e.preventDefault();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Errores en el formulario',
+                    text: 'Por favor corrija los errores en los items antes de continuar (campos obligatorios vacíos o valores inválidos).',
+                    confirmButtonColor: '#d33'
+                });
+                return false;
+            }
+
+            // Confirmación antes de enviar
+            e.preventDefault();
+            Swal.fire({
+                title: '¿Estás seguro?',
+                text: "Estás a punto de emitir una Nota de Crédito. Verifica que todos los datos sean correctos.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Sí, emitir documento',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    this.submit();
+                }
+            });
+        });
+
+        // Validación de descuento vs precio total (REEMPLAZADA CON NUEVA FUNCIÓN)
+        function validarDescuentoNotaCredito(event) {
+            validarCampoItem(event.target, 'blur');
+        }
+
+        // Agregar validación a descuentos existentes
+        document.addEventListener('blur', function(e) {
+            if (e.target.classList.contains('descuento') || e.target.name?.includes('monto_descuento')) {
+                validarDescuentoNotaCredito(e);
+            }
+        }, true);
+
+        document.addEventListener('change', function(e) {
+            if (e.target.classList.contains('descuento') || e.target.name?.includes('monto_descuento')) {
+                validarDescuentoNotaCredito(e);
+            }
         });
     </script>
 </body>

@@ -6,6 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Comprobante de Crédito Fiscal - DTE El Salvador</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="{{ asset('js/catalogo-municipios.js') }}"></script>
 </head>
 <body class="bg-gray-100">
@@ -75,7 +76,13 @@
                             </div>
 
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">NIT (14 dígitos) *</label>
+                                <div class="flex justify-between items-center mb-2">
+                                    <label class="block text-sm font-medium text-gray-700" id="labelNit">NIT (14 dígitos) *</label>
+                                    <div class="flex items-center gap-2 bg-blue-50 px-2 py-1 rounded border border-blue-100">
+                                        <input type="checkbox" id="nitHomologado" class="rounded text-blue-600 focus:ring-blue-500 h-4 w-4">
+                                        <label for="nitHomologado" class="text-xs text-blue-800 cursor-pointer select-none font-medium">NIT Homologado (DUI)</label>
+                                    </div>
+                                </div>
                                 <div class="relative">
                                     <input type="text" id="receptor_num_documento" name="receptor_num_documento" placeholder="06142302881449" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required value="{{ old('receptor_num_documento') }}">
                                     <div id="busquedaLoader" style="display:none;" class="absolute right-3 top-3">
@@ -98,6 +105,23 @@
                                 <label class="block text-sm font-medium text-gray-700 mb-2">NRC (Obligatorio para CCF) *</label>
                                 <input type="text" name="receptor_nrc" pattern="[0-9]*" inputmode="numeric" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required value="{{ old('receptor_nrc') }}" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                                 <p class="text-xs text-red-600 mt-1 font-medium">⚠️ Campo obligatorio para CCF</p>
+                            </div>
+
+                            <!-- Gran Contribuyente -->
+                            <div class="md:col-span-2">
+                                <input type="hidden" name="gran_contribuyente" value="0">
+                                <div class="flex items-start gap-4 bg-orange-50 border border-orange-200 rounded-lg p-4">
+                                    <div class="flex items-center gap-2 mt-0.5">
+                                        <input type="checkbox" id="granContribuyente" name="gran_contribuyente" value="1" class="rounded w-5 h-5 text-orange-600" {{ old('gran_contribuyente') ? 'checked' : '' }}>
+                                        <label for="granContribuyente" class="text-sm font-semibold text-orange-800 cursor-pointer select-none">
+                                            Gran Contribuyente
+                                        </label>
+                                    </div>
+                                    <div class="text-xs text-orange-700">
+                                        <p>Cuando el receptor es <strong>Gran Contribuyente</strong> (clasificado por el MH), retiene el <strong>1% de la venta gravada</strong> directamente al fisco.</p>
+                                        <p class="mt-1">Reduce el monto que recibes: <code class="bg-orange-100 px-1 rounded">Total a pagar = Total − Retención 1%</code></p>
+                                    </div>
+                                </div>
                             </div>
 
                             <div>
@@ -178,8 +202,17 @@
                         <div id="itemsContainer">
                             <div class="item-row bg-gray-50 p-4 rounded-lg mb-4">
                                 <input type="hidden" name="items[0][producto_id]" class="producto-id" value="">
-                                <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
-                                    <div class="md:col-span-1">
+                                <div class="grid grid-cols-1 md:grid-cols-7 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Tipo *</label>
+                                        <select name="items[0][tipo_item]" class="tipo-item w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+                                            <option value="">Seleccionar</option>
+                                            <option value="1">Bien</option>
+                                            <option value="2">Servicio</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-2">Código *</label>
                                         <div class="relative">
                                             <input type="text" name="items[0][codigo]" data-item-index="0" class="codigo-producto w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
@@ -230,7 +263,7 @@
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Condición *</label>
                                 <select name="condicion_operacion" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
                                     <option value="1">Contado</option>
-                                    <option value="2">Crédito</option>
+                                    <!-- <option value="2">Crédito</option> -->
                                     <option value="3">Otro</option>
                                 </select>
                             </div>
@@ -270,8 +303,16 @@
                                 <span class="text-gray-600">IVA (13%) - Crédito Fiscal:</span>
                                 <span class="font-semibold text-green-600" id="iva">$0.00</span>
                             </div>
+                            <div class="flex justify-between text-base border-t pt-2">
+                                <span class="text-gray-600">Monto Total Operación:</span>
+                                <span class="font-semibold" id="montoTotal">$0.00</span>
+                            </div>
+                            <div class="flex justify-between" id="ivaRete1Row" style="display:none">
+                                <span class="text-orange-700 font-medium">Retención IVA 1% (Gran Contribuyente):</span>
+                                <span class="font-semibold text-orange-600" id="ivaRete1">-$0.00</span>
+                            </div>
                             <div class="flex justify-between text-xl font-bold text-blue-600 border-t pt-2">
-                                <span>Total:</span>
+                                <span>Total a Pagar:</span>
                                 <span id="total">$0.00</span>
                             </div>
                         </div>
@@ -293,16 +334,27 @@
 
     <script>
         let itemCount = 1;
+        let servicioCount = 1;
 
         // Agregar nuevo item
         document.getElementById('addItem').addEventListener('click', function() {
             const container = document.getElementById('itemsContainer');
             const newItem = document.createElement('div');
             newItem.className = 'item-row bg-gray-50 p-4 rounded-lg mb-4';
+            
             newItem.innerHTML = `
                 <input type="hidden" name="items[${itemCount}][producto_id]" class="producto-id" value="">
-                <div class="grid grid-cols-1 md:grid-cols-6 gap-4\">
-                    <div class="md:col-span-1">
+                <div class="grid grid-cols-1 md:grid-cols-7 gap-4\">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Tipo *</label>
+                        <select name="items[${itemCount}][tipo_item]" class="tipo-item w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" data-item-index="${itemCount}" required>
+                            <option value="">Seleccionar</option>
+                            <option value="1">Bien</option>
+                            <option value="2">Servicio</option>
+                        </select>
+                    </div>
+
+                    <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Código *</label>
                         <div class="relative">
                             <input type="text" name="items[${itemCount}][codigo]" data-item-index="${itemCount}" class="codigo-producto w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
@@ -336,13 +388,50 @@
             `;
             container.appendChild(newItem);
             
-            const newCodigoInput = newItem.querySelector('.codigo-producto');
-            setupProductSearch(newCodigoInput);
+            const tipoItemSelect = newItem.querySelector('.tipo-item');
+            const codigoInput = newItem.querySelector('.codigo-producto');
+            
+            // Listener para cambios en tipo_item
+            tipoItemSelect.addEventListener('change', function() {
+                aplicarLogicaTipo(this, codigoInput);
+            });
+            
+            // Si es edición inicial, setup búsqueda
+            setupProductSearch(codigoInput);
             
             itemCount++;
             attachCalculateEvents();
+            attachItemValidation();  // AGREGAR VALIDACIÓN AL NUEVO ITEM
             verificarEstadoFormulario();
         });
+
+        // Aplicar lógica según el tipo seleccionado
+        function aplicarLogicaTipo(tipoSelect, codigoInput) {
+            const tipo = tipoSelect.value;
+            
+            if (tipo === '2') {
+                // SERVICIO: código auto-generado
+                const servicioCode = 'SERV-' + String(servicioCount).padStart(3, '0');
+                servicioCount++;
+                
+                codigoInput.value = servicioCode;
+                codigoInput.readOnly = true;
+                codigoInput.classList.add('bg-gray-200');
+                codigoInput.style.cursor = 'not-allowed';
+                
+                // Remover evento de búsqueda
+                codigoInput.removeEventListener('blur', function() {});
+            } else if (tipo === '1') {
+                // BIEN: código manual con búsqueda
+                codigoInput.value = '';
+                codigoInput.readOnly = false;
+                codigoInput.classList.remove('bg-gray-200');
+                codigoInput.style.cursor = 'auto';
+                
+                // Re-agregar búsqueda si no está
+                setupProductSearch(codigoInput);
+            }
+        }
 
         // Eliminar item
         document.addEventListener('click', function(e) {
@@ -356,6 +445,7 @@
         // Calcular totales según fórmula del Ministerio de Hacienda
         function calcularTotales() {
             const precioIncluyeIva = document.getElementById('precioIncluyeIva').checked;
+            const esGranContribuyente = document.getElementById('granContribuyente').checked;
             let subtotal = 0;
             let totalIva = 0;
 
@@ -382,11 +472,16 @@
                 }
             });
 
-            const total = subtotal + totalIva;
+            const montoTotal = subtotal + totalIva;
+            const ivaRete1 = esGranContribuyente ? Math.round(subtotal * 0.01 * 100) / 100 : 0;
+            const totalPagar = montoTotal - ivaRete1;
 
             document.getElementById('subtotal').textContent = '$' + subtotal.toFixed(2);
             document.getElementById('iva').textContent = '$' + totalIva.toFixed(2);
-            document.getElementById('total').textContent = '$' + total.toFixed(2);
+            document.getElementById('montoTotal').textContent = '$' + montoTotal.toFixed(2);
+            document.getElementById('ivaRete1').textContent = '-$' + ivaRete1.toFixed(2);
+            document.getElementById('total').textContent = '$' + totalPagar.toFixed(2);
+            document.getElementById('ivaRete1Row').style.display = esGranContribuyente ? 'flex' : 'none';
         }
 
         function attachCalculateEvents() {
@@ -400,7 +495,15 @@
                 input.addEventListener('change', validarCantidad);
             });
 
+            document.querySelectorAll('.descuento').forEach(input => {
+                input.removeEventListener('change', validarDescuento);
+                input.addEventListener('change', validarDescuento);
+                input.removeEventListener('blur', validarDescuento);
+                input.addEventListener('blur', validarDescuento);
+            });
+
             document.getElementById('precioIncluyeIva').addEventListener('change', calcularTotales);
+            document.getElementById('granContribuyente').addEventListener('change', calcularTotales);
             verificarEstadoFormulario();
         }
 
@@ -445,28 +548,76 @@
 
         // Obtener token de autenticación del servidor
         const authToken = @json(session('auth_token'));
+        const motorApiUrl = @json(config('services.motor_api.url'));
 
-        // Validación de NIT
+        // Función para manejar errores de autenticación (Token expirado)
+        function handleAuthError(error) {
+            if (error.message.includes('HTTP 401') || error.message.includes('Token expirado')) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Sesión expirada',
+                    text: 'Tu sesión de conexión con el API ha expirado. Por favor recarga la página.',
+                    confirmButtonText: 'Recargar página',
+                    allowOutsideClick: false
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.reload();
+                    }
+                });
+                return true;
+            }
+            return false;
+        }
+
+        // Validación de NIT / DUI Homologado
         const numDocInput = document.querySelector('input[name="receptor_num_documento"]');
         const nitHelp = document.getElementById('nitHelp');
+        const nitHomologadoCheck = document.getElementById('nitHomologado');
+        const labelNit = document.getElementById('labelNit');
+
+        // Listener para el checkbox de NIT Homologado
+        nitHomologadoCheck.addEventListener('change', function() {
+            const isHomologado = this.checked;
+            
+            // Limpiar input y resetear estado
+            numDocInput.value = '';
+            nitHelp.textContent = isHomologado ? 'DUI: 9 dígitos sin guiones' : 'NIT: 14 dígitos sin guiones';
+            nitHelp.className = 'text-xs text-gray-500 mt-1';
+            
+            // Actualizar label y placeholder
+            if (isHomologado) {
+                labelNit.textContent = 'NIT Homologado (9 dígitos) *';
+                numDocInput.placeholder = '000000000';
+                numDocInput.maxLength = 9;
+            } else {
+                labelNit.textContent = 'NIT (14 dígitos) *';
+                numDocInput.placeholder = '06142302881449';
+                numDocInput.maxLength = 14;
+            }
+            
+            // Ocultar resultados de búsqueda previos
+            document.getElementById('resultadoBusqueda').classList.add('hidden');
+        });
 
         numDocInput.addEventListener('input', function() {
             let valor = this.value.replace(/[^0-9]/g, ''); // Solo números
+            const isHomologado = nitHomologadoCheck.checked;
+            const maxLen = isHomologado ? 9 : 14;
 
-            if (valor.length > 14) {
-                valor = valor.substring(0, 14);
+            if (valor.length > maxLen) {
+                valor = valor.substring(0, maxLen);
             }
             this.value = valor;
 
             // Validación visual
-            if (valor.length === 14) {
-                nitHelp.textContent = '✓ NIT válido';
+            if (valor.length === maxLen) {
+                nitHelp.textContent = isHomologado ? '✓ NIT Homologado válido' : '✓ NIT válido';
                 nitHelp.className = 'text-xs text-green-600 mt-1 font-medium';
             } else if (valor.length > 0) {
-                nitHelp.textContent = `Faltan ${14 - valor.length} dígitos`;
+                nitHelp.textContent = `Faltan ${maxLen - valor.length} dígitos`;
                 nitHelp.className = 'text-xs text-orange-600 mt-1 font-medium';
             } else {
-                nitHelp.textContent = 'NIT: 14 dígitos sin guiones';
+                nitHelp.textContent = isHomologado ? 'DUI: 9 dígitos sin guiones' : 'NIT: 14 dígitos sin guiones';
                 nitHelp.className = 'text-xs text-gray-500 mt-1';
             }
         });
@@ -474,10 +625,13 @@
         // Validación antes de enviar
         document.getElementById('facturaForm').addEventListener('submit', function(e) {
             const numDoc = numDocInput.value.replace(/[^0-9]/g, '');
+            const isHomologado = document.getElementById('nitHomologado').checked;
+            const requiredLen = isHomologado ? 9 : 14;
 
-            if (numDoc.length !== 14) {
+            if (numDoc.length !== requiredLen) {
                 e.preventDefault();
-                alert('El NIT debe tener exactamente 14 dígitos.\n\nActual: ' + numDoc.length + ' dígitos\nRequerido: 14 dígitos');
+                const tipoDoc = isHomologado ? 'NIT Homologado' : 'NIT';
+                alert(`El ${tipoDoc} debe tener exactamente ${requiredLen} dígitos.\n\nActual: ${numDoc.length} dígitos\nRequerido: ${requiredLen} dígitos`);
                 numDocInput.focus();
                 return false;
             }
@@ -529,8 +683,10 @@
         docInput.addEventListener('blur', function() {
             clearTimeout(timeoutBusqueda);
             const documento = this.value.trim();
+            const isHomologado = document.getElementById('nitHomologado').checked;
+            const minLen = isHomologado ? 9 : 14;
 
-            if (!documento || documento.length < 14) {
+            if (!documento || documento.length < minLen) {
                 resultadoBusqueda.classList.add('hidden');
                 return;
             }
@@ -544,18 +700,20 @@
 
             // Limpiar caracteres especiales del documento
             const documentoLimpio = documento.replace(/[^0-9]/g, '');
+            const isHomologado = document.getElementById('nitHomologado').checked;
+            const requiredLen = isHomologado ? 9 : 14;
 
             // Validar que no esté vacío después de limpiar
-            if (!documentoLimpio || documentoLimpio.length < 14) {
+            if (!documentoLimpio || documentoLimpio.length < requiredLen) {
                 busquedaLoader.style.display = 'none';
-                resultadoBusqueda.textContent = '✗ NIT inválido (debe tener 14 dígitos)';
+                resultadoBusqueda.textContent = `✗ ${isHomologado ? 'NIT Homologado' : 'NIT'} inválido (debe tener ${requiredLen} dígitos)`;
                 resultadoBusqueda.className = 'text-xs text-red-600 mt-1 font-medium';
                 resultadoBusqueda.classList.remove('hidden');
                 return;
             }
 
-            // Consumir directamente el endpoint de Motors González con autenticación
-            fetch(`https://motorsgonzalez.com/api/clientes/buscar/${documentoLimpio}`, {
+            // Consumir el endpoint de Motors González desde .env con autenticación
+            fetch(`${motorApiUrl}/clientes/buscar/${documentoLimpio}`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${authToken}`,
@@ -665,6 +823,50 @@
         }
 
         // ==========================================
+        // Validación de descuento vs precio total
+        // ==========================================
+        function validarDescuento(event) {
+            const descuentoInput = event.target;
+            const descuento = parseFloat(descuentoInput.value) || 0;
+            const itemRow = descuentoInput.closest('.item-row');
+            
+            const cantidadInput = itemRow.querySelector('.cantidad');
+            const precioInput = itemRow.querySelector('.precio');
+            
+            const cantidad = parseFloat(cantidadInput.value) || 0;
+            const precio = parseFloat(precioInput.value) || 0;
+            const precioTotal = cantidad * precio;
+
+            const mensajesError = itemRow.querySelectorAll('.mensaje-descuento-error');
+            mensajesError.forEach(msg => {
+                msg.textContent = '';
+                msg.classList.add('hidden');
+            });
+
+            if (descuento > precioTotal && precioTotal > 0) {
+                descuentoInput.classList.add('border-red-500', 'border-2');
+                descuentoInput.value = precioTotal;
+                itemRow.classList.add('error-descuento');
+                
+                let mensajeError = itemRow.querySelector('.mensaje-descuento-error');
+                if (!mensajeError) {
+                    mensajeError = document.createElement('p');
+                    mensajeError.className = 'mensaje-descuento-error text-xs mt-1 font-medium';
+                    descuentoInput.closest('div').parentElement.appendChild(mensajeError);
+                }
+                mensajeError.textContent = `⚠️ Descuento no puede ser mayor a $${precioTotal.toFixed(2)} (cantidad × precio)`;
+                mensajeError.className = 'text-xs mt-1 font-medium text-red-600';
+                mensajeError.classList.remove('hidden');
+            } else if (descuento >= 0) {
+                descuentoInput.classList.remove('border-red-500', 'border-2');
+                itemRow.classList.remove('error-descuento');
+            }
+
+            verificarEstadoFormulario();
+            calcularTotales();
+        }
+
+        // ==========================================
         // Validación de cantidad vs stock
         // ==========================================
         function validarCantidad(event) {
@@ -705,12 +907,12 @@
 
         function verificarEstadoFormulario() {
             const submitBtn = document.getElementById('submitBtn');
-            const itemsConError = document.querySelectorAll('.item-row.error-stock');
+            const itemsConError = document.querySelectorAll('.item-row.error-stock, .item-row.error-descuento');
             
             if (itemsConError.length > 0) {
                 submitBtn.disabled = true;
                 submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
-                submitBtn.title = 'Hay items con stock insuficiente';
+                submitBtn.title = 'Hay items con errores (stock insuficiente o descuento inválido)';
             } else {
                 submitBtn.disabled = false;
                 submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
@@ -738,9 +940,13 @@
             }
             
             const indexAttr = inputElement.getAttribute('data-item-index');
-            const authToken = '{{ session("auth_token") }}';
+            const loader = itemRow.querySelector('.loader-producto');
+            const resultadoMsg = itemRow.querySelector('.resultado-producto');
 
-            fetch(`https://motorsgonzalez.com/api/productos/buscar/${codigo}`, {
+            if (loader) loader.classList.remove('hidden');
+            if (resultadoMsg) resultadoMsg.classList.add('hidden');
+
+            fetch(`${motorApiUrl}/productos/buscar/${codigo}`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${authToken}`,
@@ -754,6 +960,7 @@
                 return response.json();
             })
             .then(data => {
+                if (loader) loader.classList.add('hidden');
                 const producto = data.data || data;
 
                 if (producto && producto.codigo) {
@@ -789,21 +996,168 @@
                     }
 
                     calcularTotales();
-                    console.log('✓ Producto encontrado:', producto.nombre || producto.codigo);
+                    
+                    if (resultadoMsg) {
+                        resultadoMsg.textContent = '✓ Producto encontrado';
+                        resultadoMsg.className = 'resultado-producto text-xs mt-1 font-medium text-green-600';
+                        resultadoMsg.classList.remove('hidden');
+                        setTimeout(() => resultadoMsg.classList.add('hidden'), 3000);
+                    }
                 } else {
-                    // Limpiar el campo si no encuentra el producto
-                    inputElement.value = '';
-                    inputElement.focus();
+                    // NO LIMPIAR EL CAMPO, MOSTRAR MENSAJE TEMPORAL
+                    if (resultadoMsg) {
+                        resultadoMsg.textContent = '⚠️ Producto no encontrado (ingrese datos manualmente)';
+                        resultadoMsg.className = 'resultado-producto text-xs mt-1 font-medium text-orange-600';
+                        resultadoMsg.classList.remove('hidden');
+                    }
                 }
             })
             .catch(error => {
-                // Limpiar el campo en caso de error
-                inputElement.value = '';
-                inputElement.focus();
+                if (loader) loader.classList.add('hidden');
+                // NO LIMPIAR EL CAMPO, MOSTRAR ERROR
+                if (resultadoMsg) {
+                    resultadoMsg.textContent = '⚠️ Error al buscar producto';
+                    resultadoMsg.className = 'resultado-producto text-xs mt-1 font-medium text-red-600';
+                    resultadoMsg.classList.remove('hidden');
+                }
             });
         }
 
         setupProductSearch(document.querySelector('.codigo-producto'));
+
+        // VALIDACIÓN EN TIEMPO REAL DE ITEMS (IDÉNTICA A DTE-01)
+        // Validar campo de item
+        function validarCampoItem(input, tipoValidacion = 'default') {
+            const itemRow = input.closest('.item-row');
+            const campoNombre = input.name.match(/\[([^\]]+)\]/)?.[1] || '';
+            const valor = input.value.trim();
+            let esValido = true;
+            let mensaje = '';
+
+            // Campos obligatorios no deben estar vacíos
+            const camposObligatorios = ['tipo_item', 'codigo', 'descripcion', 'cantidad', 'precio_unitario'];
+            
+            if (camposObligatorios.includes(campoNombre)) {
+                if (!valor) {
+                    esValido = false;
+                    mensaje = 'Este campo es obligatorio';
+                }
+            }
+
+            // Campos de moneda (precio y descuento) deben ser positivos
+            const camposMoneda = ['precio_unitario', 'monto_descuento'];
+            if (camposMoneda.includes(campoNombre) && valor) {
+                const numeroValor = parseFloat(valor);
+                if (isNaN(numeroValor) || numeroValor < 0) {
+                    esValido = false;
+                    mensaje = 'Solo se permiten números positivos';
+                } else if (numeroValor === 0 && campoNombre === 'precio_unitario') {
+                    esValido = false;
+                    mensaje = 'El precio debe ser mayor a 0';
+                }
+            }
+
+            // Campo cantidad debe ser positivo
+            if (campoNombre === 'cantidad' && valor) {
+                const numeroValor = parseInt(valor);
+                if (isNaN(numeroValor) || numeroValor <= 0) {
+                    esValido = false;
+                    mensaje = 'La cantidad debe ser mayor a 0';
+                }
+            }
+
+            // Validar descuento no sea mayor al subtotal
+            if (campoNombre === 'monto_descuento' && valor) {
+                const cantidadInput = itemRow.querySelector('input[name*="cantidad"]');
+                const precioInput = itemRow.querySelector('input[name*="precio_unitario"]');
+                
+                if (cantidadInput && precioInput && cantidadInput.value && precioInput.value) {
+                    const subtotal = parseFloat(cantidadInput.value) * parseFloat(precioInput.value);
+                    const descuento = parseFloat(valor);
+                    
+                    if (descuento > subtotal) {
+                        esValido = false;
+                        mensaje = `Descuento no puede ser mayor al subtotal ($${subtotal.toFixed(2)})`;
+                    }
+                }
+            }
+
+            // Aplicar estilos visual
+            if (esValido && valor) {
+                input.classList.remove('border-red-500', 'bg-red-50', 'error-field');
+                input.classList.add('border-green-500');
+                // Remover mensaje de error si existe
+                const existentMsg = itemRow.querySelector(`[data-error-for="${input.name}"]`);
+                if (existentMsg) existentMsg.remove();
+            } else if (!esValido) {
+                input.classList.remove('border-green-500');
+                input.classList.add('border-red-500', 'bg-red-50', 'error-field');
+                
+                // Mostrar/actualizar mensaje de error
+                let msgElement = itemRow.querySelector(`[data-error-for="${input.name}"]`);
+                if (!msgElement) {
+                    msgElement = document.createElement('p');
+                    msgElement.setAttribute('data-error-for', input.name);
+                    msgElement.className = 'text-red-600 text-xs mt-1 font-semibold';
+                    input.parentElement.appendChild(msgElement);
+                }
+                msgElement.textContent = mensaje;
+            } else {
+                input.classList.remove('border-red-500', 'bg-red-50', 'error-field', 'border-green-500');
+            }
+
+            return esValido;
+        }
+
+        // Attach validación a todos los inputs de items existentes
+        function attachItemValidation() {
+            document.querySelectorAll('.item-row input, .item-row select').forEach(input => {
+                // Remover listeners anteriores (si existen)
+                input.removeEventListener('blur', handleItemBlur);
+                input.removeEventListener('change', handleItemChange);
+                input.removeEventListener('input', handleItemInput);
+                
+                // Agregar nuevos listeners
+                input.addEventListener('blur', handleItemBlur);
+                input.addEventListener('change', handleItemChange);
+                input.addEventListener('input', handleItemInput);
+            });
+        }
+
+        // Handlers para validación
+        function handleItemBlur(e) {
+            validarCampoItem(e.target, 'blur');
+            calcularTotales();
+        }
+
+        function handleItemChange(e) {
+            validarCampoItem(e.target, 'change');
+            calcularTotales();
+        }
+
+        function handleItemInput(e) {
+            // Solo validar en tiempo real para campos numéricos
+            if (['precio_unitario', 'monto_descuento', 'cantidad'].includes(e.target.name.match(/\[([^\]]+)\]/)?.[1])) {
+                validarCampoItem(e.target, 'input');
+            }
+        }
+
+        // Setup del primer item (item 0)
+        const primerTipoItem = document.querySelector('select[name="items[0][tipo_item]"]');
+        const primerCodigoInput = document.querySelector('input[name="items[0][codigo]"]');
+        
+        if (primerTipoItem) {
+            primerTipoItem.addEventListener('change', function() {
+                aplicarLogicaTipo(this, primerCodigoInput);
+            });
+        }
+
+        if (primerCodigoInput) {
+            setupProductSearch(primerCodigoInput);
+        }
+
+        // Inicializar validación en items existentes
+        attachItemValidation();
 
         // Función para recolectar producto_ids antes de enviar
         function recolectarProductoIds() {
@@ -826,9 +1180,47 @@
             return productos;
         }
 
-        // Agregar listener al submit del formulario - ANTES de cualquier otra cosa
+        // Agregar listener al submit del formulario
         document.getElementById('facturaForm').addEventListener('submit', function(e) {
+            if (e.defaultPrevented) return;
+
             console.log('=== SUBMIT INICIADO ===');
+            
+            // Validar todos los items antes de enviar
+            let hayErrores = false;
+            document.querySelectorAll('.item-row').forEach(itemRow => {
+                // Validar campos obligatorios
+                const tipoInput = itemRow.querySelector('select[name*="tipo_item"]');
+                const codigoInput = itemRow.querySelector('input[name*="codigo"]');
+                const descInput = itemRow.querySelector('input[name*="descripcion"]');
+                const cantidadInput = itemRow.querySelector('input[name*="cantidad"]');
+                const precioInput = itemRow.querySelector('input[name*="precio_unitario"]');
+                
+                [tipoInput, codigoInput, descInput, cantidadInput, precioInput].forEach(input => {
+                    if (input && !validarCampoItem(input)) {
+                        hayErrores = true;
+                    }
+                });
+                
+                // Validar descuento si existe
+                const descuentoInput = itemRow.querySelector('input[name*="monto_descuento"]');
+                if (descuentoInput && descuentoInput.value) {
+                    if (!validarCampoItem(descuentoInput)) {
+                        hayErrores = true;
+                    }
+                }
+            });
+            
+            if (hayErrores) {
+                e.preventDefault();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Errores en el formulario',
+                    text: 'Por favor corrija los errores en los items antes de continuar.',
+                    confirmButtonColor: '#d33'
+                });
+                return false;
+            }
             
             // Recolectar producto_ids INMEDIATAMENTE
             const productos = recolectarProductoIds();
@@ -837,7 +1229,24 @@
                 const jsonProductos = JSON.stringify(productos);
                 document.getElementById('motorClientesIds').value = jsonProductos;
             }
-        }, true); // Usar captura en lugar de burbuja
+
+            // Confirmación
+            e.preventDefault();
+            Swal.fire({
+                title: '¿Estás seguro?',
+                text: "Estás a punto de emitir un Comprobante de Crédito Fiscal. Verifica que todos los datos sean correctos.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Sí, emitir CCF',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    this.submit();
+                }
+            });
+        });
     </script>
 </body>
 </html>
