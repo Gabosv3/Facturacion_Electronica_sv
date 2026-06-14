@@ -201,6 +201,28 @@ php artisan cache:clear               # Clear application cache
     - Formula: `ventaGravada = precio`, then `iva = ventaGravada * 0.13`
     - Total to pay is base price + calculated IVA
   - Implementation: `DTEService::calcularTotalesItemsConTasa()` (DTEService.php:136)
+- **Discount Handling and subTotal Calculation** (CRITICAL):
+  - **For DTE-01, DTE-03, DTE-05, DTE-14**:
+    - **Item level**: `ventaGravada = cantidad × precioUni` (**WITHOUT subtracting discount**)
+    - **Item level**: `montoDescu` = discount amount (stored separately)
+    - **Resumen level**:
+      - `totalGravada` = Sum of all `ventaGravada` (without discount subtracted)
+      - `subTotalVentas` = `totalGravada` (equal, both without discount)
+      - `descuGravada` / `totalDescu` = Sum of all `montoDescu`
+      - `subTotal` = `subTotalVentas - totalDescu` (**discount subtracted HERE**)
+      - `montoTotalOperacion` = `subTotal` (final amount with discount)
+    - **IVA calculation**: IVA calculated on `(ventaGravada - montoDescu)` per item
+  - **Example with discount**:
+    - Item: Quantity 1, Price $23.00, Discount $1.00
+    - Item JSON: `precioUni: 23.00`, `montoDescu: 1.00`, `ventaGravada: 23.00` (= 1 × 23, **NO discount subtracted**)
+    - Resumen: `totalGravada: 23.00`, `subTotalVentas: 23.00`, `totalDescu: 1.00`, `subTotal: 22.00` (= 23 - 1)
+    - MH validates: `ventaGravada = cantidad × precioUni` → `23 = 1 × 23` ✅
+    - MH validates: `subTotalVentas = totalGravada` → `23 = 23` ✅
+    - MH validates: `subTotal = subTotalVentas - totalDescu` → `22 = 23 - 1` ✅
+  - **Common Errors**:
+    - `[resumen.subTotalVentas] CALCULO INCORRECTO` - Setting `ventaGravada = (cantidad × precio) - descuento` (should NOT subtract)
+    - `[resumen.subTotal] CALCULO INCORRECTO` - Not subtracting `totalDescu` from `subTotalVentas` (must subtract)
+  - Implementation: `calcularTotalesItemsConTasa()`, `calcularTotalesNotaCredito()` (DTEService.php)
 - **Document Numbering**: Control numbers auto-increment per document type, extracting last correlative from database
 - **Token Renewal**: Tokens expire in ~24h; system auto-renews at 23h 50min to prevent gaps
 - **SSL Verification**: Disabled in non-production environments (see MHApiService:62, 186)

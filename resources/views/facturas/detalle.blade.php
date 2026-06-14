@@ -404,6 +404,7 @@
                                 </div>
                                 @endif
 
+
                                 <div class="flex justify-between text-xl font-bold text-blue-600 border-t pt-2">
                                     <span>TOTAL{{ $ivaRete1 > 0 ? ' A PAGAR' : '' }}:</span>
                                     <span>${{ number_format($totalPagarFinal, 2) }}</span>

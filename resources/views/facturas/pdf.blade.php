@@ -465,9 +465,9 @@
                                         if ($factura->respuesta_mh) {
                                             $respuestaMH = json_decode($factura->respuesta_mh, true);
                                             if (is_array($respuestaMH)) {
-                                                $selloRecepcion = $respuestaMH['envio_mh']['selloRecibido'] 
-                                                    ?? $respuestaMH['selloRecibido'] 
-                                                    ?? $respuestaMH['data']['selloRecibido'] 
+                                                $selloRecepcion = $respuestaMH['envio_mh']['selloRecibido']
+                                                    ?? $respuestaMH['selloRecibido']
+                                                    ?? $respuestaMH['data']['selloRecibido']
                                                     ?? 'PENDIENTE';
                                             }
                                         }
