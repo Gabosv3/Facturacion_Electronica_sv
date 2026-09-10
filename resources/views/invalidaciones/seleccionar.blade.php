@@ -6,15 +6,15 @@
     <title>Seleccionar Factura para Invalidar - DTE El Salvador</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100">
+<body class="bg-slate-50">
     @include('components.navbar')
 
     <div class="container mx-auto px-4 py-8">
         <div class="max-w-7xl mx-auto">
-            <div class="bg-white rounded-lg shadow-lg p-6">
+            <div class="bg-white rounded-xl shadow-[0_1px_3px_0_rgb(0_0_0/0.06),0_4px_12px_-2px_rgb(0_0_0/0.06)] border border-slate-100 p-6">
                 <div class="mb-6">
-                    <h1 class="text-3xl font-bold text-gray-800">Seleccionar Factura para Invalidar</h1>
-                    <p class="text-gray-600 mt-2">Seleccione la factura que desea invalidar</p>
+                    <h1 class="text-3xl font-bold text-slate-800">Seleccionar Factura para Invalidar</h1>
+                    <p class="text-slate-500 mt-2">Seleccione la factura que desea invalidar</p>
                 </div>
 
                 @if(session('error'))
@@ -26,19 +26,19 @@
                 <!-- Tabla de facturas -->
                 <div class="overflow-x-auto">
                     <table class="min-w-full table-auto">
-                        <thead class="bg-gray-200">
+                        <thead class="bg-slate-200">
                             <tr>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Número de Control</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Tipo DTE</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Receptor</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Fecha Emisión</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Total</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Acción</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Número de Control</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Tipo DTE</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Receptor</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Fecha Emisión</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Total</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Acción</th>
                             </tr>
                         </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
+                        <tbody class="bg-white divide-y divide-slate-100">
                             @forelse($facturas as $factura)
-                                <tr class="hover:bg-gray-50">
+                                <tr class="hover:bg-slate-50">
                                     <td class="px-4 py-4 whitespace-nowrap">
                                         <div class="text-sm font-mono font-semibold text-gray-900">
                                             {{ $factura->numero_control }}
@@ -61,7 +61,7 @@
                                         <div class="text-sm font-semibold text-gray-900">
                                             {{ $factura->receptor_nombre }}
                                         </div>
-                                        <div class="text-xs text-gray-500">
+                                        <div class="text-xs text-slate-500">
                                             {{ $factura->receptor_num_documento }}
                                         </div>
                                     </td>
@@ -84,7 +84,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="px-4 py-8 text-center text-gray-500">
+                                    <td colspan="6" class="px-4 py-8 text-center text-slate-500">
                                         <p>No hay facturas disponibles para invalidar.</p>
                                         <p class="text-sm mt-2">Solo se pueden invalidar facturas enviadas exitosamente al MH.</p>
                                     </td>
@@ -102,7 +102,7 @@
                 <!-- Botón para volver -->
                 <div class="mt-6 flex justify-end">
                     <a href="{{ route('invalidaciones.index') }}"
-                       class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg transition">
+                       class="bg-slate-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg transition">
                         Volver
                     </a>
                 </div>

@@ -6,7 +6,7 @@
     <title>DEBUG - Evento #{{ $evento->id }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100">
+<body class="bg-slate-50">
     @include('components.navbar')
 
     <div class="max-w-4xl mx-auto p-8">
@@ -15,28 +15,28 @@
         <!-- Información del Evento -->
         <div class="bg-white rounded-lg shadow p-6 mb-6">
             <h2 class="text-xl font-bold mb-4">Datos del Evento</h2>
-            <pre class="bg-gray-100 p-4 rounded overflow-x-auto">{{ json_encode($evento->toArray(), JSON_PRETTY_PRINT) }}</pre>
+            <pre class="bg-slate-100 p-4 rounded overflow-x-auto">{{ json_encode($evento->toArray(), JSON_PRETTY_PRINT) }}</pre>
         </div>
 
         <!-- Facturas Cargadas -->
         <div class="bg-white rounded-lg shadow p-6 mb-6">
             <h2 class="text-xl font-bold mb-4">Facturas Cargadas en la Relación</h2>
             <p class="mb-2"><strong>Count:</strong> {{ $evento->facturas->count() }}</p>
-            <pre class="bg-gray-100 p-4 rounded overflow-x-auto">{{ json_encode($evento->facturas->toArray(), JSON_PRETTY_PRINT) }}</pre>
+            <pre class="bg-slate-100 p-4 rounded overflow-x-auto">{{ json_encode($evento->facturas->toArray(), JSON_PRETTY_PRINT) }}</pre>
         </div>
 
         <!-- Facturas desde Query Fresco -->
         <div class="bg-white rounded-lg shadow p-6 mb-6">
             <h2 class="text-xl font-bold mb-4">Facturas desde Query Fresco</h2>
             <p class="mb-2"><strong>Count:</strong> {{ $facturasFrescas->count() }}</p>
-            <pre class="bg-gray-100 p-4 rounded overflow-x-auto">{{ json_encode($facturasFrescas->toArray(), JSON_PRETTY_PRINT) }}</pre>
+            <pre class="bg-slate-100 p-4 rounded overflow-x-auto">{{ json_encode($facturasFrescas->toArray(), JSON_PRETTY_PRINT) }}</pre>
         </div>
 
         <!-- Query SQL Raw -->
         <div class="bg-white rounded-lg shadow p-6">
             <h2 class="text-xl font-bold mb-4">Query SQL Directo</h2>
             <p class="mb-2"><strong>Count:</strong> {{ $countDirecto }}</p>
-            <p class="text-sm text-gray-600 mb-2">SELECT COUNT(*) FROM facturas WHERE evento_contingencia_id = {{ $evento->id }}</p>
+            <p class="text-sm text-slate-500 mb-2">SELECT COUNT(*) FROM facturas WHERE evento_contingencia_id = {{ $evento->id }}</p>
         </div>
 
         <div class="mt-6">

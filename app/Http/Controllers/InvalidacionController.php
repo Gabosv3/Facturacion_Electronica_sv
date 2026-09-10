@@ -2,11 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\FacturaElectronicaMail;
+use App\Mail\InvalidacionMail;
 use App\Models\EventoInvalidacion;
 use App\Models\Factura;
 use App\Services\InvalidacionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class InvalidacionController extends Controller
 {
@@ -73,6 +77,10 @@ class InvalidacionController extends Controller
             'solicitante_nombre' => 'required|string|max:200',
             'solicitante_tipo_doc' => 'required|string|max:2',
             'solicitante_num_doc' => 'required|string|max:20',
+            // Normativa DTE 2.0 (MH): el evento de invalidación exige correo y teléfono
+            // del receptor en el objeto "documento", el MH lo rechaza sin esto.
+            'receptor_correo' => 'required|email|max:100',
+            'receptor_telefono' => 'required|string|max:20',
         ]);
 
         try {
@@ -101,12 +109,30 @@ class InvalidacionController extends Controller
                 'solicitante_nombre' => $request->solicitante_nombre,
                 'solicitante_tipo_doc' => $request->solicitante_tipo_doc,
                 'solicitante_num_doc' => $request->solicitante_num_doc,
+                'receptor_correo' => $request->receptor_correo,
+                'receptor_telefono' => $request->receptor_telefono,
                 'fecha_evento' => now(),
             ]);
 
             if ($resultado['success']) {
-                return redirect()->route('invalidaciones.show', $resultado['evento']->id)
-                    ->with('success', 'Evento de invalidación procesado exitosamente');
+                $evento = $resultado['evento'];
+                $mensaje = 'Evento de invalidación procesado exitosamente';
+
+                // Notificación obligatoria al receptor según Normativa de Cumplimiento DTE 2.0 (MH):
+                // debe entregarse el JSON del evento y la representación gráfica (PDF) del evento
+                // y del DTE invalidado.
+                $resultadoNotificacion = $this->notificarReceptor($evento);
+                $mensaje .= '. ' . $resultadoNotificacion['mensaje'];
+
+                $resultadoReemplazo = $this->notificarFacturaReemplazo($evento->fresh(['factura', 'facturaReemplazo']));
+                if ($resultadoReemplazo !== null) {
+                    $mensaje .= ' ' . $resultadoReemplazo['mensaje'];
+                }
+
+                $huboProblema = !$resultadoNotificacion['success'] || ($resultadoReemplazo && !$resultadoReemplazo['success']);
+
+                return redirect()->route('invalidaciones.show', $evento->id)
+                    ->with($huboProblema ? 'warning' : 'success', $mensaje);
             }
 
             return back()->with('error', $resultado['message']);
@@ -120,6 +146,133 @@ class InvalidacionController extends Controller
     }
 
     /**
+     * Notifica al receptor de la invalidación por correo (JSON + PDFs adjuntos),
+     * conforme lo exige la Normativa de Cumplimiento DTE 2.0 del MH.
+     */
+    private function notificarReceptor(EventoInvalidacion $evento): array
+    {
+        // Preferir el correo capturado en el propio evento (obligatorio desde
+        // Normativa DTE 2.0); si el evento es anterior a ese cambio, usar el de la factura.
+        $correo = $evento->receptor_correo ?? $evento->factura->receptor_correo;
+
+        if (empty($correo)) {
+            Log::warning('No se pudo notificar invalidación: receptor sin correo registrado', [
+                'evento_id' => $evento->id,
+                'factura_id' => $evento->factura_id,
+            ]);
+
+            return [
+                'success' => false,
+                'mensaje' => 'No se pudo notificar al receptor: no tiene correo electrónico registrado. Debes reenviarla manualmente una vez tengas su correo.',
+            ];
+        }
+
+        try {
+            Mail::to($correo)->send(new InvalidacionMail($evento));
+
+            Log::info('Notificación de invalidación enviada al receptor', [
+                'evento_id' => $evento->id,
+                'correo' => $correo,
+            ]);
+
+            return [
+                'success' => true,
+                'mensaje' => "Se notificó al receptor ({$correo}) con el JSON y los PDF del evento y del documento invalidado.",
+            ];
+        } catch (\Exception $e) {
+            Log::error('Error al notificar invalidación al receptor', [
+                'evento_id' => $evento->id,
+                'correo' => $correo,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'mensaje' => 'No se pudo enviar la notificación por correo: ' . $e->getMessage() . '. Puedes reintentarlo manualmente.',
+            ];
+        }
+    }
+
+    /**
+     * Si la invalidación es tipo 1 (error de datos) y tiene documento de reemplazo,
+     * envía automáticamente ese nuevo DTE al receptor en un correo aparte, para que
+     * quede con un documento válido tras la anulación del original.
+     */
+    private function notificarFacturaReemplazo(EventoInvalidacion $evento): ?array
+    {
+        if ($evento->tipo_invalidacion != '1' || !$evento->facturaReemplazo) {
+            return null;
+        }
+
+        $facturaReemplazo = $evento->facturaReemplazo;
+        $correo = $facturaReemplazo->receptor_correo ?? $evento->factura->receptor_correo;
+
+        if (empty($correo)) {
+            Log::warning('No se pudo enviar factura de reemplazo: sin correo registrado', [
+                'evento_id' => $evento->id,
+                'factura_reemplazo_id' => $facturaReemplazo->id,
+            ]);
+
+            return [
+                'success' => false,
+                'mensaje' => 'No se pudo enviar la factura de reemplazo: no hay correo registrado.',
+            ];
+        }
+
+        if ($facturaReemplazo->estado !== 'enviado_mh') {
+            return [
+                'success' => false,
+                'mensaje' => 'La factura de reemplazo aún no ha sido enviada al MH, no se pudo notificar.',
+            ];
+        }
+
+        try {
+            Mail::to($correo)->send(new FacturaElectronicaMail($facturaReemplazo));
+
+            Log::info('Factura de reemplazo enviada tras invalidación', [
+                'evento_id' => $evento->id,
+                'factura_reemplazo_id' => $facturaReemplazo->id,
+                'correo' => $correo,
+            ]);
+
+            return [
+                'success' => true,
+                'mensaje' => "Se envió el documento de reemplazo ({$facturaReemplazo->numero_control}) a {$correo}.",
+            ];
+        } catch (\Exception $e) {
+            Log::error('Error al enviar factura de reemplazo tras invalidación', [
+                'evento_id' => $evento->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'mensaje' => 'No se pudo enviar la factura de reemplazo: ' . $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Reenvía manualmente la notificación de invalidación al receptor
+     */
+    public function enviarEmail($id)
+    {
+        $evento = EventoInvalidacion::with(['factura', 'facturaReemplazo'])->findOrFail($id);
+
+        if (empty($evento->receptor_correo) && empty($evento->factura->receptor_correo)) {
+            return back()->with('error', 'Este evento no tiene un correo electrónico registrado para el receptor.');
+        }
+
+        if (!$evento->fueExitosa()) {
+            return back()->with('warning', 'Solo se pueden notificar eventos de invalidación procesados exitosamente por el MH.');
+        }
+
+        $resultado = $this->notificarReceptor($evento);
+
+        return back()->with($resultado['success'] ? 'success' : 'error', $resultado['mensaje']);
+    }
+
+    /**
      * Muestra los detalles de un evento de invalidación
      */
     public function show($id)
@@ -127,6 +280,27 @@ class InvalidacionController extends Controller
         $evento = EventoInvalidacion::with(['factura', 'facturaReemplazo'])->findOrFail($id);
 
         return view('invalidaciones.detalle', compact('evento'));
+    }
+
+    /**
+     * Descarga el PDF del evento de invalidación (el mismo que se adjunta
+     * por correo), para poder enviarlo manualmente por WhatsApp u otro medio.
+     */
+    public function descargarPdf($id)
+    {
+        $evento = EventoInvalidacion::with(['factura', 'facturaReemplazo'])->findOrFail($id);
+
+        try {
+            $pdf = Pdf::loadView('invalidaciones.pdf', ['evento' => $evento]);
+
+            return $pdf->download('invalidacion_' . $evento->factura->numero_control . '.pdf');
+        } catch (\Exception $e) {
+            Log::error('Error al generar PDF de invalidación para descarga: ' . $e->getMessage(), [
+                'evento_id' => $evento->id,
+            ]);
+
+            return back()->with('error', 'Error al generar el PDF: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -153,8 +327,22 @@ class InvalidacionController extends Controller
             $resultado = $this->invalidacionService->enviarEvento($evento);
 
             if ($resultado['success']) {
+                $mensaje = 'Evento reenviado exitosamente';
+
+                $eventoFresco = $evento->fresh(['factura', 'facturaReemplazo']);
+
+                $resultadoNotificacion = $this->notificarReceptor($eventoFresco);
+                $mensaje .= '. ' . $resultadoNotificacion['mensaje'];
+
+                $resultadoReemplazo = $this->notificarFacturaReemplazo($eventoFresco);
+                if ($resultadoReemplazo !== null) {
+                    $mensaje .= ' ' . $resultadoReemplazo['mensaje'];
+                }
+
+                $huboProblema = !$resultadoNotificacion['success'] || ($resultadoReemplazo && !$resultadoReemplazo['success']);
+
                 return redirect()->route('invalidaciones.show', $evento->id)
-                    ->with('success', 'Evento reenviado exitosamente');
+                    ->with($huboProblema ? 'warning' : 'success', $mensaje);
             }
 
             return back()->with('error', $resultado['message']);

@@ -9,13 +9,13 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="{{ asset('js/catalogo-municipios.js') }}"></script>
 </head>
-<body class="bg-gray-100">
+<body class="bg-slate-50">
     @include('components.navbar')
 
     <div class="container mx-auto px-4 py-8">
         <div class="max-w-5xl mx-auto">
-            <div class="bg-white rounded-lg shadow-lg p-6">
-                <h1 class="text-3xl font-bold text-gray-800 mb-6">Generar Factura Electrónica</h1>
+            <div class="bg-white rounded-xl shadow-[0_1px_3px_0_rgb(0_0_0/0.06),0_4px_12px_-2px_rgb(0_0_0/0.06)] border border-slate-100 p-6">
+                <h1 class="text-3xl font-bold text-slate-800 mb-6">Generar Factura Electrónica</h1>
 
                 @if(session('error'))
                     <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
@@ -38,24 +38,24 @@
                     <!-- Checkbox Clientes Varios -->
                     <div class="mb-6 p-4 bg-yellow-50 border-2 border-yellow-300 rounded-lg">
                         <div class="flex items-center gap-3">
-                            <input type="checkbox" id="clientesVarios" name="clientes_varios" value="1" class="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                            <label for="clientesVarios" class="text-lg font-semibold text-gray-800 cursor-pointer">
+                            <input type="checkbox" id="clientesVarios" name="clientes_varios" value="1" class="w-5 h-5 rounded border-slate-200 text-blue-600 focus:ring-blue-500">
+                            <label for="clientesVarios" class="text-lg font-semibold text-slate-800 cursor-pointer">
                                 Factura de Clientes Varios
                             </label>
                         </div>
-                        <p class="text-sm text-gray-600 mt-2 ml-8">
+                        <p class="text-sm text-slate-500 mt-2 ml-8">
                             📌 Active esta opción para generar una factura sin datos específicos del cliente. Solo necesitará agregar los productos/servicios.
                         </p>
                     </div>
 
                     <!-- Datos del Receptor -->
                     <div class="mb-8" id="datosClienteSection">
-                        <h2 class="text-xl font-semibold text-gray-700 mb-4 border-b pb-2">Datos del Cliente</h2>
+                        <h2 class="text-xl font-semibold text-slate-700 mb-4 border-b pb-2">Datos del Cliente</h2>
                         
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Documento *</label>
-                                <select name="receptor_tipo_documento" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Tipo de Documento *</label>
+                                <select name="receptor_tipo_documento" class="w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
                                     <option value="">Seleccione...</option>
                                     <option value="36">NIT - Registro de contribuyente IVA</option>
                                     <option value="13">DUI - Persona natural sin IVA</option>
@@ -63,13 +63,13 @@
                                     <option value="03">Pasaporte</option>
                                     <option value="37">Otro</option>
                                 </select>
-                                <p class="text-xs text-gray-500 mt-1">DUI solo para personas naturales NO inscritas en IVA</p>
+                                <p class="text-xs text-slate-500 mt-1">DUI solo para personas naturales NO inscritas en IVA</p>
                             </div>
 
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Número de Documento *</label>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Número de Documento *</label>
                                 <div class="relative">
-                                    <input type="text" id="receptor_num_documento" name="receptor_num_documento" placeholder="DUI: 12345678-9 / NIT: 1234-567890-123-4" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required value="{{ old('receptor_num_documento') }}">
+                                    <input type="text" id="receptor_num_documento" name="receptor_num_documento" placeholder="DUI: 12345678-9 / NIT: 1234-567890-123-4" class="w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required value="{{ old('receptor_num_documento') }}">
                                     <div id="busquedaLoader" style="display:none;" class="absolute right-3 top-3">
                                         <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -77,52 +77,52 @@
                                         </svg>
                                     </div>
                                 </div>
-                                <p class="text-xs text-gray-500 mt-1">DUI: 8 dígitos-1 dígito / NIT: 14 dígitos con guiones</p>
+                                <p class="text-xs text-slate-500 mt-1">DUI: 8 dígitos-1 dígito / NIT: 14 dígitos con guiones</p>
                                 <p id="resultadoBusqueda" class="text-xs mt-1 hidden"></p>
                             </div>
 
                             <div class="md:col-span-2">
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Nombre Completo *</label>
-                                <input type="text" name="receptor_nombre" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required value="{{ old('receptor_nombre') }}" style="text-transform: uppercase;" oninput="this.value = this.value.toUpperCase()">
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Nombre Completo *</label>
+                                <input type="text" name="receptor_nombre" class="w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required value="{{ old('receptor_nombre') }}" style="text-transform: uppercase;" oninput="this.value = this.value.toUpperCase()">
                             </div>
 
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">NRC (opcional)</label>
-                                <input type="text" name="receptor_nrc" pattern="[0-9]*" inputmode="numeric" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" value="{{ old('receptor_nrc') }}" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                                <label class="block text-sm font-medium text-slate-700 mb-2">NRC (opcional)</label>
+                                <input type="text" name="receptor_nrc" pattern="[0-9]*" inputmode="numeric" class="w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" value="{{ old('receptor_nrc') }}" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                             </div>
 
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Teléfono</label>
-                                <input type="text" name="receptor_telefono" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" value="{{ old('receptor_telefono') }}" placeholder="7777-7777" maxlength="9" oninput="formatearTelefono(this)">
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Teléfono</label>
+                                <input type="text" name="receptor_telefono" class="w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" value="{{ old('receptor_telefono') }}" placeholder="7777-7777" maxlength="9" oninput="formatearTelefono(this)">
                             </div>
 
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Código Actividad Económica</label>
-                                <input type="text" name="receptor_cod_actividad" placeholder="Ej: 62010" maxlength="10" pattern="[0-9]*" inputmode="numeric" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" value="{{ old('receptor_cod_actividad') }}" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
-                                <p class="text-xs text-gray-500 mt-1">Opcional</p>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Código Actividad Económica</label>
+                                <input type="text" name="receptor_cod_actividad" placeholder="Ej: 62010" maxlength="10" pattern="[0-9]*" inputmode="numeric" class="w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" value="{{ old('receptor_cod_actividad') }}" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                                <p class="text-xs text-slate-500 mt-1">Opcional</p>
                             </div>
 
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Descripción Actividad</label>
-                                <input type="text" name="receptor_desc_actividad" placeholder="Ej: PROGRAMACIÓN INFORMÁTICA" minlength="5" maxlength="150" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" value="{{ old('receptor_desc_actividad') }}">
-                                <p class="text-xs text-gray-500 mt-1">Opcional (obligatorio solo para DTE-03 CCF)</p>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Descripción Actividad</label>
+                                <input type="text" name="receptor_desc_actividad" placeholder="Ej: PROGRAMACIÓN INFORMÁTICA" minlength="5" maxlength="150" class="w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" value="{{ old('receptor_desc_actividad') }}">
+                                <p class="text-xs text-slate-500 mt-1">Opcional (obligatorio solo para DTE-03 CCF)</p>
                             </div>
 
                             <div class="md:col-span-2">
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Correo Electrónico</label>
-                                <input type="email" name="receptor_correo" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" value="{{ old('receptor_correo') }}">
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Correo Electrónico</label>
+                                <input type="email" name="receptor_correo" class="w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" value="{{ old('receptor_correo') }}">
                             </div>
                         </div>
                     </div>
 
                     <!-- Dirección del Receptor -->
                     <div class="mb-8" id="direccionClienteSection">
-                        <h2 class="text-xl font-semibold text-gray-700 mb-4 border-b pb-2">Dirección del Cliente</h2>
+                        <h2 class="text-xl font-semibold text-slate-700 mb-4 border-b pb-2">Dirección del Cliente</h2>
                         
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Departamento *</label>
-                                <select name="receptor_departamento" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Departamento *</label>
+                                <select name="receptor_departamento" class="w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
                                     <option value="">Seleccione...</option>
                                     <option value="01">Ahuachapán</option>
                                     <option value="02">Santa Ana</option>
@@ -142,16 +142,16 @@
                             </div>
 
                             <div class="md:col-span-2">
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Municipio *</label>
-                                <select name="receptor_municipio" id="municipioSelect" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Municipio *</label>
+                                <select name="receptor_municipio" id="municipioSelect" class="w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
                                     <option value="">Seleccione primero un departamento</option>
                                 </select>
-                                <p class="text-xs text-gray-500 mt-1" id="municipioHelp">Seleccione un departamento para ver los municipios</p>
+                                <p class="text-xs text-slate-500 mt-1" id="municipioHelp">Seleccione un departamento para ver los municipios</p>
                             </div>
 
                             <div class="md:col-span-3">
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Dirección Completa *</label>
-                                <textarea name="receptor_complemento" rows="2" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>{{ old('receptor_complemento') }}</textarea>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Dirección Completa *</label>
+                                <textarea name="receptor_complemento" rows="2" class="w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>{{ old('receptor_complemento') }}</textarea>
                             </div>
                         </div>
                     </div>
@@ -159,20 +159,20 @@
                     <!-- Items de la Factura -->
                     <div class="mb-8">
                         <div class="flex justify-between items-center mb-4">
-                            <h2 class="text-xl font-semibold text-gray-700">Productos/Servicios</h2>
+                            <h2 class="text-xl font-semibold text-slate-700">Productos/Servicios</h2>
                             <div class="flex items-center gap-2">
                                 <input type="checkbox" id="precioIncluyeIva" name="precio_incluye_iva" value="1" checked class="rounded">
-                                <label for="precioIncluyeIva" class="text-sm text-gray-700">Precio incluye IVA</label>
+                                <label for="precioIncluyeIva" class="text-sm text-slate-700">Precio incluye IVA</label>
                             </div>
                         </div>
                         
                         <div id="itemsContainer">
-                            <div class="item-row bg-gray-50 p-4 rounded-lg mb-4">
+                            <div class="item-row bg-slate-50 p-4 rounded-lg mb-4">
                                 <input type="hidden" name="items[0][producto_id]" class="producto-id" value="">
                                 <div class="grid grid-cols-1 md:grid-cols-7 gap-4">
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Tipo *</label>
-                                        <select name="items[0][tipo_item]" class="tipo-item w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" data-item-index="0" required>
+                                        <label class="block text-sm font-medium text-slate-700 mb-2">Tipo *</label>
+                                        <select name="items[0][tipo_item]" class="tipo-item w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" data-item-index="0" required>
                                             <option value="">Seleccionar</option>
                                             <option value="1">Bien</option>
                                             <option value="2">Servicio</option>
@@ -180,9 +180,9 @@
                                     </div>
 
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Código *</label>
+                                        <label class="block text-sm font-medium text-slate-700 mb-2">Código *</label>
                                         <div class="relative">
-                                            <input type="text" name="items[0][codigo]" data-item-index="0" class="codigo-producto w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+                                            <input type="text" name="items[0][codigo]" data-item-index="0" class="codigo-producto w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
                                             <div class="loader-producto hidden absolute right-3 top-3">
                                                 <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -194,23 +194,23 @@
                                     </div>
 
                                     <div class="md:col-span-2">
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Descripción *</label>
-                                        <input type="text" name="items[0][descripcion]" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+                                        <label class="block text-sm font-medium text-slate-700 mb-2">Descripción *</label>
+                                        <input type="text" name="items[0][descripcion]" class="w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
                                     </div>
 
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Cantidad *</label>
-                                        <input type="number" step="1" name="items[0][cantidad]" class="cantidad w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required min="1">
+                                        <label class="block text-sm font-medium text-slate-700 mb-2">Cantidad *</label>
+                                        <input type="number" step="1" name="items[0][cantidad]" class="cantidad w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required min="1">
                                     </div>
 
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Precio Unit. *</label>
-                                        <input type="number" step="0.01" name="items[0][precio_unitario]" class="precio w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required min="0">
+                                        <label class="block text-sm font-medium text-slate-700 mb-2">Precio Unit. *</label>
+                                        <input type="number" step="0.01" name="items[0][precio_unitario]" class="precio w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required min="0">
                                     </div>
 
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Descuento</label>
-                                        <input type="number" step="0.01" name="items[0][monto_descuento]" value="0" class="descuento w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" min="0">
+                                        <label class="block text-sm font-medium text-slate-700 mb-2">Descuento</label>
+                                        <input type="number" step="0.01" name="items[0][monto_descuento]" value="0" class="descuento w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" min="0">
                                     </div>
                                 </div>
                             </div>
@@ -223,12 +223,12 @@
 
                     <!-- Resumen y Condiciones -->
                     <div class="mb-8">
-                        <h2 class="text-xl font-semibold text-gray-700 mb-4 border-b pb-2">Condiciones de Pago</h2>
+                        <h2 class="text-xl font-semibold text-slate-700 mb-4 border-b pb-2">Condiciones de Pago</h2>
                         
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Condición *</label>
-                                <select name="condicion_operacion" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Condición *</label>
+                                <select name="condicion_operacion" class="w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
                                     <option value="1">Contado</option>
                                     <!-- <option value="2">Crédito</option> -->
                                     <option value="3">Otro</option>
@@ -236,8 +236,8 @@
                             </div>
 
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Forma de Pago *</label>
-                                <select name="forma_pago" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Forma de Pago *</label>
+                                <select name="forma_pago" class="w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
                                     <option value="01">Efectivo</option>
                                     <option value="02">Cheque</option>
                                     <option value="03">Transferencia</option>
@@ -247,27 +247,27 @@
                             </div>
 
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Referencia de Pago</label>
-                                <input type="text" name="referencia_pago" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" value="{{ old('referencia_pago') }}">
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Referencia de Pago</label>
+                                <input type="text" name="referencia_pago" class="w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" value="{{ old('referencia_pago') }}">
                             </div>
 
                             <div class="md:col-span-3">
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Observaciones</label>
-                                <textarea name="observaciones" rows="2" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500">{{ old('observaciones') }}</textarea>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Observaciones</label>
+                                <textarea name="observaciones" rows="2" class="w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500">{{ old('observaciones') }}</textarea>
                             </div>
                         </div>
                     </div>
 
                     <!-- Resumen de Totales -->
                     <div class="bg-blue-50 p-6 rounded-lg mb-6">
-                        <h3 class="text-lg font-semibold text-gray-700 mb-4">Resumen</h3>
+                        <h3 class="text-lg font-semibold text-slate-700 mb-4">Resumen</h3>
                         <div class="space-y-2">
                             <div class="flex justify-between">
-                                <span class="text-gray-600">Subtotal (sin IVA):</span>
+                                <span class="text-slate-500">Subtotal (sin IVA):</span>
                                 <span class="font-semibold" id="subtotal">$0.00</span>
                             </div>
                             <div class="flex justify-between" style="display: none">
-                                <span class="text-gray-600">IVA (13%):</span>
+                                <span class="text-slate-500">IVA (13%):</span>
                                 <span class="font-semibold" id="iva">$0.00</span>
                             </div>
                             <div class="flex justify-between text-xl font-bold text-blue-600 border-t pt-2">
@@ -282,7 +282,7 @@
                         <button type="submit" id="submitBtn" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-lg">
                             Generar y Firmar Factura
                         </button>
-                        <a href="{{ route('facturas.index') }}" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold px-6 py-3 rounded-lg">
+                        <a href="{{ route('facturas.index') }}" class="bg-slate-500 hover:bg-gray-600 text-white font-semibold px-6 py-3 rounded-lg">
                             Cancelar
                         </a>
                     </div>
@@ -365,14 +365,14 @@
         document.getElementById('addItem').addEventListener('click', function() {
             const container = document.getElementById('itemsContainer');
             const newItem = document.createElement('div');
-            newItem.className = 'item-row bg-gray-50 p-4 rounded-lg mb-4';
+            newItem.className = 'item-row bg-slate-50 p-4 rounded-lg mb-4';
             
             newItem.innerHTML = `
                 <input type="hidden" name="items[${itemCount}][producto_id]" class="producto-id" value="">
                 <div class="grid grid-cols-1 md:grid-cols-7 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Tipo *</label>
-                        <select name="items[${itemCount}][tipo_item]" class="tipo-item w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" data-item-index="${itemCount}" required>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Tipo *</label>
+                        <select name="items[${itemCount}][tipo_item]" class="tipo-item w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" data-item-index="${itemCount}" required>
                             <option value="">Seleccionar</option>
                             <option value="1">Bien</option>
                             <option value="2">Servicio</option>
@@ -380,9 +380,9 @@
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Código *</label>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Código *</label>
                         <div class="relative">
-                            <input type="text" name="items[${itemCount}][codigo]" data-item-index="${itemCount}" class="codigo-producto w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+                            <input type="text" name="items[${itemCount}][codigo]" data-item-index="${itemCount}" class="codigo-producto w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
                             <div class="loader-producto hidden absolute right-3 top-3">
                                 <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -393,20 +393,20 @@
                         <p class="resultado-producto text-xs mt-1 hidden"></p>
                     </div>
                     <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Descripción *</label>
-                        <input type="text" name="items[${itemCount}][descripcion]" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Descripción *</label>
+                        <input type="text" name="items[${itemCount}][descripcion]" class="w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Cantidad *</label>
-                        <input type="number" step="1" name="items[${itemCount}][cantidad]" class="cantidad w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required min="1">
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Cantidad *</label>
+                        <input type="number" step="1" name="items[${itemCount}][cantidad]" class="cantidad w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required min="1">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Precio Unit. *</label>
-                        <input type="number" step="0.01" name="items[${itemCount}][precio_unitario]" class="precio w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required min="0">
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Precio Unit. *</label>
+                        <input type="number" step="0.01" name="items[${itemCount}][precio_unitario]" class="precio w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required min="0">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Descuento</label>
-                        <input type="number" step="0.01" name="items[${itemCount}][monto_descuento]" value="0" class="descuento w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" min="0">
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Descuento</label>
+                        <input type="number" step="0.01" name="items[${itemCount}][monto_descuento]" value="0" class="descuento w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" min="0">
                     </div>
                 </div>
                 <button type="button" class="removeItem mt-2 text-red-500 hover:text-red-700 text-sm">Eliminar</button>
@@ -440,7 +440,7 @@
                 
                 codigoInput.value = servicioCode;
                 codigoInput.readOnly = true;
-                codigoInput.classList.add('bg-gray-200');
+                codigoInput.classList.add('bg-slate-200');
                 codigoInput.style.cursor = 'not-allowed';
                 
                 // Remover evento de búsqueda
@@ -449,7 +449,7 @@
                 // BIEN: código manual con búsqueda
                 codigoInput.value = '';
                 codigoInput.readOnly = false;
-                codigoInput.classList.remove('bg-gray-200');
+                codigoInput.classList.remove('bg-slate-200');
                 codigoInput.style.cursor = 'auto';
                 
                 // Re-agregar búsqueda si no está
@@ -587,7 +587,7 @@
                 municipioSelect.disabled = false;
             } else {
                 municipioHelp.textContent = 'Seleccione un departamento para ver los municipios';
-                municipioHelp.className = 'text-xs text-gray-500 mt-1';
+                municipioHelp.className = 'text-xs text-slate-500 mt-1';
                 municipioSelect.disabled = true;
             }
         });
@@ -636,7 +636,7 @@
                     // Bloquear campo NRC para DUI (personas naturales sin IVA no tienen NRC)
                     nrcInput.disabled = true;
                     nrcInput.value = '';
-                    nrcInput.classList.add('bg-gray-200', 'cursor-not-allowed');
+                    nrcInput.classList.add('bg-slate-200', 'cursor-not-allowed');
                     break;
                 case '36': // NIT - Contribuyente IVA
                     numDocInput.placeholder = 'Ej: 06142302881449';
@@ -644,39 +644,39 @@
                     helpText.className = 'text-xs text-blue-600 mt-1 font-medium';
                     // Desbloquear campo NRC para NIT
                     nrcInput.disabled = false;
-                    nrcInput.classList.remove('bg-gray-200', 'cursor-not-allowed');
+                    nrcInput.classList.remove('bg-slate-200', 'cursor-not-allowed');
                     break;
                 case '02': // Carnet de residente
                     numDocInput.placeholder = 'Número de carnet de residente';
                     helpText.textContent = 'Ingrese el número de carnet de residente';
-                    helpText.className = 'text-xs text-gray-500 mt-1';
+                    helpText.className = 'text-xs text-slate-500 mt-1';
                     // Desbloquear campo NRC
                     nrcInput.disabled = false;
-                    nrcInput.classList.remove('bg-gray-200', 'cursor-not-allowed');
+                    nrcInput.classList.remove('bg-slate-200', 'cursor-not-allowed');
                     break;
                 case '03': // Pasaporte
                     numDocInput.placeholder = 'Número de pasaporte';
                     helpText.textContent = 'Ingrese el número de pasaporte';
-                    helpText.className = 'text-xs text-gray-500 mt-1';
+                    helpText.className = 'text-xs text-slate-500 mt-1';
                     // Desbloquear campo NRC
                     nrcInput.disabled = false;
-                    nrcInput.classList.remove('bg-gray-200', 'cursor-not-allowed');
+                    nrcInput.classList.remove('bg-slate-200', 'cursor-not-allowed');
                     break;
                 case '37': // Otro
                     numDocInput.placeholder = 'Otro documento de identificación';
                     helpText.textContent = 'Ingrese el número de documento';
-                    helpText.className = 'text-xs text-gray-500 mt-1';
+                    helpText.className = 'text-xs text-slate-500 mt-1';
                     // Desbloquear campo NRC
                     nrcInput.disabled = false;
-                    nrcInput.classList.remove('bg-gray-200', 'cursor-not-allowed');
+                    nrcInput.classList.remove('bg-slate-200', 'cursor-not-allowed');
                     break;
                 default:
                     numDocInput.placeholder = 'Seleccione primero el tipo de documento';
                     helpText.textContent = 'Seleccione el tipo de documento';
-                    helpText.className = 'text-xs text-gray-500 mt-1';
+                    helpText.className = 'text-xs text-slate-500 mt-1';
                     // Desbloquear campo NRC por defecto
                     nrcInput.disabled = false;
-                    nrcInput.classList.remove('bg-gray-200', 'cursor-not-allowed');
+                    nrcInput.classList.remove('bg-slate-200', 'cursor-not-allowed');
             }
         });
 

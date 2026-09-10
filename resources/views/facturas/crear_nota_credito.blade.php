@@ -9,13 +9,13 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="{{ asset('js/catalogo-municipios.js') }}"></script>
 </head>
-<body class="bg-gray-100">
+<body class="bg-slate-50">
     @include('components.navbar')
 
     <div class="container mx-auto px-4 py-8">
         <div class="max-w-5xl mx-auto">
-            <div class="bg-white rounded-lg shadow-lg p-6">
-                <h1 class="text-3xl font-bold text-gray-800 mb-6">Generar Nota de Crédito (DTE-05)</h1>
+            <div class="bg-white rounded-xl shadow-[0_1px_3px_0_rgb(0_0_0/0.06),0_4px_12px_-2px_rgb(0_0_0/0.06)] border border-slate-100 p-6">
+                <h1 class="text-3xl font-bold text-slate-800 mb-6">Generar Nota de Crédito (DTE-05)</h1>
 
                 <div class="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-6">
                     <p class="font-semibold">ℹ️ Información sobre Notas de Crédito</p>
@@ -57,11 +57,11 @@
 
                     <!-- Selección de Documento a Relacionar -->
                     <div class="mb-8">
-                        <h2 class="text-xl font-semibold text-gray-700 mb-4 border-b pb-2">Documento a Anular/Ajustar</h2>
+                        <h2 class="text-xl font-semibold text-slate-700 mb-4 border-b pb-2">Documento a Anular/Ajustar</h2>
 
                         <div class="grid grid-cols-1 gap-4">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Seleccionar Factura o CCF *</label>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Seleccionar Factura o CCF *</label>
                                 @if($facturasDisponibles->isEmpty())
                                     <div class="bg-orange-100 border border-orange-400 text-orange-700 px-4 py-3 rounded">
                                         <p class="font-semibold">⚠️ No hay facturas disponibles</p>
@@ -74,7 +74,7 @@
                                         </p>
                                     </div>
                                 @else
-                                    <select name="documento_relacionado_id" id="documentoRelacionado" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+                                    <select name="documento_relacionado_id" id="documentoRelacionado" class="w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
                                         <option value="">Seleccione el documento a relacionar...</option>
                                         @foreach($facturasDisponibles as $factura)
                                             <option value="{{ $factura->id }}"
@@ -111,7 +111,7 @@
                                             </option>
                                         @endforeach
                                     </select>
-                                    <p class="text-xs text-gray-500 mt-1">
+                                    <p class="text-xs text-slate-500 mt-1">
                                         Solo se muestran facturas con NIT enviadas exitosamente al MH.
                                         Total disponibles: {{ $facturasDisponibles->count() }}
                                     </p>
@@ -145,8 +145,8 @@
                             </div>
 
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Nota de Crédito *</label>
-                                <select name="tipo_documento" id="tipoNotaCredito" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Tipo de Nota de Crédito *</label>
+                                <select name="tipo_documento" id="tipoNotaCredito" class="w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
                                     <option value="">Seleccione...</option>
                                     <option value="1">Anulación - Documento emitido por error</option>
                                     <option value="2">Ajuste de Precio - Corrección de monto</option>
@@ -167,10 +167,10 @@
 
                             <div class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                                 <label class="flex items-start cursor-pointer">
-                                    <input type="checkbox" name="precio_incluye_iva" id="precioIncluyeIva" value="1" class="mt-1 h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                    <input type="checkbox" name="precio_incluye_iva" id="precioIncluyeIva" value="1" class="mt-1 h-5 w-5 text-blue-600 focus:ring-blue-500 border-slate-200 rounded">
                                     <div class="ml-3">
                                         <span class="text-sm font-medium text-gray-900">El precio del producto incluye IVA</span>
-                                        <p class="text-xs text-gray-600 mt-1">
+                                        <p class="text-xs text-slate-500 mt-1">
                                             Marca esta casilla si el precio unitario que ingresarás ya incluye el IVA (13%).
                                             El sistema extraerá automáticamente la venta gravada y el IVA.
                                         </p>
@@ -185,12 +185,12 @@
 
                     <!-- Datos del Receptor (se llenan automáticamente) -->
                     <div class="mb-8">
-                        <h2 class="text-xl font-semibold text-gray-700 mb-4 border-b pb-2">Datos del Cliente (automático)</h2>
+                        <h2 class="text-xl font-semibold text-slate-700 mb-4 border-b pb-2">Datos del Cliente (automático)</h2>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Documento *</label>
-                                <select name="receptor_tipo_documento" id="receptor_tipo_documento" class="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-100" readonly required>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Tipo de Documento *</label>
+                                <select name="receptor_tipo_documento" id="receptor_tipo_documento" class="w-full border border-slate-200 rounded-lg px-4 py-2 bg-slate-50" readonly required>
                                     <option value="">Seleccione primero la factura...</option>
                                     <option value="36">NIT - Registro de contribuyente IVA</option>
                                     <option value="13">DUI - Persona natural sin IVA</option>
@@ -201,45 +201,45 @@
                             </div>
 
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Número de Documento *</label>
-                                <input type="text" name="receptor_num_documento" id="receptor_num_documento" class="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-100" readonly required>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Número de Documento *</label>
+                                <input type="text" name="receptor_num_documento" id="receptor_num_documento" class="w-full border border-slate-200 rounded-lg px-4 py-2 bg-slate-50" readonly required>
                             </div>
 
                             <div class="md:col-span-2">
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Nombre Completo *</label>
-                                <input type="text" name="receptor_nombre" id="receptor_nombre" class="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-100" readonly required style="text-transform: uppercase;">
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Nombre Completo *</label>
+                                <input type="text" name="receptor_nombre" id="receptor_nombre" class="w-full border border-slate-200 rounded-lg px-4 py-2 bg-slate-50" readonly required style="text-transform: uppercase;">
                             </div>
 
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">NRC</label>
-                                <input type="text" name="receptor_nrc" id="receptor_nrc" class="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-100" readonly>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">NRC</label>
+                                <input type="text" name="receptor_nrc" id="receptor_nrc" class="w-full border border-slate-200 rounded-lg px-4 py-2 bg-slate-50" readonly>
                             </div>
 
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Teléfono</label>
-                                <input type="text" name="receptor_telefono" id="receptor_telefono" class="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-100" readonly placeholder="7777-7777">
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Teléfono</label>
+                                <input type="text" name="receptor_telefono" id="receptor_telefono" class="w-full border border-slate-200 rounded-lg px-4 py-2 bg-slate-50" readonly placeholder="7777-7777">
                             </div>
 
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Código Actividad Económica</label>
-                                <input type="text" name="receptor_cod_actividad" id="receptor_cod_actividad" class="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-100" readonly>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Código Actividad Económica</label>
+                                <input type="text" name="receptor_cod_actividad" id="receptor_cod_actividad" class="w-full border border-slate-200 rounded-lg px-4 py-2 bg-slate-50" readonly>
                             </div>
 
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Descripción Actividad *</label>
-                                <input type="text" name="receptor_desc_actividad" id="receptor_desc_actividad" value="ACTIVIDADES NO ESPECIFICADAS" class="w-full border border-gray-300 rounded-lg px-4 py-2" required>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Descripción Actividad *</label>
+                                <input type="text" name="receptor_desc_actividad" id="receptor_desc_actividad" value="ACTIVIDADES NO ESPECIFICADAS" class="w-full border border-slate-200 rounded-lg px-4 py-2" required>
                             </div>
 
                             <div class="md:col-span-2">
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Correo Electrónico</label>
-                                <input type="email" name="receptor_correo" id="receptor_correo" class="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-100" readonly>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Correo Electrónico</label>
+                                <input type="email" name="receptor_correo" id="receptor_correo" class="w-full border border-slate-200 rounded-lg px-4 py-2 bg-slate-50" readonly>
                             </div>
                         </div>
                     </div>
 
                     <!-- Dirección del Receptor (automático) -->
                     <div class="mb-8">
-                        <h2 class="text-xl font-semibold text-gray-700 mb-4 border-b pb-2">Dirección del Cliente (automático)</h2>
+                        <h2 class="text-xl font-semibold text-slate-700 mb-4 border-b pb-2">Dirección del Cliente (automático)</h2>
 
                         <input type="hidden" name="receptor_departamento" id="receptor_departamento" value="06">
                         <input type="hidden" name="receptor_municipio" id="receptor_municipio" value="23">
@@ -247,29 +247,29 @@
 
                         <div class="grid grid-cols-1 gap-4">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Complemento de Dirección *</label>
-                                <input type="text" name="receptor_complemento" id="receptor_complemento" class="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-100" readonly required>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Complemento de Dirección *</label>
+                                <input type="text" name="receptor_complemento" id="receptor_complemento" class="w-full border border-slate-200 rounded-lg px-4 py-2 bg-slate-50" readonly required>
                             </div>
                         </div>
-                        <p class="text-xs text-gray-500 mt-2">La dirección se copia automáticamente del documento relacionado</p>
+                        <p class="text-xs text-slate-500 mt-2">La dirección se copia automáticamente del documento relacionado</p>
                     </div>
 
                     <!-- Items de la Nota de Crédito -->
                     <div class="mb-8">
                         <div class="flex justify-between items-center mb-4 border-b pb-2">
-                            <h2 class="text-xl font-semibold text-gray-700">Items de la Nota de Crédito</h2>
+                            <h2 class="text-xl font-semibold text-slate-700">Items de la Nota de Crédito</h2>
                             <button type="button" id="autoLlenarItems" class="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 text-sm hidden">
                                 ✨ Auto-llenar Items
                             </button>
                         </div>
 
                         <div id="items-container">
-                            <div class="item-row bg-gray-50 p-4 rounded-lg mb-4">
+                            <div class="item-row bg-slate-50 p-4 rounded-lg mb-4">
                                 <input type="hidden" name="items[0][producto_id]" class="producto-id" value="">
                                 <div class="grid grid-cols-1 md:grid-cols-7 gap-4">
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Tipo *</label>
-                                        <select name="items[0][tipo_item]" class="tipo-item w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" data-item-index="0" required>
+                                        <label class="block text-sm font-medium text-slate-700 mb-2">Tipo *</label>
+                                        <select name="items[0][tipo_item]" class="tipo-item w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" data-item-index="0" required>
                                             <option value="">Seleccionar</option>
                                             <option value="1">Bien</option>
                                             <option value="2">Servicio</option>
@@ -277,9 +277,9 @@
                                     </div>
 
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Código</label>
+                                        <label class="block text-sm font-medium text-slate-700 mb-2">Código</label>
                                         <div class="relative">
-                                            <input type="text" name="items[0][codigo]" data-item-index="0" class="codigo-producto w-full border border-gray-300 rounded-lg px-4 py-2" required>
+                                            <input type="text" name="items[0][codigo]" data-item-index="0" class="codigo-producto w-full border border-slate-200 rounded-lg px-4 py-2" required>
                                             <div class="loader-producto hidden absolute right-3 top-3">
                                                 <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -290,20 +290,20 @@
                                         <p class="resultado-producto text-xs mt-1 hidden"></p>
                                     </div>
                                     <div class="md:col-span-2">
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Descripción</label>
-                                        <input type="text" name="items[0][descripcion]" class="w-full border border-gray-300 rounded-lg px-4 py-2" required>
+                                        <label class="block text-sm font-medium text-slate-700 mb-2">Descripción</label>
+                                        <input type="text" name="items[0][descripcion]" class="w-full border border-slate-200 rounded-lg px-4 py-2" required>
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Cantidad</label>
-                                        <input type="number" name="items[0][cantidad]" step="1" min="1" class="w-full border border-gray-300 rounded-lg px-4 py-2" required>
+                                        <label class="block text-sm font-medium text-slate-700 mb-2">Cantidad</label>
+                                        <input type="number" name="items[0][cantidad]" step="1" min="1" class="w-full border border-slate-200 rounded-lg px-4 py-2" required>
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Precio Unit.</label>
-                                        <input type="number" name="items[0][precio_unitario]" step="0.01" min="0" class="w-full border border-gray-300 rounded-lg px-4 py-2" required>
+                                        <label class="block text-sm font-medium text-slate-700 mb-2">Precio Unit.</label>
+                                        <input type="number" name="items[0][precio_unitario]" step="0.01" min="0" class="w-full border border-slate-200 rounded-lg px-4 py-2" required>
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Descuento</label>
-                                        <input type="number" name="items[0][monto_descuento]" step="0.01" min="0" value="0" class="w-full border border-gray-300 rounded-lg px-4 py-2">
+                                        <label class="block text-sm font-medium text-slate-700 mb-2">Descuento</label>
+                                        <input type="number" name="items[0][monto_descuento]" step="0.01" min="0" value="0" class="w-full border border-slate-200 rounded-lg px-4 py-2">
                                     </div>
                                 </div>
                             </div>
@@ -316,12 +316,12 @@
 
                     <!-- Condiciones de Pago -->
                     <div class="mb-8">
-                        <h2 class="text-xl font-semibold text-gray-700 mb-4 border-b pb-2">Condiciones de Pago</h2>
+                        <h2 class="text-xl font-semibold text-slate-700 mb-4 border-b pb-2">Condiciones de Pago</h2>
 
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Condición de Operación *</label>
-                                <select name="condicion_operacion" class="w-full border border-gray-300 rounded-lg px-4 py-2" required>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Condición de Operación *</label>
+                                <select name="condicion_operacion" class="w-full border border-slate-200 rounded-lg px-4 py-2" required>
                                     <option value="1">Contado</option>
                                     <!-- <option value="2">Crédito</option> -->
                                     <option value="3">Otro</option>
@@ -329,8 +329,8 @@
                             </div>
 
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Forma de Pago *</label>
-                                <select name="forma_pago" class="w-full border border-gray-300 rounded-lg px-4 py-2" required>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Forma de Pago *</label>
+                                <select name="forma_pago" class="w-full border border-slate-200 rounded-lg px-4 py-2" required>
                                     <option value="01">Billetes y monedas</option>
                                     <option value="02">Tarjeta débito/crédito</option>
                                     <option value="03">Cheque</option>
@@ -340,21 +340,21 @@
                             </div>
 
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Referencia de Pago</label>
-                                <input type="text" name="referencia_pago" class="w-full border border-gray-300 rounded-lg px-4 py-2">
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Referencia de Pago</label>
+                                <input type="text" name="referencia_pago" class="w-full border border-slate-200 rounded-lg px-4 py-2">
                             </div>
                         </div>
                     </div>
 
                     <!-- Observaciones -->
                     <div class="mb-8">
-                        <h2 class="text-xl font-semibold text-gray-700 mb-4 border-b pb-2">Observaciones</h2>
-                        <textarea name="observaciones" rows="3" class="w-full border border-gray-300 rounded-lg px-4 py-2" placeholder="Motivo de la nota de crédito..."></textarea>
+                        <h2 class="text-xl font-semibold text-slate-700 mb-4 border-b pb-2">Observaciones</h2>
+                        <textarea name="observaciones" rows="3" class="w-full border border-slate-200 rounded-lg px-4 py-2" placeholder="Motivo de la nota de crédito..."></textarea>
                     </div>
 
                     <!-- Botones de Acción -->
                     <div class="flex justify-between items-center">
-                        <a href="{{ route('facturas.index') }}" class="bg-gray-500 text-white px-6 py-3 rounded-lg hover:bg-gray-600">
+                        <a href="{{ route('facturas.index') }}" class="bg-slate-500 text-white px-6 py-3 rounded-lg hover:bg-gray-600">
                             Cancelar
                         </a>
                         <button type="submit" class="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600">
@@ -474,7 +474,7 @@
                         tipoTexto = 'DEVOLUCIÓN';
                         iconoTexto = '📦';
                     } else {
-                        colorClasses = 'border-gray-400 bg-gray-50 text-gray-800';
+                        colorClasses = 'border-gray-400 bg-slate-50 text-slate-800';
                         tipoTexto = 'NOTA DE CRÉDITO';
                         iconoTexto = '⚠️';
                     }
@@ -550,12 +550,12 @@
         document.getElementById('addItem').addEventListener('click', function() {
             const container = document.getElementById('items-container');
             const newItem = `
-                <div class="item-row bg-gray-50 p-4 rounded-lg mb-4">
+                <div class="item-row bg-slate-50 p-4 rounded-lg mb-4">
                     <input type="hidden" name="items[${itemCount}][producto_id]" class="producto-id" value="">
                     <div class="grid grid-cols-1 md:grid-cols-7 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Tipo *</label>
-                            <select name="items[${itemCount}][tipo_item]" class="tipo-item w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" data-item-index="${itemCount}" required>
+                            <label class="block text-sm font-medium text-slate-700 mb-2">Tipo *</label>
+                            <select name="items[${itemCount}][tipo_item]" class="tipo-item w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" data-item-index="${itemCount}" required>
                                 <option value="">Seleccionar</option>
                                 <option value="1">Bien</option>
                                 <option value="2">Servicio</option>
@@ -563,9 +563,9 @@
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Código</label>
+                            <label class="block text-sm font-medium text-slate-700 mb-2">Código</label>
                             <div class="relative">
-                                <input type="text" name="items[${itemCount}][codigo]" data-item-index="${itemCount}" class="codigo-producto w-full border border-gray-300 rounded-lg px-4 py-2" required>
+                                <input type="text" name="items[${itemCount}][codigo]" data-item-index="${itemCount}" class="codigo-producto w-full border border-slate-200 rounded-lg px-4 py-2" required>
                                 <div class="loader-producto hidden absolute right-3 top-3">
                                     <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -576,20 +576,20 @@
                             <p class="resultado-producto text-xs mt-1 hidden"></p>
                         </div>
                         <div class="md:col-span-2">
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Descripción</label>
-                            <input type="text" name="items[${itemCount}][descripcion]" class="w-full border border-gray-300 rounded-lg px-4 py-2" required>
+                            <label class="block text-sm font-medium text-slate-700 mb-2">Descripción</label>
+                            <input type="text" name="items[${itemCount}][descripcion]" class="w-full border border-slate-200 rounded-lg px-4 py-2" required>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Cantidad</label>
-                            <input type="number" name="items[${itemCount}][cantidad]" step="1" min="1" class="cantidad w-full border border-gray-300 rounded-lg px-4 py-2" required>
+                            <label class="block text-sm font-medium text-slate-700 mb-2">Cantidad</label>
+                            <input type="number" name="items[${itemCount}][cantidad]" step="1" min="1" class="cantidad w-full border border-slate-200 rounded-lg px-4 py-2" required>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Precio Unit.</label>
-                            <input type="number" name="items[${itemCount}][precio_unitario]" step="0.01" min="0" class="precio w-full border border-gray-300 rounded-lg px-4 py-2" required>
+                            <label class="block text-sm font-medium text-slate-700 mb-2">Precio Unit.</label>
+                            <input type="number" name="items[${itemCount}][precio_unitario]" step="0.01" min="0" class="precio w-full border border-slate-200 rounded-lg px-4 py-2" required>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Descuento</label>
-                            <input type="number" name="items[${itemCount}][monto_descuento]" step="0.01" min="0" value="0" class="descuento w-full border border-gray-300 rounded-lg px-4 py-2">
+                            <label class="block text-sm font-medium text-slate-700 mb-2">Descuento</label>
+                            <input type="number" name="items[${itemCount}][monto_descuento]" step="0.01" min="0" value="0" class="descuento w-full border border-slate-200 rounded-lg px-4 py-2">
                         </div>
                     </div>
                     <button type="button" class="remove-item text-red-500 hover:text-red-700 mt-2">Eliminar</button>
@@ -720,7 +720,7 @@
                 
                 codigoInput.value = servicioCode;
                 codigoInput.readOnly = true;
-                codigoInput.classList.add('bg-gray-200');
+                codigoInput.classList.add('bg-slate-200');
                 codigoInput.style.cursor = 'not-allowed';
                 
                 // Remover evento de búsqueda
@@ -729,7 +729,7 @@
                 // BIEN: código manual con búsqueda
                 codigoInput.value = '';
                 codigoInput.readOnly = false;
-                codigoInput.classList.remove('bg-gray-200');
+                codigoInput.classList.remove('bg-slate-200');
                 codigoInput.style.cursor = 'auto';
                 
                 // Re-agregar búsqueda si no está
@@ -804,40 +804,40 @@
                     // Agregar cada item de la factura
                     currentFacturaItems.forEach((item, index) => {
                         const newItem = `
-                            <div class="item-row bg-gray-50 p-4 rounded-lg mb-4">
+                            <div class="item-row bg-slate-50 p-4 rounded-lg mb-4">
                                 <input type="hidden" name="items[${index}][producto_id]" class="producto-id" value="${item.producto_id || ''}">
                                 <div class="grid grid-cols-1 md:grid-cols-7 gap-4">
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Tipo *</label>
-                                        <select name="items[${index}][tipo_item]" class="tipo-item w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+                                        <label class="block text-sm font-medium text-slate-700 mb-2">Tipo *</label>
+                                        <select name="items[${index}][tipo_item]" class="tipo-item w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
                                             <option value="1" ${item.tipo_item == 1 ? 'selected' : ''}>Bien</option>
                                             <option value="2" ${item.tipo_item == 2 ? 'selected' : ''}>Servicio</option>
                                         </select>
                                     </div>
 
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Código</label>
-                                        <input type="text" name="items[${index}][codigo]" value="${item.codigo || ''}" class="codigo-producto w-full border border-gray-300 rounded-lg px-4 py-2" required>
+                                        <label class="block text-sm font-medium text-slate-700 mb-2">Código</label>
+                                        <input type="text" name="items[${index}][codigo]" value="${item.codigo || ''}" class="codigo-producto w-full border border-slate-200 rounded-lg px-4 py-2" required>
                                     </div>
 
                                     <div class="md:col-span-2">
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Descripción</label>
-                                        <input type="text" name="items[${index}][descripcion]" value="${item.descripcion || ''}" class="w-full border border-gray-300 rounded-lg px-4 py-2" required>
+                                        <label class="block text-sm font-medium text-slate-700 mb-2">Descripción</label>
+                                        <input type="text" name="items[${index}][descripcion]" value="${item.descripcion || ''}" class="w-full border border-slate-200 rounded-lg px-4 py-2" required>
                                     </div>
 
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Cantidad</label>
-                                        <input type="number" name="items[${index}][cantidad]" value="${item.cantidad || ''}" step="1" min="1" class="cantidad w-full border border-gray-300 rounded-lg px-4 py-2" required>
+                                        <label class="block text-sm font-medium text-slate-700 mb-2">Cantidad</label>
+                                        <input type="number" name="items[${index}][cantidad]" value="${item.cantidad || ''}" step="1" min="1" class="cantidad w-full border border-slate-200 rounded-lg px-4 py-2" required>
                                     </div>
 
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Precio Unit.</label>
-                                        <input type="number" name="items[${index}][precio_unitario]" value="${item.precio_unitario || ''}" step="0.01" min="0" class="precio w-full border border-gray-300 rounded-lg px-4 py-2" required>
+                                        <label class="block text-sm font-medium text-slate-700 mb-2">Precio Unit.</label>
+                                        <input type="number" name="items[${index}][precio_unitario]" value="${item.precio_unitario || ''}" step="0.01" min="0" class="precio w-full border border-slate-200 rounded-lg px-4 py-2" required>
                                     </div>
 
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Descuento</label>
-                                        <input type="number" name="items[${index}][monto_descuento]" value="${item.monto_descuento || 0}" step="0.01" min="0" class="descuento w-full border border-gray-300 rounded-lg px-4 py-2">
+                                        <label class="block text-sm font-medium text-slate-700 mb-2">Descuento</label>
+                                        <input type="number" name="items[${index}][monto_descuento]" value="${item.monto_descuento || 0}" step="0.01" min="0" class="descuento w-full border border-slate-200 rounded-lg px-4 py-2">
                                     </div>
                                 </div>
                                 <button type="button" class="remove-item text-red-500 hover:text-red-700 mt-2 text-sm font-medium">Eliminar Item</button>

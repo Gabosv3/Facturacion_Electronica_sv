@@ -6,7 +6,7 @@
     <title>Gestión de Tokens MH</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100">
+<body class="bg-slate-50">
     <div class="container mx-auto px-4 py-8">
         <div class="max-w-6xl mx-auto">
             <div class="mb-4">
@@ -15,9 +15,9 @@
                 </a>
             </div>
 
-            <div class="bg-white rounded-lg shadow-lg p-6">
+            <div class="bg-white rounded-xl shadow-[0_1px_3px_0_rgb(0_0_0/0.06),0_4px_12px_-2px_rgb(0_0_0/0.06)] border border-slate-100 p-6">
                 <div class="flex justify-between items-center mb-6">
-                    <h1 class="text-3xl font-bold text-gray-800">Gestión de Tokens MH</h1>
+                    <h1 class="text-3xl font-bold text-slate-800">Gestión de Tokens MH</h1>
                     <form action="{{ route('admin.tokens.renovar') }}" method="POST">
                         @csrf
                         <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg">
@@ -44,15 +44,15 @@
                         <h2 class="text-xl font-semibold text-green-800 mb-4">✓ Token Activo</h2>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <p class="text-sm text-gray-600">Creado:</p>
+                                <p class="text-sm text-slate-500">Creado:</p>
                                 <p class="font-semibold">{{ $tokenActivo->created_at->format('d/m/Y H:i:s') }}</p>
                             </div>
                             <div>
-                                <p class="text-sm text-gray-600">Expira:</p>
+                                <p class="text-sm text-slate-500">Expira:</p>
                                 <p class="font-semibold">{{ $tokenActivo->expires_at->format('d/m/Y H:i:s') }}</p>
                             </div>
                             <div class="md:col-span-2">
-                                <p class="text-sm text-gray-600">Tiempo restante:</p>
+                                <p class="text-sm text-slate-500">Tiempo restante:</p>
                                 <p class="font-semibold text-lg">
                                     @php
                                         $diff = now()->diff($tokenActivo->expires_at);
@@ -61,8 +61,8 @@
                                 </p>
                             </div>
                             <div class="md:col-span-2">
-                                <p class="text-sm text-gray-600 mb-2">Token (primeros 50 caracteres):</p>
-                                <div class="bg-gray-100 p-3 rounded font-mono text-xs break-all">
+                                <p class="text-sm text-slate-500 mb-2">Token (primeros 50 caracteres):</p>
+                                <div class="bg-slate-100 p-3 rounded font-mono text-xs break-all">
                                     {{ substr($tokenActivo->token, 0, 50) }}...
                                 </div>
                             </div>
@@ -71,7 +71,7 @@
                 @else
                     <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-6">
                         <h2 class="text-xl font-semibold text-yellow-800 mb-2">⚠ No hay token activo</h2>
-                        <p class="text-gray-700">Genera un nuevo token para poder enviar DTEs al Ministerio de Hacienda.</p>
+                        <p class="text-slate-700">Genera un nuevo token para poder enviar DTEs al Ministerio de Hacienda.</p>
                     </div>
                 @endif
 
@@ -80,25 +80,25 @@
                     <h2 class="text-xl font-semibold text-blue-800 mb-4">ℹ️ Información del Sistema</h2>
                     <div class="space-y-2">
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Usuario MH:</span>
+                            <span class="text-slate-500">Usuario MH:</span>
                             <span class="font-semibold">{{ config('dte.mh_user') }}</span>
                         </div>
                         <div class="flex justify-between">
-                            <span class="text-gray-600">URL Autenticación:</span>
+                            <span class="text-slate-500">URL Autenticación:</span>
                             <span class="font-mono text-sm">{{ config('dte.mh_auth_url') }}</span>
                         </div>
                         <div class="flex justify-between">
-                            <span class="text-gray-600">URL Recepción:</span>
+                            <span class="text-slate-500">URL Recepción:</span>
                             <span class="font-mono text-sm">{{ config('dte.mh_recepcion_url') }}</span>
                         </div>
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Ambiente:</span>
+                            <span class="text-slate-500">Ambiente:</span>
                             <span class="font-semibold">
                                 {{ config('dte.ambiente') == '00' ? 'Pruebas' : 'Producción' }}
                             </span>
                         </div>
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Renovación automática:</span>
+                            <span class="text-slate-500">Renovación automática:</span>
                             <span class="font-semibold">Diariamente a las 2:00 AM</span>
                         </div>
                     </div>
@@ -106,36 +106,36 @@
 
                 <!-- Historial de Tokens -->
                 <div class="mb-6">
-                    <h2 class="text-xl font-semibold text-gray-700 mb-4">📜 Historial de Tokens</h2>
+                    <h2 class="text-xl font-semibold text-slate-700 mb-4">📜 Historial de Tokens</h2>
                     
                     @if($tokens->count() > 0)
                         <div class="overflow-x-auto">
                             <table class="w-full">
-                                <thead class="bg-gray-50">
+                                <thead class="bg-slate-50">
                                     <tr>
-                                        <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">ID</th>
-                                        <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">Creado</th>
-                                        <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">Expira</th>
-                                        <th class="px-4 py-3 text-center text-sm font-semibold text-gray-600">Estado</th>
-                                        <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">Token</th>
+                                        <th class="px-4 py-3 text-left text-sm font-semibold text-slate-500">ID</th>
+                                        <th class="px-4 py-3 text-left text-sm font-semibold text-slate-500">Creado</th>
+                                        <th class="px-4 py-3 text-left text-sm font-semibold text-slate-500">Expira</th>
+                                        <th class="px-4 py-3 text-center text-sm font-semibold text-slate-500">Estado</th>
+                                        <th class="px-4 py-3 text-left text-sm font-semibold text-slate-500">Token</th>
                                     </tr>
                                 </thead>
-                                <tbody class="divide-y divide-gray-200">
+                                <tbody class="divide-y divide-slate-100">
                                     @foreach($tokens as $token)
-                                    <tr class="hover:bg-gray-50">
-                                        <td class="px-4 py-3 text-sm text-gray-700">{{ $token->id }}</td>
-                                        <td class="px-4 py-3 text-sm text-gray-700">{{ $token->created_at->format('d/m/Y H:i') }}</td>
-                                        <td class="px-4 py-3 text-sm text-gray-700">{{ $token->expires_at->format('d/m/Y H:i') }}</td>
+                                    <tr class="hover:bg-slate-50">
+                                        <td class="px-4 py-3 text-sm text-slate-700">{{ $token->id }}</td>
+                                        <td class="px-4 py-3 text-sm text-slate-700">{{ $token->created_at->format('d/m/Y H:i') }}</td>
+                                        <td class="px-4 py-3 text-sm text-slate-700">{{ $token->expires_at->format('d/m/Y H:i') }}</td>
                                         <td class="px-4 py-3 text-center">
                                             @if($token->isValid())
                                                 <span class="px-3 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full">Válido</span>
                                             @elseif($token->isExpired())
-                                                <span class="px-3 py-1 bg-gray-100 text-gray-800 text-xs font-semibold rounded-full">Expirado</span>
+                                                <span class="px-3 py-1 bg-slate-100 text-slate-800 text-xs font-semibold rounded-full">Expirado</span>
                                             @else
                                                 <span class="px-3 py-1 bg-red-100 text-red-800 text-xs font-semibold rounded-full">Inactivo</span>
                                             @endif
                                         </td>
-                                        <td class="px-4 py-3 text-sm font-mono text-gray-600">{{ substr($token->token, 0, 30) }}...</td>
+                                        <td class="px-4 py-3 text-sm font-mono text-slate-500">{{ substr($token->token, 0, 30) }}...</td>
                                     </tr>
                                     @endforeach
                                 </tbody>
@@ -146,26 +146,26 @@
                             {{ $tokens->links() }}
                         </div>
                     @else
-                        <div class="text-center py-8 text-gray-500">
+                        <div class="text-center py-8 text-slate-500">
                             No hay tokens registrados
                         </div>
                     @endif
                 </div>
 
                 <!-- Comandos útiles -->
-                <div class="bg-gray-50 border border-gray-200 rounded-lg p-6">
-                    <h2 class="text-xl font-semibold text-gray-700 mb-4">💻 Comandos Artisan</h2>
+                <div class="bg-slate-50 border border-slate-200 rounded-lg p-6">
+                    <h2 class="text-xl font-semibold text-slate-700 mb-4">💻 Comandos Artisan</h2>
                     <div class="space-y-3">
                         <div class="bg-white p-3 rounded border">
-                            <p class="text-sm text-gray-600 mb-1">Renovar token manualmente:</p>
+                            <p class="text-sm text-slate-500 mb-1">Renovar token manualmente:</p>
                             <code class="text-sm bg-gray-800 text-green-400 px-3 py-2 rounded block">php artisan mh:renovar-token</code>
                         </div>
                         <div class="bg-white p-3 rounded border">
-                            <p class="text-sm text-gray-600 mb-1">Ejecutar tareas programadas:</p>
+                            <p class="text-sm text-slate-500 mb-1">Ejecutar tareas programadas:</p>
                             <code class="text-sm bg-gray-800 text-green-400 px-3 py-2 rounded block">php artisan schedule:work</code>
                         </div>
                         <div class="bg-white p-3 rounded border">
-                            <p class="text-sm text-gray-600 mb-1">Ver logs:</p>
+                            <p class="text-sm text-slate-500 mb-1">Ver logs:</p>
                             <code class="text-sm bg-gray-800 text-green-400 px-3 py-2 rounded block">tail -f storage/logs/laravel.log</code>
                         </div>
                     </div>

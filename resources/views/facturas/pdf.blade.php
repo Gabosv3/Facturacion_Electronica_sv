@@ -257,10 +257,57 @@
             width: 100px;
             height: 100px;
         }
+
+        .invalidado-banner {
+            border: 2px solid #dc2626;
+            background-color: #fef2f2;
+            color: #991b1b;
+            padding: 8px 12px;
+            margin-bottom: 15px;
+            font-size: 10px;
+            border-radius: 4px;
+        }
+
+        .invalidado-banner .titulo {
+            font-size: 13px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 3px;
+        }
+
+        .watermark-invalidado {
+            position: fixed;
+            top: 320px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            z-index: 999;
+        }
+
+        .watermark-invalidado span {
+            display: inline-block;
+            font-size: 80px;
+            font-weight: bold;
+            letter-spacing: 6px;
+            color: rgba(220, 38, 38, 0.28);
+            border: 6px solid rgba(220, 38, 38, 0.28);
+            padding: 6px 30px;
+            transform: rotate(-25deg);
+            text-transform: uppercase;
+        }
     </style>
 </head>
 <body>
     @php
+        $invalidacionActiva = $factura->getInvalidacionActiva();
+        $anuladoPorNotaCredito = $factura->nota_credito_estado === 'anulacion';
+        $documentoAnulado = $factura->invalidada || $invalidacionActiva || $anuladoPorNotaCredito;
+
+        $selloTexto = 'Invalidado';
+        if (!($factura->invalidada || $invalidacionActiva) && $anuladoPorNotaCredito) {
+            $selloTexto = 'Anulado';
+        }
+
         $resumen = $factura->dte_json['dteJson']['resumen'] ?? [];
         
         // Extracción segura de valores del JSON
@@ -400,7 +447,35 @@
         ];
     @endphp
 
+    @if($documentoAnulado)
+        <div class="watermark-invalidado"><span>{{ $selloTexto }}</span></div>
+    @endif
+
     <div class="container">
+        @if($factura->invalidada || $invalidacionActiva)
+            <div class="invalidado-banner">
+                <div class="titulo">⚠ Documento Invalidado</div>
+                @if($invalidacionActiva)
+                    Código de invalidación: {{ $invalidacionActiva->codigo_invalidacion }} &nbsp;|&nbsp;
+                    Fecha del evento: {{ \Carbon\Carbon::parse($invalidacionActiva->fecha_evento)->format('d/m/Y H:i:s') }} &nbsp;|&nbsp;
+                    Motivo: {{ $invalidacionActiva->motivo_invalidacion }}
+                @else
+                    Este documento fue marcado como invalidado en el sistema.
+                @endif
+            </div>
+        @elseif($anuladoPorNotaCredito)
+            <div class="invalidado-banner">
+                <div class="titulo">⚠ Documento Anulado por Nota de Crédito</div>
+                @php $notaCredito = $factura->nota_credito_id ? \App\Models\Factura::find($factura->nota_credito_id) : null; @endphp
+                @if($notaCredito)
+                    Nota de Crédito: {{ $notaCredito->numero_control }} &nbsp;|&nbsp;
+                    Fecha: {{ $notaCredito->fecha_emision->format('d/m/Y') }}
+                @else
+                    Este documento fue anulado mediante una Nota de Crédito.
+                @endif
+            </div>
+        @endif
+
         <!-- Header -->
         <table class="header-table">
             <tr>

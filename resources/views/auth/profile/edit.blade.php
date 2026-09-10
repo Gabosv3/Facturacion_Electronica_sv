@@ -4,9 +4,9 @@
 
 @section('content')
 <div class="max-w-2xl mx-auto">
-    <div class="bg-white rounded-lg shadow-lg p-8">
+    <div class="bg-white rounded-xl shadow-[0_1px_3px_0_rgb(0_0_0/0.06),0_4px_12px_-2px_rgb(0_0_0/0.06)] border border-slate-100 p-8">
         <div class="flex items-center justify-between mb-8">
-            <h1 class="text-3xl font-bold text-gray-800">Editar Perfil</h1>
+            <h1 class="text-3xl font-bold text-slate-800">Editar Perfil</h1>
         </div>
 
         @if($errors->any())
@@ -25,7 +25,7 @@
 
             <!-- Nombre Completo -->
             <div class="form-group">
-                <label for="name" class="block text-sm font-medium text-gray-700 mb-2">
+                <label for="name" class="block text-sm font-medium text-slate-700 mb-2">
                     Nombre Completo *
                 </label>
                 <input
@@ -34,7 +34,7 @@
                     name="name"
                     value="{{ old('name', $user['name'] ?? '') }}"
                     required
-                    class="w-full px-4 py-2 border @error('name') border-red-500 @else border-gray-300 @enderror rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                    class="w-full px-4 py-2 border @error('name') border-red-500 @else border-slate-200 @enderror rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                     placeholder="Tu nombre completo"
                 >
                 @error('name')
@@ -44,7 +44,7 @@
 
             <!-- Correo Electrónico -->
             <div class="form-group">
-                <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
+                <label for="email" class="block text-sm font-medium text-slate-700 mb-2">
                     Correo Electrónico *
                 </label>
                 <input
@@ -53,7 +53,7 @@
                     name="email"
                     value="{{ old('email', $user['email'] ?? '') }}"
                     required
-                    class="w-full px-4 py-2 border @error('email') border-red-500 @else border-gray-300 @enderror rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                    class="w-full px-4 py-2 border @error('email') border-red-500 @else border-slate-200 @enderror rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                     placeholder="tu@email.com"
                 >
                 @error('email')
@@ -63,7 +63,7 @@
 
             <!-- Teléfono -->
             <div class="form-group">
-                <label for="phone" class="block text-sm font-medium text-gray-700 mb-2">
+                <label for="phone" class="block text-sm font-medium text-slate-700 mb-2">
                     Teléfono (Opcional)
                 </label>
                 <input
@@ -71,7 +71,7 @@
                     id="phone"
                     name="phone"
                     value="{{ old('phone', $user['phone'] ?? '') }}"
-                    class="w-full px-4 py-2 border @error('phone') border-red-500 @else border-gray-300 @enderror rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                    class="w-full px-4 py-2 border @error('phone') border-red-500 @else border-slate-200 @enderror rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                     placeholder="+503 XXXX-XXXX"
                 >
                 @error('phone')
@@ -87,7 +87,7 @@
             </div>
 
             <!-- Botones de acción -->
-            <div class="flex gap-4 mt-8 pt-6 border-t border-gray-200">
+            <div class="flex gap-4 mt-8 pt-6 border-t border-slate-200">
                 <a href="{{ route('profile.show') }}" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-semibold px-4 py-3 rounded-lg text-center transition">
                     ← Cancelar
                 </a>

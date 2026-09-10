@@ -7,6 +7,8 @@ use App\Http\Controllers\LoginController;
 use App\Http\Controllers\ContingenciaController;
 use App\Http\Controllers\ConsultaController;
 use App\Http\Controllers\InvalidacionController;
+use App\Http\Controllers\KardexController;
+use App\Http\Controllers\HomeController;
 
 // Rutas públicas (sin autenticación)
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
@@ -18,13 +20,16 @@ Route::post('/facturas/buscar-cliente', [FacturaController::class, 'buscarClient
 // Ruta raíz - redirige a login si no está autenticado
 Route::get('/', function () {
     if (\Illuminate\Support\Facades\Session::has('auth_token')) {
-        return redirect()->route('facturas.index');
+        return redirect()->route('home');
     }
     return redirect()->route('login');
-})->name('home');
+});
 
 // Rutas protegidas (requieren autenticación)
 Route::middleware(['auth.check'])->group(function () {
+
+    // Dashboard / Inicio
+    Route::get('/home', [HomeController::class, 'index'])->name('home');
 
     // Rutas de perfil
     Route::prefix('profile')->name('profile.')->group(function () {
@@ -44,6 +49,7 @@ Route::prefix('facturas')->name('facturas.')->group(function () {
     Route::delete('/{factura}', [FacturaController::class, 'destroy'])->name('destroy');
     Route::post('/{factura}/enviar-email', [FacturaController::class, 'enviarEmail'])->name('enviarEmail');
     Route::get('/{factura}/descargar-json', [FacturaController::class, 'descargarJSON'])->name('descargarJSON');
+    Route::get('/{factura}/descargar-pdf', [FacturaController::class, 'descargarPdf'])->name('descargarPdf');
     Route::post('/{factura}/enviar-json', [FacturaController::class, 'enviarJSON'])->name('enviarJSON');
 });
 
@@ -85,6 +91,15 @@ Route::prefix('invalidaciones')->name('invalidaciones.')->group(function () {
     Route::post('/guardar', [InvalidacionController::class, 'store'])->name('store');
     Route::get('/{evento}', [InvalidacionController::class, 'show'])->name('show');
     Route::post('/{evento}/reintentar', [InvalidacionController::class, 'reintentar'])->name('reintentar');
+    Route::post('/{evento}/enviar-email', [InvalidacionController::class, 'enviarEmail'])->name('enviarEmail');
+    Route::get('/{evento}/descargar-pdf', [InvalidacionController::class, 'descargarPdf'])->name('descargarPdf');
+});
+
+// Rutas de Kardex
+Route::prefix('kardex')->name('kardex.')->group(function () {
+    Route::get('/', [KardexController::class, 'index'])->name('index');
+    Route::post('/exportar', [KardexController::class, 'exportar'])->name('exportar');
+    Route::get('/debug-api', [KardexController::class, 'debugApi'])->name('debug_api');
 });
 
 // Ruta de logout

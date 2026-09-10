@@ -6,17 +6,17 @@
     <title>Contingencia #{{ $evento->id }} - DTE El Salvador</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100">
+<body class="bg-slate-50">
     @include('components.navbar')
 
     <div class="container mx-auto px-4 py-8">
         <div class="max-w-7xl mx-auto">
             <!-- Header -->
-            <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <div class="bg-white rounded-xl shadow-[0_1px_3px_0_rgb(0_0_0/0.06),0_4px_12px_-2px_rgb(0_0_0/0.06)] border border-slate-100 p-6 mb-6">
                 <div class="flex justify-between items-start">
                     <div>
-                        <h1 class="text-3xl font-bold text-gray-800">Evento de Contingencia #{{ $evento->id }}</h1>
-                        <p class="text-gray-600 mt-2">{{ $evento->tipo_contingencia_descripcion }}</p>
+                        <h1 class="text-3xl font-bold text-slate-800">Evento de Contingencia #{{ $evento->id }}</h1>
+                        <p class="text-slate-500 mt-2">{{ $evento->tipo_contingencia_descripcion }}</p>
                     </div>
                     <a href="{{ route('contingencias.index') }}" class="bg-gray-600 hover:bg-gray-700 text-white font-semibold px-6 py-3 rounded-lg">
                         ← Volver
@@ -53,18 +53,18 @@
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                 <!-- Detalles Generales -->
                 <div class="bg-white rounded-lg shadow p-6">
-                    <h2 class="text-xl font-bold text-gray-800 mb-4">📋 Detalles del Evento</h2>
+                    <h2 class="text-xl font-bold text-slate-800 mb-4">📋 Detalles del Evento</h2>
                     <div class="space-y-3">
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Código del Evento:</span>
+                            <span class="text-slate-500">Código del Evento:</span>
                             <span class="font-mono text-sm">{{ $evento->codigo_evento }}</span>
                         </div>
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Tipo de Contingencia:</span>
+                            <span class="text-slate-500">Tipo de Contingencia:</span>
                             <span class="font-semibold">{{ $evento->tipo_contingencia }}</span>
                         </div>
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Estado:</span>
+                            <span class="text-slate-500">Estado:</span>
                             <span>
                                 @if($evento->estado == 'activo')
                                     <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-semibold rounded">🚨 ACTIVO</span>
@@ -78,11 +78,11 @@
                             </span>
                         </div>
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Fecha/Hora Inicio:</span>
+                            <span class="text-slate-500">Fecha/Hora Inicio:</span>
                             <span class="font-semibold">{{ $evento->fecha_hora_inicio->format('d/m/Y H:i:s') }}</span>
                         </div>
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Fecha/Hora Fin:</span>
+                            <span class="text-slate-500">Fecha/Hora Fin:</span>
                             <span class="font-semibold">
                                 @if($evento->fecha_hora_fin)
                                     {{ $evento->fecha_hora_fin->format('d/m/Y H:i:s') }}
@@ -92,11 +92,11 @@
                             </span>
                         </div>
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Cantidad de DTEs:</span>
+                            <span class="text-slate-500">Cantidad de DTEs:</span>
                             <span class="font-bold text-2xl text-blue-600">
                                 {{ $evento->facturas->count() }}
                                 @if($evento->estado == 'activo')
-                                    <span class="text-sm text-gray-500 font-normal">(en curso)</span>
+                                    <span class="text-sm text-slate-500 font-normal">(en curso)</span>
                                 @endif
                             </span>
                         </div>
@@ -105,12 +105,12 @@
 
                 <!-- Motivo y Respuesta MH -->
                 <div class="bg-white rounded-lg shadow p-6">
-                    <h2 class="text-xl font-bold text-gray-800 mb-4">📝 Motivo de Contingencia</h2>
-                    <p class="text-gray-700">{{ $evento->motivo_contingencia }}</p>
+                    <h2 class="text-xl font-bold text-slate-800 mb-4">📝 Motivo de Contingencia</h2>
+                    <p class="text-slate-700">{{ $evento->motivo_contingencia }}</p>
 
                     @if($evento->respuesta_mh)
                     <div class="mt-6 pt-6 border-t">
-                        <h3 class="text-lg font-semibold text-gray-800 mb-2">📨 Respuesta del MH</h3>
+                        <h3 class="text-lg font-semibold text-slate-800 mb-2">📨 Respuesta del MH</h3>
                         @php
                             $respuestaMH = is_string($evento->respuesta_mh) ? json_decode($evento->respuesta_mh, true) : $evento->respuesta_mh;
                         @endphp
@@ -119,49 +119,49 @@
                             <div class="space-y-2 text-sm">
                                 @if(isset($respuestaMH['estado']))
                                 <div class="flex justify-between">
-                                    <span class="text-gray-600">Estado:</span>
+                                    <span class="text-slate-500">Estado:</span>
                                     <span class="font-semibold">{{ $respuestaMH['estado'] }}</span>
                                 </div>
                                 @endif
 
                                 @if(isset($respuestaMH['selloRecibido']))
                                 <div class="flex flex-col">
-                                    <span class="text-gray-600 mb-1">Sello Recibido:</span>
-                                    <span class="font-mono text-xs bg-gray-100 p-2 rounded break-all">{{ $respuestaMH['selloRecibido'] }}</span>
+                                    <span class="text-slate-500 mb-1">Sello Recibido:</span>
+                                    <span class="font-mono text-xs bg-slate-100 p-2 rounded break-all">{{ $respuestaMH['selloRecibido'] }}</span>
                                 </div>
                                 @endif
 
                                 @if(isset($respuestaMH['fhProcesamiento']))
                                 <div class="flex justify-between">
-                                    <span class="text-gray-600">Fecha/Hora Procesamiento:</span>
+                                    <span class="text-slate-500">Fecha/Hora Procesamiento:</span>
                                     <span class="font-semibold">{{ $respuestaMH['fhProcesamiento'] }}</span>
                                 </div>
                                 @endif
 
                                 @if(isset($respuestaMH['clasificaMsg']))
                                 <div class="flex justify-between">
-                                    <span class="text-gray-600">Clasificación:</span>
+                                    <span class="text-slate-500">Clasificación:</span>
                                     <span class="font-semibold">{{ $respuestaMH['clasificaMsg'] }}</span>
                                 </div>
                                 @endif
 
                                 @if(isset($respuestaMH['codigoMsg']))
                                 <div class="flex justify-between">
-                                    <span class="text-gray-600">Código Mensaje:</span>
+                                    <span class="text-slate-500">Código Mensaje:</span>
                                     <span class="font-semibold">{{ $respuestaMH['codigoMsg'] }}</span>
                                 </div>
                                 @endif
 
                                 @if(isset($respuestaMH['descripcionMsg']))
                                 <div class="flex flex-col">
-                                    <span class="text-gray-600 mb-1">Descripción:</span>
+                                    <span class="text-slate-500 mb-1">Descripción:</span>
                                     <span class="bg-green-50 p-2 rounded">{{ $respuestaMH['descripcionMsg'] }}</span>
                                 </div>
                                 @endif
 
                                 @if(isset($respuestaMH['observaciones']) && is_array($respuestaMH['observaciones']) && count($respuestaMH['observaciones']) > 0)
                                 <div class="flex flex-col">
-                                    <span class="text-gray-600 mb-1">Observaciones:</span>
+                                    <span class="text-slate-500 mb-1">Observaciones:</span>
                                     <ul class="list-disc list-inside bg-yellow-50 p-2 rounded">
                                         @foreach($respuestaMH['observaciones'] as $obs)
                                         <li>{{ $obs }}</li>
@@ -176,19 +176,19 @@
 
                     @if($evento->codigo_lote)
                     <div class="mt-6 pt-6 border-t">
-                        <h3 class="text-lg font-semibold text-gray-800 mb-2">📦 Código de Lote</h3>
-                        <p class="font-mono text-sm bg-gray-100 p-3 rounded">{{ $evento->codigo_lote }}</p>
+                        <h3 class="text-lg font-semibold text-slate-800 mb-2">📦 Código de Lote</h3>
+                        <p class="font-mono text-sm bg-slate-100 p-3 rounded">{{ $evento->codigo_lote }}</p>
                     </div>
                     @endif
 
                     @if($evento->estado == 'procesado' && $evento->evento_json)
                     <div class="mt-6 pt-6 border-t">
-                        <h3 class="text-lg font-semibold text-gray-800 mb-2">📋 JSON del Evento Enviado al MH</h3>
-                        <details class="bg-gray-50 rounded-lg p-4">
-                            <summary class="cursor-pointer font-semibold text-gray-700 hover:text-gray-900">
+                        <h3 class="text-lg font-semibold text-slate-800 mb-2">📋 JSON del Evento Enviado al MH</h3>
+                        <details class="bg-slate-50 rounded-lg p-4">
+                            <summary class="cursor-pointer font-semibold text-slate-700 hover:text-gray-900">
                                 Ver JSON del evento de contingencia
                             </summary>
-                            <pre class="text-xs text-gray-600 overflow-x-auto mt-3 bg-white p-3 rounded border">{{ json_encode($evento->evento_json, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) }}</pre>
+                            <pre class="text-xs text-slate-500 overflow-x-auto mt-3 bg-white p-3 rounded border">{{ json_encode($evento->evento_json, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) }}</pre>
                         </details>
                     </div>
                     @endif
@@ -198,7 +198,7 @@
             <!-- Acciones -->
             @if($evento->estado != 'procesado')
             <div class="bg-white rounded-lg shadow p-6 mb-6">
-                <h2 class="text-xl font-bold text-gray-800 mb-4">⚡ Acciones Disponibles</h2>
+                <h2 class="text-xl font-bold text-slate-800 mb-4">⚡ Acciones Disponibles</h2>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     @if($evento->estado == 'activo')
                         <form action="{{ route('contingencias.cerrar', $evento) }}" method="POST">
@@ -237,25 +237,25 @@
 
             <!-- Lista de DTEs -->
             <div class="bg-white rounded-lg shadow p-6">
-                <h2 class="text-xl font-bold text-gray-800 mb-4">📄 DTEs en Contingencia ({{ $evento->facturas->count() }})</h2>
+                <h2 class="text-xl font-bold text-slate-800 mb-4">📄 DTEs en Contingencia ({{ $evento->facturas->count() }})</h2>
 
                 @if($evento->facturas->count() > 0)
                     <div class="overflow-x-auto">
                         <table class="w-full">
-                            <thead class="bg-gray-50">
+                            <thead class="bg-slate-50">
                                 <tr>
-                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">Tipo</th>
-                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">Número Control</th>
-                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">Código Generación</th>
-                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">Fecha</th>
-                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">Cliente</th>
-                                    <th class="px-4 py-3 text-right text-sm font-semibold text-gray-600">Total</th>
-                                    <th class="px-4 py-3 text-center text-sm font-semibold text-gray-600">Estado</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-slate-500">Tipo</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-slate-500">Número Control</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-slate-500">Código Generación</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-slate-500">Fecha</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-slate-500">Cliente</th>
+                                    <th class="px-4 py-3 text-right text-sm font-semibold text-slate-500">Total</th>
+                                    <th class="px-4 py-3 text-center text-sm font-semibold text-slate-500">Estado</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-gray-200">
+                            <tbody class="divide-y divide-slate-100">
                                 @foreach($evento->facturas as $factura)
-                                <tr class="hover:bg-gray-50">
+                                <tr class="hover:bg-slate-50">
                                     <td class="px-4 py-3 text-sm">
                                         @if($factura->tipo_dte == '01')
                                             <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded">DTE-01</span>
@@ -288,7 +288,7 @@
                     </div>
                 @else
                     <div class="text-center py-8">
-                        <p class="text-gray-500">No hay DTEs asociados a este evento de contingencia</p>
+                        <p class="text-slate-500">No hay DTEs asociados a este evento de contingencia</p>
                     </div>
                 @endif
             </div>

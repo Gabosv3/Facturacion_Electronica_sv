@@ -7,97 +7,88 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
-<body class="bg-gray-100">
+<body class="bg-slate-50">
     @include('components.navbar')
 
     <div class="container mx-auto px-4 py-8">
         <div class="max-w-4xl mx-auto">
-            </div>
 
-            <div class="bg-white rounded-lg shadow-lg p-8">
+            <div class="bg-white rounded-xl shadow-[0_1px_3px_0_rgb(0_0_0_/_0.06),0_4px_12px_-2px_rgb(0_0_0_/_0.06)] p-6 sm:p-8 border border-slate-100">
                 <!-- Header -->
-                <div class="border-b pb-6 mb-6">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            @if($factura->tipo_dte == '03')
-                                <h1 class="text-3xl font-bold text-green-800">COMPROBANTE DE CRÉDITO FISCAL</h1>
-                                <p class="text-sm text-green-600 font-semibold mt-1">DTE-03 (CCF)</p>
-                            @elseif($factura->tipo_dte == '05')
-                                <h1 class="text-3xl font-bold text-purple-800">NOTA DE CRÉDITO</h1>
-                                <p class="text-sm text-purple-600 font-semibold mt-1">DTE-05</p>
-                            @elseif($factura->tipo_dte == '14')
-                                <h1 class="text-3xl font-bold text-orange-800">FACTURA DE SUJETO EXCLUIDO</h1>
-                                <p class="text-sm text-orange-600 font-semibold mt-1">DTE-14</p>
-                            @else
-                                <h1 class="text-3xl font-bold text-gray-800">FACTURA ELECTRÓNICA</h1>
-                                <p class="text-sm text-blue-600 font-semibold mt-1">DTE-01</p>
-                            @endif
-                            <p class="text-gray-600 mt-2">{{ config('dte.emisor.nombre_comercial') }}</p>
-                            <p class="text-sm text-gray-500">NIT: {{ config('dte.emisor.nit') }}</p>
-                            <p class="text-sm text-gray-500">NRC: {{ config('dte.emisor.nrc') }}</p>
-                        </div>
-                        <div class="text-right">
-                            @if($factura->estado == 'enviado_mh')
-                                <span class="inline-block px-4 py-2 bg-green-100 text-green-800 font-semibold rounded-lg">✓ ENVIADA AL MH</span>
-                            @elseif($factura->estado == 'firmado')
-                                <span class="inline-block px-4 py-2 bg-blue-100 text-blue-800 font-semibold rounded-lg">✓ FIRMADA</span>
-                            @elseif($factura->estado == 'firmado_sin_enviar')
-                                <span class="inline-block px-4 py-2 bg-yellow-100 text-yellow-800 font-semibold rounded-lg">⚠ FIRMADA (Sin enviar)</span>
-                            @elseif($factura->estado == 'error_firma')
-                                <span class="inline-block px-4 py-2 bg-red-100 text-red-800 font-semibold rounded-lg">✗ ERROR AL FIRMAR</span>
-                            @elseif($factura->estado == 'rechazado')
-                                <span class="inline-block px-4 py-2 bg-red-100 text-red-800 font-semibold rounded-lg">✗ RECHAZADA</span>
-                            @else
-                                <span class="inline-block px-4 py-2 bg-gray-100 text-gray-800 font-semibold rounded-lg">⏱ PENDIENTE</span>
-                            @endif
-                        </div>
+                @php
+                    $tipoMeta = [
+                        '03' => ['titulo' => 'Comprobante de Crédito Fiscal', 'badge' => 'DTE-03 · CCF', 'clase' => 'bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200'],
+                        '05' => ['titulo' => 'Nota de Crédito', 'badge' => 'DTE-05', 'clase' => 'bg-violet-50 text-violet-700 ring-1 ring-inset ring-violet-200'],
+                        '14' => ['titulo' => 'Factura de Sujeto Excluido', 'badge' => 'DTE-14', 'clase' => 'bg-orange-50 text-orange-700 ring-1 ring-inset ring-orange-200'],
+                    ];
+                    $meta = $tipoMeta[$factura->tipo_dte] ?? ['titulo' => 'Factura Electrónica', 'badge' => 'DTE-01', 'clase' => 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-200'];
+
+                    $estadoMeta = [
+                        'enviado_mh' => ['label' => 'Enviada al MH', 'clase' => 'bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200', 'icon' => '✓'],
+                        'firmado' => ['label' => 'Firmada', 'clase' => 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-200', 'icon' => '✓'],
+                        'firmado_sin_enviar' => ['label' => 'Firmada (sin enviar)', 'clase' => 'bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200', 'icon' => '⚠'],
+                        'error_firma' => ['label' => 'Error al firmar', 'clase' => 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-200', 'icon' => '✗'],
+                        'rechazado' => ['label' => 'Rechazada', 'clase' => 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-200', 'icon' => '✗'],
+                    ];
+                    $eMeta = $estadoMeta[$factura->estado] ?? ['label' => 'Pendiente', 'clase' => 'bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-200', 'icon' => '⏱'];
+                @endphp
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 pb-6 mb-6 border-b border-slate-100">
+                    <div>
+                        <span class="inline-block px-2.5 py-1 {{ $meta['clase'] }} text-xs font-bold rounded-full mb-2">
+                            {{ $meta['badge'] }}
+                        </span>
+                        <h1 class="text-2xl font-bold text-slate-800 tracking-tight">{{ $meta['titulo'] }}</h1>
+                        <p class="text-sm text-slate-500 mt-2">{{ config('dte.emisor.nombre_comercial') }}</p>
+                        <p class="text-xs text-slate-400">NIT {{ config('dte.emisor.nit') }} · NRC {{ config('dte.emisor.nrc') }}</p>
                     </div>
+                    <span class="inline-flex items-center gap-1.5 px-3.5 py-2 {{ $eMeta['clase'] }} font-semibold text-sm rounded-lg shrink-0">
+                        {{ $eMeta['icon'] }} {{ $eMeta['label'] }}
+                    </span>
                 </div>
 
                 <!-- Información de la factura -->
-                <div class="grid grid-cols-2 gap-6 mb-6">
-                    <div>
-                        <h3 class="text-sm font-semibold text-gray-600 mb-2">Datos del Documento</h3>
-                        <div class="space-y-1">
-                            <p class="text-sm">
-                                <span class="font-medium">Tipo:</span>
-                                @if($factura->tipo_dte == '03')
-                                    <span class="inline-block px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded">CCF (DTE-03)</span>
-                                @elseif($factura->tipo_dte == '05')
-                                    <span class="inline-block px-2 py-1 bg-purple-100 text-purple-800 text-xs font-semibold rounded">Nota de Crédito (DTE-05)</span>
-                                @elseif($factura->tipo_dte == '14')
-                                    <span class="inline-block px-2 py-1 bg-orange-100 text-orange-800 text-xs font-semibold rounded">Sujeto Excluido (DTE-14)</span>
-                                @else
-                                    <span class="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded">Factura (DTE-01)</span>
-                                @endif
-                            </p>
-                            <p class="text-sm"><span class="font-medium">Número Control:</span> {{ $factura->numero_control }}</p>
-                            <p class="text-sm"><span class="font-medium">Código Generación:</span> {{ $factura->codigo_generacion }}</p>
-                            <p class="text-sm"><span class="font-medium">Fecha:</span> {{ $factura->fecha_emision->format('d/m/Y') }}</p>
-                            <p class="text-sm"><span class="font-medium">Hora:</span> {{ $factura->hora_emision }}</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div class="bg-slate-50 border border-slate-100 rounded-xl p-4">
+                        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-3">Datos del Documento</h3>
+                        <dl class="space-y-2.5">
+                            <div class="flex justify-between gap-3">
+                                <dt class="text-sm text-slate-500 shrink-0">Número Control</dt>
+                                <dd class="text-sm font-medium text-slate-800 text-right font-mono">{{ $factura->numero_control }}</dd>
+                            </div>
+                            <div class="flex justify-between gap-3">
+                                <dt class="text-sm text-slate-500 shrink-0">Código Generación</dt>
+                                <dd class="text-xs font-medium text-slate-600 text-right font-mono break-all">{{ $factura->codigo_generacion }}</dd>
+                            </div>
+                            <div class="flex justify-between gap-3">
+                                <dt class="text-sm text-slate-500 shrink-0">Fecha y hora</dt>
+                                <dd class="text-sm font-medium text-slate-800 text-right">{{ $factura->fecha_emision->format('d/m/Y') }} · {{ $factura->hora_emision }}</dd>
+                            </div>
                             @if($factura->intentos_envio > 0)
-                                <p class="text-sm"><span class="font-medium">Intentos de envío:</span>
-                                    <span class="inline-block px-2 py-1 text-xs rounded {{ $factura->intentos_envio > 1 ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800' }}">
-                                        {{ $factura->intentos_envio }}
-                                    </span>
-                                </p>
+                                <div class="flex justify-between gap-3 items-center">
+                                    <dt class="text-sm text-slate-500 shrink-0">Intentos de envío</dt>
+                                    <dd>
+                                        <span class="inline-block px-2 py-0.5 text-xs font-semibold rounded-full {{ $factura->intentos_envio > 1 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700' }}">
+                                            {{ $factura->intentos_envio }}
+                                        </span>
+                                    </dd>
+                                </div>
                             @endif
-                        </div>
+                        </dl>
                     </div>
 
-                    <div>
-                        <h3 class="text-sm font-semibold text-gray-600 mb-2">Cliente</h3>
-                        <div class="space-y-1">
-                            <p class="text-sm font-semibold">{{ $factura->receptor_nombre }}</p>
-                            <p class="text-sm">{{ $factura->receptor_num_documento }}</p>
+                    <div class="bg-slate-50 border border-slate-100 rounded-xl p-4">
+                        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-3">Cliente</h3>
+                        <p class="text-sm font-semibold text-slate-800">{{ $factura->receptor_nombre }}</p>
+                        <p class="text-sm text-slate-500 mt-0.5">{{ $factura->receptor_num_documento }}</p>
+                        <div class="flex flex-wrap gap-x-4 gap-y-0.5 mt-2 text-xs text-slate-500">
                             @if($factura->receptor_nrc)
-                                <p class="text-sm">NRC: {{ $factura->receptor_nrc }}</p>
+                                <span>NRC {{ $factura->receptor_nrc }}</span>
                             @endif
                             @if($factura->receptor_telefono)
-                                <p class="text-sm">Tel: {{ $factura->receptor_telefono }}</p>
+                                <span>📞 {{ $factura->receptor_telefono }}</span>
                             @endif
                             @if($factura->receptor_correo)
-                                <p class="text-sm">{{ $factura->receptor_correo }}</p>
+                                <span>✉️ {{ $factura->receptor_correo }}</span>
                             @endif
                         </div>
                     </div>
@@ -113,7 +104,7 @@
                         @elseif($factura->nota_credito_estado == 'devolucion')
                             border-blue-300 bg-blue-50
                         @else
-                            border-gray-300 bg-gray-50
+                            border-slate-200 bg-slate-50
                         @endif
                     ">
                         <div class="flex items-center gap-3">
@@ -125,7 +116,7 @@
                                 @elseif($factura->nota_credito_estado == 'devolucion')
                                     text-blue-600
                                 @else
-                                    text-gray-600
+                                    text-slate-500
                                 @endif
                             " fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -139,7 +130,7 @@
                                     @elseif($factura->nota_credito_estado == 'devolucion')
                                         text-blue-800
                                     @else
-                                        text-gray-800
+                                        text-slate-800
                                     @endif
                                 ">
                                     @if($factura->nota_credito_estado == 'anulacion')
@@ -165,7 +156,7 @@
                                             @elseif($factura->nota_credito_estado == 'devolucion')
                                                 text-blue-700
                                             @else
-                                                text-gray-700
+                                                text-slate-700
                                             @endif
                                         ">
                                             Nota de Crédito: <a href="{{ route('facturas.show', $notaCredito) }}" class="underline font-medium hover:opacity-80">{{ $notaCredito->numero_control }}</a>
@@ -182,25 +173,25 @@
                 @if($factura->tipo_dte == '05' && $factura->documento_relacionado_numero_control)
                     <div class="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6">
                         <h3 class="text-sm font-semibold text-purple-800 mb-3">📄 Documento Relacionado</h3>
-                        <div class="grid grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <p class="text-sm"><span class="font-medium text-gray-700">Tipo de Documento:</span>
+                                <p class="text-sm"><span class="font-medium text-slate-700">Tipo de Documento:</span>
                                     @if($factura->documento_relacionado_tipo_dte == '01')
                                         <span class="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded ml-1">Factura (DTE-01)</span>
                                     @elseif($factura->documento_relacionado_tipo_dte == '03')
                                         <span class="inline-block px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded ml-1">CCF (DTE-03)</span>
                                     @endif
                                 </p>
-                                <p class="text-sm mt-1"><span class="font-medium text-gray-700">Número Control:</span> {{ $factura->documento_relacionado_numero_control }}</p>
+                                <p class="text-sm mt-1"><span class="font-medium text-slate-700">Número Control:</span> {{ $factura->documento_relacionado_numero_control }}</p>
                             </div>
                             <div>
-                                <p class="text-sm"><span class="font-medium text-gray-700">Código Generación:</span> {{ $factura->documento_relacionado_codigo_generacion }}</p>
-                                <p class="text-sm mt-1"><span class="font-medium text-gray-700">Fecha Emisión:</span> {{ \Carbon\Carbon::parse($factura->documento_relacionado_fecha_emision)->format('d/m/Y') }}</p>
+                                <p class="text-sm"><span class="font-medium text-slate-700">Código Generación:</span> {{ $factura->documento_relacionado_codigo_generacion }}</p>
+                                <p class="text-sm mt-1"><span class="font-medium text-slate-700">Fecha Emisión:</span> {{ \Carbon\Carbon::parse($factura->documento_relacionado_fecha_emision)->format('d/m/Y') }}</p>
                             </div>
                         </div>
                         @if($factura->tipo_documento)
                             <div class="mt-3 pt-3 border-t border-purple-200">
-                                <p class="text-sm"><span class="font-medium text-gray-700">Motivo:</span>
+                                <p class="text-sm"><span class="font-medium text-slate-700">Motivo:</span>
                                     @if($factura->tipo_documento == '1')
                                         <span class="text-purple-700">Anulación - Documento emitido por error</span>
                                     @elseif($factura->tipo_documento == '2')
@@ -234,11 +225,11 @@
                         </h3>
 
                         @if($invalidacionActiva)
-                            <div class="grid grid-cols-2 gap-4">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
-                                    <p class="text-sm"><span class="font-medium text-gray-700">Código Invalidación:</span> {{ $invalidacionActiva->codigo_invalidacion }}</p>
-                                    <p class="text-sm mt-1"><span class="font-medium text-gray-700">Fecha Evento:</span> {{ \Carbon\Carbon::parse($invalidacionActiva->fecha_evento)->format('d/m/Y H:i:s') }}</p>
-                                    <p class="text-sm mt-1"><span class="font-medium text-gray-700">Tipo:</span>
+                                    <p class="text-sm"><span class="font-medium text-slate-700">Código Invalidación:</span> {{ $invalidacionActiva->codigo_invalidacion }}</p>
+                                    <p class="text-sm mt-1"><span class="font-medium text-slate-700">Fecha Evento:</span> {{ \Carbon\Carbon::parse($invalidacionActiva->fecha_evento)->format('d/m/Y H:i:s') }}</p>
+                                    <p class="text-sm mt-1"><span class="font-medium text-slate-700">Tipo:</span>
                                         @if($invalidacionActiva->tipo_invalidacion == '1')
                                             <span class="text-red-700">Tipo 1 - Errores formales (se emite documento de reemplazo)</span>
                                         @else
@@ -247,7 +238,7 @@
                                     </p>
                                 </div>
                                 <div>
-                                    <p class="text-sm"><span class="font-medium text-gray-700">Estado:</span>
+                                    <p class="text-sm"><span class="font-medium text-slate-700">Estado:</span>
                                         @if($invalidacionActiva->estado == 'procesado')
                                             <span class="px-2 py-1 bg-red-100 text-red-800 text-xs font-semibold rounded-full ml-1">✓ Procesado por MH</span>
                                         @elseif($invalidacionActiva->estado == 'enviado')
@@ -255,10 +246,10 @@
                                         @endif
                                     </p>
                                     @if($invalidacionActiva->sello_recepcion)
-                                        <p class="text-sm mt-1"><span class="font-medium text-gray-700">Sello MH:</span> {{ substr($invalidacionActiva->sello_recepcion, 0, 30) }}...</p>
+                                        <p class="text-sm mt-1"><span class="font-medium text-slate-700">Sello MH:</span> {{ substr($invalidacionActiva->sello_recepcion, 0, 30) }}...</p>
                                     @endif
                                     @if($invalidacionActiva->factura_reemplazo_id)
-                                        <p class="text-sm mt-1"><span class="font-medium text-gray-700">Documento de Reemplazo:</span>
+                                        <p class="text-sm mt-1"><span class="font-medium text-slate-700">Documento de Reemplazo:</span>
                                             <a href="{{ route('facturas.show', $invalidacionActiva->factura_reemplazo_id) }}" class="text-blue-600 hover:text-blue-800 underline">
                                                 Ver DTE reemplazo
                                             </a>
@@ -267,19 +258,19 @@
                                 </div>
                             </div>
                             <div class="mt-3 pt-3 border-t border-red-200">
-                                <p class="text-sm"><span class="font-medium text-gray-700">Motivo:</span> <span class="text-red-700">{{ $invalidacionActiva->motivo_invalidacion }}</span></p>
+                                <p class="text-sm"><span class="font-medium text-slate-700">Motivo:</span> <span class="text-red-700">{{ $invalidacionActiva->motivo_invalidacion }}</span></p>
                             </div>
                             <div class="mt-3 pt-3 border-t border-red-200">
-                                <div class="grid grid-cols-2 gap-4">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div>
-                                        <p class="text-xs font-medium text-gray-600 mb-1">Responsable (Emisor)</p>
+                                        <p class="text-xs font-medium text-slate-500 mb-1">Responsable (Emisor)</p>
                                         <p class="text-sm">{{ $invalidacionActiva->responsable_nombre }}</p>
-                                        <p class="text-xs text-gray-600">{{ $invalidacionActiva->responsable_num_doc }}</p>
+                                        <p class="text-xs text-slate-500">{{ $invalidacionActiva->responsable_num_doc }}</p>
                                     </div>
                                     <div>
-                                        <p class="text-xs font-medium text-gray-600 mb-1">Solicitante</p>
+                                        <p class="text-xs font-medium text-slate-500 mb-1">Solicitante</p>
                                         <p class="text-sm">{{ $invalidacionActiva->solicitante_nombre }}</p>
-                                        <p class="text-xs text-gray-600">{{ $invalidacionActiva->solicitante_num_doc }}</p>
+                                        <p class="text-xs text-slate-500">{{ $invalidacionActiva->solicitante_num_doc }}</p>
                                     </div>
                                 </div>
                             </div>
@@ -293,41 +284,41 @@
                                 $invalidacionPendiente = $factura->eventosInvalidacion()->whereIn('estado', ['pendiente', 'firmado'])->first();
                             @endphp
                             @if($invalidacionPendiente)
-                                <p class="text-sm text-gray-700">Este documento tiene una invalidación en estado: <span class="font-semibold">{{ ucfirst($invalidacionPendiente->estado) }}</span></p>
-                                <p class="text-sm text-gray-600 mt-2">Fecha evento: {{ \Carbon\Carbon::parse($invalidacionPendiente->fecha_evento)->format('d/m/Y H:i:s') }}</p>
+                                <p class="text-sm text-slate-700">Este documento tiene una invalidación en estado: <span class="font-semibold">{{ ucfirst($invalidacionPendiente->estado) }}</span></p>
+                                <p class="text-sm text-slate-500 mt-2">Fecha evento: {{ \Carbon\Carbon::parse($invalidacionPendiente->fecha_evento)->format('d/m/Y H:i:s') }}</p>
                             @endif
                         @else
-                            <p class="text-sm text-gray-700">Este documento ha sido marcado como invalidado.</p>
+                            <p class="text-sm text-slate-700">Este documento ha sido marcado como invalidado.</p>
                         @endif
                     </div>
                 @endif
 
                 <!-- Items -->
                 <div class="mb-6">
-                    <h3 class="text-lg font-semibold text-gray-700 mb-4">Detalle de Productos/Servicios</h3>
-                    <div class="overflow-x-auto">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-3">Detalle de Productos/Servicios</h3>
+                    <div class="overflow-x-auto rounded-xl border border-slate-100">
                         <table class="w-full">
-                            <thead class="bg-gray-100">
+                            <thead class="bg-slate-50 border-b border-slate-100">
                                 <tr>
-                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">#</th>
-                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">Código</th>
-                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">Descripción</th>
-                                    <th class="px-4 py-3 text-right text-sm font-semibold text-gray-600">Cant.</th>
-                                    <th class="px-4 py-3 text-right text-sm font-semibold text-gray-600">P. Unit.</th>
-                                    <th class="px-4 py-3 text-right text-sm font-semibold text-gray-600">Desc.</th>
-                                    <th class="px-4 py-3 text-right text-sm font-semibold text-gray-600">Total</th>
+                                    <th class="px-4 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">#</th>
+                                    <th class="px-4 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Código</th>
+                                    <th class="px-4 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Descripción</th>
+                                    <th class="px-4 py-2.5 text-right text-xs font-semibold text-slate-500 uppercase tracking-wide">Cant.</th>
+                                    <th class="px-4 py-2.5 text-right text-xs font-semibold text-slate-500 uppercase tracking-wide">P. Unit.</th>
+                                    <th class="px-4 py-2.5 text-right text-xs font-semibold text-slate-500 uppercase tracking-wide">Desc.</th>
+                                    <th class="px-4 py-2.5 text-right text-xs font-semibold text-slate-500 uppercase tracking-wide">Total</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-gray-200">
+                            <tbody class="divide-y divide-slate-100 bg-white">
                                 @foreach($factura->items as $item)
-                                <tr>
-                                    <td class="px-4 py-3 text-sm text-gray-700">{{ $item->num_item }}</td>
-                                    <td class="px-4 py-3 text-sm text-gray-700">{{ $item->codigo }}</td>
-                                    <td class="px-4 py-3 text-sm text-gray-700">{{ $item->descripcion }}</td>
-                                    <td class="px-4 py-3 text-sm text-right text-gray-700">{{ number_format($item->cantidad, 2) }}</td>
-                                    <td class="px-4 py-3 text-sm text-right text-gray-700">${{ number_format($item->precio_unitario, 2) }}</td>
-                                    <td class="px-4 py-3 text-sm text-right text-gray-700">${{ number_format($item->monto_descuento, 2) }}</td>
-                                    <td class="px-4 py-3 text-sm text-right font-semibold text-gray-700">
+                                <tr class="hover:bg-slate-50/70 transition-colors">
+                                    <td class="px-4 py-3 text-sm text-slate-500">{{ $item->num_item }}</td>
+                                    <td class="px-4 py-3 text-sm text-slate-500 font-mono">{{ $item->codigo }}</td>
+                                    <td class="px-4 py-3 text-sm text-slate-700">{{ $item->descripcion }}</td>
+                                    <td class="px-4 py-3 text-sm text-right text-slate-600">{{ number_format($item->cantidad, 2) }}</td>
+                                    <td class="px-4 py-3 text-sm text-right text-slate-600">${{ number_format($item->precio_unitario, 2) }}</td>
+                                    <td class="px-4 py-3 text-sm text-right text-slate-600">${{ number_format($item->monto_descuento, 2) }}</td>
+                                    <td class="px-4 py-3 text-sm text-right font-semibold text-slate-800">
                                         @if($factura->tipo_dte === '01' || $factura->tipo_dte === '14')
                                             {{-- DTE-01 y DTE-14: Mostrar total CON IVA (lo que se cobra) --}}
                                             ${{ number_format(($item->cantidad * $item->precio_unitario) - $item->monto_descuento, 2) }}
@@ -344,24 +335,24 @@
                 </div>
 
                 <!-- Totales -->
-                <div class="border-t pt-6">
+                <div class="border-t border-slate-100 pt-6">
                     <div class="flex justify-end">
-                        <div class="w-80">
+                        <div class="w-full sm:w-80 bg-slate-50 border border-slate-100 rounded-xl p-4">
                             <div class="space-y-2">
                                 <div class="flex justify-between">
-                                    <span class="text-gray-600">Subtotal:</span>
+                                    <span class="text-slate-500">Subtotal:</span>
                                     <span class="font-semibold">${{ number_format($factura->sub_total, 2) }}</span>
                                 </div>
                                 @if($factura->total_descuento > 0)
                                 <div class="flex justify-between">
-                                    <span class="text-gray-600">Descuento:</span>
+                                    <span class="text-slate-500">Descuento:</span>
                                     <span class="font-semibold text-red-600">-${{ number_format($factura->total_descuento, 2) }}</span>
                                 </div>
                                 @endif
                                 
                                 @if($factura->tipo_dte !== '01' && $factura->tipo_dte !== '14')
                                 <div class="flex justify-between">
-                                    <span class="text-gray-600">IVA
+                                    <span class="text-slate-500">IVA
                                         @if($factura->tipo_dte === '03' || $factura->tipo_dte === '05')
                                             (13%)
                                         @else
@@ -378,7 +369,7 @@
                                     @endphp
                                     @if($retencionRenta > 0)
                                     <div class="flex justify-between">
-                                        <span class="text-gray-600">(-) Retención Renta (10%):</span>
+                                        <span class="text-slate-500">(-) Retención Renta (10%):</span>
                                         <span class="font-semibold text-red-600">-${{ number_format($retencionRenta, 2) }}</span>
                                     </div>
                                     @endif
@@ -391,8 +382,8 @@
                                     $totalPagarFinal = isset($dteResumen['totalPagar']) ? floatval($dteResumen['totalPagar']) : $factura->total_pagar;
                                 @endphp
                                 @if($ivaRete1 > 0)
-                                <div class="flex justify-between border-t pt-2">
-                                    <span class="text-gray-600">Monto Total Operación:</span>
+                                <div class="flex justify-between border-t border-slate-200 pt-2">
+                                    <span class="text-slate-500">Monto Total Operación:</span>
                                     <span class="font-semibold">${{ number_format($montoTotalOperacion, 2) }}</span>
                                 </div>
                                 <div class="flex justify-between">
@@ -405,11 +396,11 @@
                                 @endif
 
 
-                                <div class="flex justify-between text-xl font-bold text-blue-600 border-t pt-2">
+                                <div class="flex justify-between text-xl font-bold text-blue-600 border-t border-slate-200 pt-2">
                                     <span>TOTAL{{ $ivaRete1 > 0 ? ' A PAGAR' : '' }}:</span>
                                     <span>${{ number_format($totalPagarFinal, 2) }}</span>
                                 </div>
-                                <div class="text-sm text-gray-600 italic mt-2">
+                                <div class="text-sm text-slate-500 italic mt-2">
                                     Son: {{ $factura->total_letras }}
                                 </div>
                             </div>
@@ -435,7 +426,7 @@
                                         Escanee este código QR para verificar la validez de este documento en el portal del Ministerio de Hacienda.
                                     </p>
                                     <div class="bg-white rounded p-3 border border-blue-200">
-                                        <p class="text-xs text-gray-600 font-medium mb-1">URL de consulta:</p>
+                                        <p class="text-xs text-slate-500 font-medium mb-1">URL de consulta:</p>
                                         <p class="text-xs text-blue-600 break-all font-mono">{{ $factura->getUrlConsultaPublica() }}</p>
                                     </div>
                                 </div>
@@ -445,56 +436,62 @@
                 @endif
 
                 <!-- Botones de acción -->
-                <div class="flex flex-wrap gap-4 mt-8 pt-6 border-t">
-                    <a href="{{ route('facturas.index') }}" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold px-6 py-2 rounded-lg transition-colors">
-                        ← Volver al Listado
-                    </a>
-                    <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg">
-                        🖨️ Imprimir
-                    </button>
-                    <button onclick="descargarJSON()" class="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-2 rounded-lg">
-                        📥 Descargar JSON
-                    </button>
-                    <button onclick="toggleJSON()" class="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-6 py-2 rounded-lg">
-                        👁️ Ver JSON
-                    </button>
+                <div class="mt-8 pt-6 border-t border-slate-100 space-y-3">
+                    <!-- Acciones principales -->
+                    <div class="flex flex-wrap gap-2.5">
+                        <a href="{{ route('facturas.index') }}" class="flex items-center gap-1.5 bg-white hover:bg-slate-50 text-slate-600 font-medium text-sm px-4 py-2.5 rounded-lg border border-slate-200 transition">
+                            ← Volver
+                        </a>
+                        <button onclick="window.print()" class="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-4 py-2.5 rounded-lg transition shadow-sm">
+                            🖨️ Imprimir
+                        </button>
+                        <a href="{{ route('facturas.descargarPdf', $factura->id) }}" class="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-4 py-2.5 rounded-lg transition shadow-sm">
+                            📄 Descargar PDF
+                        </a>
 
-                    @if($factura->receptor_correo && $factura->estado == 'enviado_mh')
-                        <form action="{{ route('facturas.enviarEmail', $factura) }}" method="POST" class="inline-block" id="form-enviar-email">
-                            @csrf
-                            <button type="button"
-                                    onclick="confirmarEnvioEmail('{{ $factura->receptor_correo }}', '{{ $factura->numero_control }}')"
-                                    class="bg-teal-600 hover:bg-teal-700 text-white font-semibold px-6 py-2 rounded-lg transition-colors inline-flex items-center gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                </svg>
-                                Enviar por Email
-                            </button>
-                        </form>
-                    @endif
+                        @if($factura->receptor_correo && $factura->estado == 'enviado_mh')
+                            <form action="{{ route('facturas.enviarEmail', $factura) }}" method="POST" class="inline-block" id="form-enviar-email">
+                                @csrf
+                                <button type="button"
+                                        onclick="confirmarEnvioEmail('{{ $factura->receptor_correo }}', '{{ $factura->numero_control }}')"
+                                        class="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm px-4 py-2.5 rounded-lg transition shadow-sm">
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                    </svg>
+                                    Enviar por Email
+                                </button>
+                            </form>
+                        @endif
+                    </div>
 
-                    @if($factura->estado === 'enviado_mh')
-                        <form action="{{ route('facturas.enviarJSON', $factura) }}" method="POST" class="inline-block">
-                            @csrf
-                            <button type="submit"
-                                    class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-2 rounded-lg transition-colors inline-flex items-center gap-2"
-                                    onclick="return confirm('¿Enviar JSON para revisión interna?')">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2m0 0v-8m0 8l-6-4m6 4l6-4" />
-                                </svg>
-                                Enviar JSON
-                            </button>
-                        </form>
+                    <!-- Acciones técnicas / secundarias -->
+                    <div class="flex flex-wrap gap-2 pt-1">
+                        <button onclick="descargarJSON()" class="text-xs font-medium text-slate-500 hover:text-slate-700 bg-slate-50 hover:bg-slate-100 px-3 py-1.5 rounded-md transition border border-slate-100">
+                            📥 Descargar JSON
+                        </button>
+                        <button onclick="toggleJSON()" class="text-xs font-medium text-slate-500 hover:text-slate-700 bg-slate-50 hover:bg-slate-100 px-3 py-1.5 rounded-md transition border border-slate-100">
+                            👁️ Ver JSON
+                        </button>
 
-                        <!-- Botón para consultar estado en MH -->
-                        <form action="{{ route('consultas.buscar') }}" method="POST" class="inline">
-                            @csrf
-                            <input type="hidden" name="factura_id" value="{{ $factura->id }}">
-                            <button type="submit" class="bg-orange-600 hover:bg-orange-700 text-white font-semibold px-6 py-2 rounded-lg transition-colors">
-                                🔍 Consultar en MH
-                            </button>
-                        </form>
-                    @endif
+                        @if($factura->estado === 'enviado_mh')
+                            <form action="{{ route('facturas.enviarJSON', $factura) }}" method="POST" class="inline-block">
+                                @csrf
+                                <button type="submit"
+                                        class="text-xs font-medium text-slate-500 hover:text-slate-700 bg-slate-50 hover:bg-slate-100 px-3 py-1.5 rounded-md transition border border-slate-100"
+                                        onclick="return confirm('¿Enviar JSON para revisión interna?')">
+                                    Enviar JSON (revisión interna)
+                                </button>
+                            </form>
+
+                            <form action="{{ route('consultas.buscar') }}" method="POST" class="inline">
+                                @csrf
+                                <input type="hidden" name="factura_id" value="{{ $factura->id }}">
+                                <button type="submit" class="text-xs font-medium text-slate-500 hover:text-slate-700 bg-slate-50 hover:bg-slate-100 px-3 py-1.5 rounded-md transition border border-slate-100">
+                                    🔍 Consultar en MH
+                                </button>
+                            </form>
+                        @endif
+                    </div>
                 </div>
 
                 <!-- JSON Viewer (oculto por defecto) -->
@@ -519,7 +516,7 @@
                     @endphp
 
                     <div class="mt-6">
-                        <h4 class="font-semibold text-gray-700 mb-3">Información de Procesamiento:</h4>
+                        <h4 class="font-semibold text-slate-700 mb-3">Información de Procesamiento:</h4>
 
                         @if(isset($respuestaMH['error_mh']) || isset($respuestaMH['ultimo_error']))
                             <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
@@ -574,11 +571,11 @@
                         @endif
 
                         <!-- Detalles técnicos (colapsables) -->
-                        <details class="bg-gray-50 rounded-lg p-4">
-                            <summary class="cursor-pointer font-semibold text-gray-700 hover:text-gray-900">
+                        <details class="bg-slate-50 rounded-lg p-4">
+                            <summary class="cursor-pointer font-semibold text-slate-700 hover:text-gray-900">
                                 Ver detalles técnicos completos
                             </summary>
-                            <pre class="text-xs text-gray-600 overflow-x-auto mt-3">{{ json_encode($respuestaMH, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
+                            <pre class="text-xs text-slate-500 overflow-x-auto mt-3">{{ json_encode($respuestaMH, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
                         </details>
                     </div>
                 @endif
@@ -646,22 +643,22 @@
                 html: `
                     <div class="text-left space-y-3 mt-4">
                         <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                            <p class="text-sm text-gray-700">
+                            <p class="text-sm text-slate-700">
                                 <span class="font-semibold text-blue-800">Factura:</span><br>
                                 <span class="text-lg font-bold text-gray-900">${numeroControl}</span>
                             </p>
                         </div>
                         <div class="bg-green-50 p-4 rounded-lg border border-green-200">
-                            <p class="text-sm text-gray-700">
+                            <p class="text-sm text-slate-700">
                                 <span class="font-semibold text-green-800">Destinatario:</span><br>
                                 <span class="font-mono text-gray-900">${email}</span>
                             </p>
                         </div>
                         <div class="bg-amber-50 p-4 rounded-lg border border-amber-200">
-                            <p class="text-sm text-gray-700">
+                            <p class="text-sm text-slate-700">
                                 <span class="font-semibold text-amber-800">Se enviarán los siguientes archivos:</span>
                             </p>
-                            <ul class="list-disc list-inside text-sm text-gray-600 mt-2 ml-2">
+                            <ul class="list-disc list-inside text-sm text-slate-500 mt-2 ml-2">
                                 <li>📄 Archivo JSON con los datos del DTE</li>
                                 <li>📑 Factura en formato HTML (imprimible como PDF)</li>
                             </ul>
@@ -688,7 +685,7 @@
                             html: `
                                 <div class="text-center">
                                     <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-teal-600 mx-auto mb-4"></div>
-                                    <p class="text-gray-600">Por favor espere mientras se envía el correo electrónico</p>
+                                    <p class="text-slate-500">Por favor espere mientras se envía el correo electrónico</p>
                                 </div>
                             `,
                             allowOutsideClick: false,
@@ -711,7 +708,7 @@
                 title: '¡Éxito!',
                 html: `
                     <div class="text-center">
-                        <div class="text-lg font-semibold text-gray-800 mb-2">
+                        <div class="text-lg font-semibold text-slate-800 mb-2">
                             {{ session('success') }}
                         </div>
                         <div class="mt-4 p-3 bg-green-50 rounded-lg border border-green-200">
@@ -734,7 +731,7 @@
                 title: 'Error al enviar',
                 html: `
                     <div class="text-center">
-                        <div class="text-lg text-gray-800 mb-4">
+                        <div class="text-lg text-slate-800 mb-4">
                             {{ session('error') }}
                         </div>
                         <div class="mt-4 p-3 bg-red-50 rounded-lg border border-red-200 text-left">

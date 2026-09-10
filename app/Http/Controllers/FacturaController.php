@@ -13,6 +13,7 @@ use App\Services\DTEService;
 use App\Services\MHApiService;
 use App\Services\ContingenciaService;
 use App\Mail\FacturaElectronicaMail;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class FacturaController extends Controller
 {
@@ -976,7 +977,30 @@ class FacturaController extends Controller
     }
 
     /**
-     * Exportar facturas filtradas a Excel
+     * Descarga el PDF de la factura (el mismo que se adjunta por correo),
+     * para poder enviarlo manualmente por WhatsApp u otro medio.
+     */
+    public function descargarPdf(Factura $factura)
+    {
+        try {
+            $pdf = Pdf::loadView('facturas.pdf', ['factura' => $factura]);
+
+            return $pdf->download($factura->numero_control . '.pdf');
+        } catch (\Exception $e) {
+            Log::error('Error al generar PDF de factura para descarga: ' . $e->getMessage(), [
+                'factura_id' => $factura->id,
+                'numero_control' => $factura->numero_control,
+            ]);
+
+            return back()->with('error', 'Error al generar el PDF: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Exportar facturas filtradas a Excel (.xlsx), con el formato de columnas
+     * usado por el negocio: Fecha, Tipo DTE (código y descripción), Número de
+     * Control, Código de Generación, Sello MH, Serie, DUI/NIT, Nombre Cliente,
+     * Exento, No Sujeto, Subtotal, IVA, Retención, Ventas, Comentarios.
      */
     public function exportarExcel(Request $request)
     {
@@ -1037,7 +1061,10 @@ class FacturaController extends Controller
                 return back()->with('warning', 'No hay facturas para exportar con los filtros aplicados.');
             }
 
-            // Obtener el sello de recepción del JSON respuesta_mh
+            // Obtener el sello de recepción del JSON respuesta_mh.
+            // La estructura varía según cómo se guardó la respuesta (envío directo,
+            // contingencia, consulta posterior), así que se revisan todas las
+            // ubicaciones posibles (mismo criterio que InvalidacionService).
             $getSelloRecibido = function($factura) {
                 if (empty($factura->respuesta_mh)) {
                     return '';
@@ -1047,62 +1074,115 @@ class FacturaController extends Controller
                     ? json_decode($factura->respuesta_mh, true)
                     : $factura->respuesta_mh;
 
-                return $respuestaMh['selloRecibido'] ?? '';
-            };
-
-            // Crear el nombre del archivo con timestamp
-            $timestamp = now()->format('Y-m-d_His');
-            $filename = "facturas_export_{$timestamp}.csv";
-
-            // Configurar headers para descarga
-            $headers = [
-                'Content-Type' => 'text/csv; charset=utf-8',
-                'Content-Disposition' => "attachment; filename=\"{$filename}\"",
-                'Pragma' => 'no-cache',
-                'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
-                'Expires' => '0'
-            ];
-
-            // Crear el callback para generar el CSV
-            $callback = function() use ($facturas, $getSelloRecibido) {
-                $file = fopen('php://output', 'w');
-
-                // Agregar BOM para UTF-8 (para que Excel lo reconozca correctamente)
-                fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
-
-                // Encabezados del CSV
-                fputcsv($file, [
-                    'Fecha de Emisión',
-                    'Tipo de DTE',
-                    'Número de Control',
-                    'Sello del Documento',
-                    'Número de Control Interno',
-                    'Código de Generación',
-                    'Ventas'
-                ], ';');
-
-                // Datos
-                foreach ($facturas as $factura) {
-                    fputcsv($file, [
-                        $factura->fecha_emision->format('d/m/Y'),
-                        $factura->tipo_dte,
-                        $factura->numero_control,
-                        $getSelloRecibido($factura),
-                        $factura->id, // Número de control interno (ID de la base de datos)
-                        $factura->codigo_generacion,
-                        number_format($factura->total_pagar, 2, '.', '')
-                    ], ';');
+                if (!is_array($respuestaMh)) {
+                    return '';
                 }
 
-                fclose($file);
+                return $respuestaMh['envio_mh']['selloRecibido']
+                    ?? $respuestaMh['selloRecibido']
+                    ?? $respuestaMh['data']['selloRecibido']
+                    ?? $respuestaMh['body']['selloRecibido']
+                    ?? '';
             };
+
+            // Nombre descriptivo del tipo de DTE (columna "Tipo de DTE" en texto)
+            $tipoDteTexto = [
+                '01' => 'Consumidor Final',
+                '03' => 'Crédito Fiscal',
+                '05' => 'Nota de Crédito',
+                '14' => 'Sujeto Excluido',
+            ];
+
+            $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+            $sheet = $spreadsheet->getActiveSheet();
+
+            $headersFila = [
+                'A1' => 'Fecha de Emisión',
+                'B1' => 'Tipo de DTE',
+                'C1' => 'Tipo de DTE',
+                'D1' => 'Número de Control',
+                'E1' => 'Código de Generación',
+                'F1' => 'Sello MH',
+                'G1' => 'Serie',
+                'H1' => 'DUI/NIT Cliente',
+                'I1' => 'Nombre Cliente',
+                'J1' => 'Exento',
+                'K1' => 'No Sujeto',
+                'L1' => 'Subtotal',
+                'M1' => 'IVA',
+                'N1' => 'Retencion ',
+                'O1' => 'Ventas',
+                'P1' => 'Comentarios',
+            ];
+
+            foreach ($headersFila as $celda => $texto) {
+                $sheet->setCellValue($celda, $texto);
+            }
+            $sheet->getStyle('A1:P1')->getFont()->setBold(true);
+
+            $serie = config('dte.establecimiento', 'S001');
+            $fila = 2;
+
+            foreach ($facturas as $factura) {
+                $dteJson = is_string($factura->dte_json)
+                    ? json_decode($factura->dte_json, true)
+                    : $factura->dte_json;
+                $reteRenta = $dteJson['resumen']['reteRenta'] ?? 0;
+
+                $sheet->setCellValue("A{$fila}", $factura->fecha_emision->format('d/m/Y'));
+                $sheet->setCellValue("B{$fila}", (int) $factura->tipo_dte);
+                $sheet->setCellValue("C{$fila}", $tipoDteTexto[$factura->tipo_dte] ?? $factura->tipo_dte);
+                $sheet->setCellValue("D{$fila}", $factura->numero_control);
+                $sheet->setCellValue("E{$fila}", $factura->codigo_generacion);
+                $sheet->setCellValue("F{$fila}", $getSelloRecibido($factura));
+                $sheet->setCellValue("G{$fila}", $serie);
+                $sheet->setCellValueExplicit("H{$fila}", $factura->receptor_num_documento, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+                $sheet->setCellValue("I{$fila}", $factura->receptor_nombre);
+                $sheet->setCellValue("J{$fila}", (float) $factura->total_exenta);
+                $sheet->setCellValue("K{$fila}", (float) $factura->total_no_sujeto);
+                $sheet->setCellValue("L{$fila}", (float) $factura->sub_total);
+                $sheet->setCellValue("M{$fila}", (float) $factura->total_iva);
+                $sheet->setCellValue("N{$fila}", (float) $reteRenta);
+                $sheet->setCellValue("O{$fila}", (float) $factura->total_pagar);
+                $sheet->setCellValue("P{$fila}", '');
+
+                $fila++;
+            }
+
+            $ultimaFila = $fila - 1;
+
+            // Formato de moneda (2 decimales) para las columnas de montos
+            $sheet->getStyle("J2:O{$ultimaFila}")
+                ->getNumberFormat()
+                ->setFormatCode('#,##0.00');
+
+            // Ancho de columnas similar al archivo de referencia del negocio
+            $anchos = ['A' => 14, 'B' => 12, 'C' => 16, 'D' => 32, 'E' => 39, 'F' => 45, 'G' => 8, 'H' => 18, 'I' => 36, 'J' => 10, 'K' => 10, 'L' => 12, 'M' => 10, 'N' => 12, 'O' => 12, 'P' => 38];
+            foreach ($anchos as $col => $ancho) {
+                $sheet->getColumnDimension($col)->setWidth($ancho);
+            }
+
+            $sheet->setAutoFilter("A1:P{$ultimaFila}");
+            $sheet->freezePane('A2');
+
+            $mesTexto = $request->filled('mes') && $request->filled('anio')
+                ? '_' . str_pad($request->input('mes'), 2, '0', STR_PAD_LEFT) . '-' . $request->input('anio')
+                : '';
+            $timestamp = now()->format('Y-m-d_His');
+            $filename = "Facturas{$mesTexto}_{$timestamp}.xlsx";
 
             Log::info('Facturas exportadas a Excel', [
                 'cantidad' => $facturas->count(),
                 'usuario' => auth()->user()->name ?? 'Sistema',
             ]);
 
-            return response()->stream($callback, 200, $headers);
+            $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+
+            return response()->streamDownload(function () use ($writer) {
+                $writer->save('php://output');
+            }, $filename, [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            ]);
 
         } catch (\Exception $e) {
             Log::error('Error al exportar facturas: ' . $e->getMessage(), [

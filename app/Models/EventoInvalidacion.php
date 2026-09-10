@@ -28,6 +28,8 @@ class EventoInvalidacion extends Model
         'solicitante_nombre',
         'solicitante_tipo_doc',
         'solicitante_num_doc',
+        'receptor_correo',
+        'receptor_telefono',
         'evento_json',
         'evento_firmado',
         'estado',

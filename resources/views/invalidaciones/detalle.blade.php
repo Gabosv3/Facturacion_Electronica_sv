@@ -6,16 +6,16 @@
     <title>Detalle Evento de Invalidación - DTE El Salvador</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100">
+<body class="bg-slate-50">
     @include('components.navbar')
 
     <div class="container mx-auto px-4 py-8">
         <div class="max-w-5xl mx-auto">
-            <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <div class="bg-white rounded-xl shadow-[0_1px_3px_0_rgb(0_0_0/0.06),0_4px_12px_-2px_rgb(0_0_0/0.06)] border border-slate-100 p-6 mb-6">
                 <div class="flex justify-between items-start mb-6">
                     <div>
-                        <h1 class="text-3xl font-bold text-gray-800">Evento de Invalidación</h1>
-                        <p class="text-gray-600 mt-1 font-mono text-sm">{{ $evento->codigo_invalidacion }}</p>
+                        <h1 class="text-3xl font-bold text-slate-800">Evento de Invalidación</h1>
+                        <p class="text-slate-500 mt-1 font-mono text-sm">{{ $evento->codigo_invalidacion }}</p>
                     </div>
                     @php
                         $estadoClasses = [
@@ -26,7 +26,7 @@
                             'error' => 'bg-red-100 text-red-800',
                         ];
                     @endphp
-                    <span class="px-4 py-2 text-lg font-semibold rounded {{ $estadoClasses[$evento->estado] ?? 'bg-gray-100 text-gray-800' }}">
+                    <span class="px-4 py-2 text-lg font-semibold rounded {{ $estadoClasses[$evento->estado] ?? 'bg-slate-100 text-slate-800' }}">
                         {{ ucfirst($evento->estado) }}
                     </span>
                 </div>
@@ -43,48 +43,83 @@
                     </div>
                 @endif
 
+                @if(session('warning'))
+                    <div class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded mb-4">
+                        {{ session('warning') }}
+                    </div>
+                @endif
+
+                @php
+                    $correoNotificacion = $evento->receptor_correo ?? $evento->factura->receptor_correo;
+                @endphp
+                @if($evento->fueExitosa())
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h3 class="font-semibold text-blue-900">Notificación al Receptor</h3>
+                                <p class="text-sm text-blue-700 mt-1">
+                                    @if($correoNotificacion)
+                                        Según la Normativa DTE 2.0, el receptor ({{ $correoNotificacion }}) debe recibir el JSON y los PDF de este evento y del documento invalidado.
+                                    @else
+                                        ⚠ Este receptor no tiene correo registrado. No se puede notificar hasta que se actualice el dato.
+                                    @endif
+                                </p>
+                            </div>
+                            @if($correoNotificacion)
+                                <form action="{{ route('invalidaciones.enviarEmail', $evento->id) }}" method="POST" class="ml-4">
+                                    @csrf
+                                    <button type="submit"
+                                            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition text-sm whitespace-nowrap">
+                                        📧 Reenviar Notificación
+                                    </button>
+                                </form>
+                            @endif
+                        </div>
+                    </div>
+                @endif
+
                 <!-- Información del Evento -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                    <div class="bg-gray-50 rounded-lg p-4">
+                    <div class="bg-slate-50 rounded-lg p-4">
                         <h2 class="text-lg font-semibold text-gray-900 mb-3">Información del Evento</h2>
                         <dl class="space-y-2">
                             <div>
-                                <dt class="text-sm text-gray-600">Fecha del Evento:</dt>
+                                <dt class="text-sm text-slate-500">Fecha del Evento:</dt>
                                 <dd class="font-semibold">{{ $evento->fecha_evento->format('d/m/Y H:i:s') }}</dd>
                             </div>
                             <div>
-                                <dt class="text-sm text-gray-600">Tipo de Invalidación:</dt>
+                                <dt class="text-sm text-slate-500">Tipo de Invalidación:</dt>
                                 <dd class="font-semibold">
                                     {{ $evento->tipo_invalidacion == '1' ? 'Anulación por errores formales' : 'Rescindir operación' }}
                                 </dd>
                             </div>
                             <div>
-                                <dt class="text-sm text-gray-600">Ambiente:</dt>
+                                <dt class="text-sm text-slate-500">Ambiente:</dt>
                                 <dd class="font-semibold">{{ $evento->ambiente == '00' ? 'Pruebas' : 'Producción' }}</dd>
                             </div>
                             <div>
-                                <dt class="text-sm text-gray-600">Versión:</dt>
+                                <dt class="text-sm text-slate-500">Versión:</dt>
                                 <dd class="font-semibold">{{ $evento->version }}</dd>
                             </div>
                         </dl>
                     </div>
 
-                    <div class="bg-gray-50 rounded-lg p-4">
+                    <div class="bg-slate-50 rounded-lg p-4">
                         <h2 class="text-lg font-semibold text-gray-900 mb-3">Procesamiento</h2>
                         <dl class="space-y-2">
                             <div>
-                                <dt class="text-sm text-gray-600">Creado:</dt>
+                                <dt class="text-sm text-slate-500">Creado:</dt>
                                 <dd class="font-semibold">{{ $evento->created_at->format('d/m/Y H:i:s') }}</dd>
                             </div>
                             @if($evento->fecha_procesamiento)
                                 <div>
-                                    <dt class="text-sm text-gray-600">Procesado:</dt>
+                                    <dt class="text-sm text-slate-500">Procesado:</dt>
                                     <dd class="font-semibold">{{ $evento->fecha_procesamiento->format('d/m/Y H:i:s') }}</dd>
                                 </div>
                             @endif
                             @if($evento->sello_recepcion)
                                 <div>
-                                    <dt class="text-sm text-gray-600">Sello de Recepción:</dt>
+                                    <dt class="text-sm text-slate-500">Sello de Recepción:</dt>
                                     <dd class="font-mono text-xs">{{ substr($evento->sello_recepcion, 0, 40) }}...</dd>
                                 </div>
                             @endif
@@ -97,19 +132,19 @@
                     <h2 class="text-lg font-semibold text-red-900 mb-3">Factura Invalidada</h2>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <span class="text-sm text-gray-600">Número de Control:</span>
+                            <span class="text-sm text-slate-500">Número de Control:</span>
                             <p class="font-mono font-semibold">{{ $evento->factura->numero_control }}</p>
                         </div>
                         <div>
-                            <span class="text-sm text-gray-600">Tipo DTE:</span>
+                            <span class="text-sm text-slate-500">Tipo DTE:</span>
                             <p class="font-semibold">DTE-{{ $evento->factura->tipo_dte }}</p>
                         </div>
                         <div>
-                            <span class="text-sm text-gray-600">Receptor:</span>
+                            <span class="text-sm text-slate-500">Receptor:</span>
                             <p class="font-semibold">{{ $evento->factura->receptor_nombre }}</p>
                         </div>
                         <div>
-                            <span class="text-sm text-gray-600">Total:</span>
+                            <span class="text-sm text-slate-500">Total:</span>
                             <p class="font-semibold">${{ number_format($evento->factura->total_pagar, 2) }}</p>
                         </div>
                         <div class="md:col-span-2">
@@ -127,18 +162,27 @@
                         <h2 class="text-lg font-semibold text-green-900 mb-3">Factura de Reemplazo</h2>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <span class="text-sm text-gray-600">Número de Control:</span>
+                                <span class="text-sm text-slate-500">Número de Control:</span>
                                 <p class="font-mono font-semibold">{{ $evento->facturaReemplazo->numero_control }}</p>
                             </div>
                             <div>
-                                <span class="text-sm text-gray-600">Código de Generación:</span>
+                                <span class="text-sm text-slate-500">Código de Generación:</span>
                                 <p class="font-mono text-xs">{{ $evento->codigo_generacion_reemplazo }}</p>
                             </div>
-                            <div class="md:col-span-2">
+                            <div class="md:col-span-2 flex items-center justify-between">
                                 <a href="{{ route('facturas.show', $evento->facturaReemplazo->id) }}"
                                    class="text-blue-600 hover:text-blue-900 text-sm font-semibold">
                                     Ver detalles de la factura de reemplazo →
                                 </a>
+                                @if($evento->facturaReemplazo->receptor_correo && $evento->facturaReemplazo->estado === 'enviado_mh')
+                                    <form action="{{ route('facturas.enviarEmail', $evento->facturaReemplazo->id) }}" method="POST">
+                                        @csrf
+                                        <button type="submit"
+                                                class="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg transition text-xs">
+                                            📧 Reenviar Documento de Reemplazo
+                                        </button>
+                                    </form>
+                                @endif
                             </div>
                         </div>
                     </div>
@@ -147,36 +191,36 @@
                 <!-- Motivo -->
                 <div class="mb-6">
                     <h2 class="text-lg font-semibold text-gray-900 mb-2">Motivo de Invalidación</h2>
-                    <div class="bg-gray-50 rounded-lg p-4">
-                        <p class="text-gray-800">{{ $evento->motivo_invalidacion }}</p>
+                    <div class="bg-slate-50 rounded-lg p-4">
+                        <p class="text-slate-800">{{ $evento->motivo_invalidacion }}</p>
                     </div>
                 </div>
 
                 <!-- Responsables -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                    <div class="bg-gray-50 rounded-lg p-4">
+                    <div class="bg-slate-50 rounded-lg p-4">
                         <h2 class="text-lg font-semibold text-gray-900 mb-3">Responsable (Emisor)</h2>
                         <dl class="space-y-2">
                             <div>
-                                <dt class="text-sm text-gray-600">Nombre:</dt>
+                                <dt class="text-sm text-slate-500">Nombre:</dt>
                                 <dd class="font-semibold">{{ $evento->responsable_nombre }}</dd>
                             </div>
                             <div>
-                                <dt class="text-sm text-gray-600">Documento:</dt>
+                                <dt class="text-sm text-slate-500">Documento:</dt>
                                 <dd class="font-semibold">{{ $evento->responsable_tipo_doc }}: {{ $evento->responsable_num_doc }}</dd>
                             </div>
                         </dl>
                     </div>
 
-                    <div class="bg-gray-50 rounded-lg p-4">
+                    <div class="bg-slate-50 rounded-lg p-4">
                         <h2 class="text-lg font-semibold text-gray-900 mb-3">Solicitante</h2>
                         <dl class="space-y-2">
                             <div>
-                                <dt class="text-sm text-gray-600">Nombre:</dt>
+                                <dt class="text-sm text-slate-500">Nombre:</dt>
                                 <dd class="font-semibold">{{ $evento->solicitante_nombre }}</dd>
                             </div>
                             <div>
-                                <dt class="text-sm text-gray-600">Documento:</dt>
+                                <dt class="text-sm text-slate-500">Documento:</dt>
                                 <dd class="font-semibold">{{ $evento->solicitante_tipo_doc }}: {{ $evento->solicitante_num_doc }}</dd>
                             </div>
                         </dl>
@@ -250,11 +294,11 @@
                         @endif
 
                         <!-- Detalles técnicos (colapsables) -->
-                        <details class="bg-gray-50 rounded-lg p-4">
-                            <summary class="cursor-pointer font-semibold text-gray-700 hover:text-gray-900">
+                        <details class="bg-slate-50 rounded-lg p-4">
+                            <summary class="cursor-pointer font-semibold text-slate-700 hover:text-gray-900">
                                 Ver detalles técnicos completos
                             </summary>
-                            <pre class="text-xs text-gray-600 overflow-x-auto mt-3">{{ json_encode($respuestaMH, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
+                            <pre class="text-xs text-slate-500 overflow-x-auto mt-3">{{ json_encode($respuestaMH, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
                         </details>
                     </div>
                 @endif
@@ -263,7 +307,7 @@
                 @if($evento->evento_json)
                     <div class="mb-6">
                         <h2 class="text-lg font-semibold text-gray-900 mb-2">JSON del Evento</h2>
-                        <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="bg-slate-50 rounded-lg p-4">
                             <pre class="text-xs overflow-x-auto">{{ json_encode($evento->evento_json, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
                         </div>
                     </div>
@@ -271,10 +315,22 @@
 
                 <!-- Botones de Acción -->
                 <div class="flex justify-between items-center mt-6 pt-6 border-t">
-                    <a href="{{ route('invalidaciones.index') }}"
-                       class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg transition">
-                        Volver a Lista
-                    </a>
+                    <div class="flex gap-3">
+                        <a href="{{ route('invalidaciones.index') }}"
+                           class="bg-slate-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg transition">
+                            Volver a Lista
+                        </a>
+                        @if($evento->fueExitosa())
+                            <a href="{{ route('invalidaciones.descargarPdf', $evento->id) }}"
+                               class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg transition">
+                                📄 Descargar PDF del Evento
+                            </a>
+                            <a href="{{ route('facturas.descargarPdf', $evento->factura->id) }}"
+                               class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg transition">
+                                📄 Descargar PDF de la Factura
+                            </a>
+                        @endif
+                    </div>
 
                     @if($evento->puedeEnviarse())
                         <form action="{{ route('invalidaciones.reintentar', $evento->id) }}" method="POST">

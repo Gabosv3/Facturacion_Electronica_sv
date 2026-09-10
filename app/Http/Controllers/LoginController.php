@@ -21,7 +21,7 @@ class LoginController extends Controller
     public function showLoginForm()
     {
         if (Session::has('auth_token')) {
-            return redirect()->route('facturas.index');
+            return redirect()->route('home');
         }
         return view('auth.login');
     }
@@ -51,7 +51,7 @@ class LoginController extends Controller
                 Session::put('user_data', $response['user']);
                 Session::put('authenticated', true);
 
-                return redirect()->route('facturas.index')->with('success', 'Sesión iniciada correctamente');
+                return redirect()->route('home')->with('success', 'Sesión iniciada correctamente');
             } else {
                 return back()->withErrors(['email' => $response['message'] ?? 'Credenciales inválidas'])->withInput();
             }

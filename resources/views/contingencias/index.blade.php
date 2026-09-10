@@ -7,17 +7,17 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
-<body class="bg-gray-100">
+<body class="bg-slate-50">
     @include('components.navbar')
 
     <div class="container mx-auto px-4 py-8">
         <div class="max-w-7xl mx-auto">
             <!-- Header -->
-            <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <div class="bg-white rounded-xl shadow-[0_1px_3px_0_rgb(0_0_0/0.06),0_4px_12px_-2px_rgb(0_0_0/0.06)] border border-slate-100 p-6 mb-6">
                 <div class="flex justify-between items-center">
                     <div>
-                        <h1 class="text-3xl font-bold text-gray-800">Gestión de Contingencias</h1>
-                        <p class="text-gray-600 mt-2">Administrar eventos de fuerza mayor que impiden el envío de DTEs al MH</p>
+                        <h1 class="text-3xl font-bold text-slate-800">Gestión de Contingencias</h1>
+                        <p class="text-slate-500 mt-2">Administrar eventos de fuerza mayor que impiden el envío de DTEs al MH</p>
                     </div>
                     <div class="flex gap-3">
                         @if(!$eventoActivo)
@@ -88,26 +88,26 @@
             @endif
 
             <!-- Lista de Eventos -->
-            <div class="bg-white rounded-lg shadow-lg p-6">
-                <h2 class="text-2xl font-bold text-gray-800 mb-4">Historial de Contingencias</h2>
+            <div class="bg-white rounded-xl shadow-[0_1px_3px_0_rgb(0_0_0/0.06),0_4px_12px_-2px_rgb(0_0_0/0.06)] border border-slate-100 p-6">
+                <h2 class="text-2xl font-bold text-slate-800 mb-4">Historial de Contingencias</h2>
 
                 @if($eventos->count() > 0)
                     <div class="overflow-x-auto">
                         <table class="w-full">
-                            <thead class="bg-gray-50">
+                            <thead class="bg-slate-50">
                                 <tr>
-                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">ID</th>
-                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">Tipo</th>
-                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">Inicio</th>
-                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">Fin</th>
-                                    <th class="px-4 py-3 text-center text-sm font-semibold text-gray-600">DTEs</th>
-                                    <th class="px-4 py-3 text-center text-sm font-semibold text-gray-600">Estado</th>
-                                    <th class="px-4 py-3 text-center text-sm font-semibold text-gray-600">Acciones</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-slate-500">ID</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-slate-500">Tipo</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-slate-500">Inicio</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-slate-500">Fin</th>
+                                    <th class="px-4 py-3 text-center text-sm font-semibold text-slate-500">DTEs</th>
+                                    <th class="px-4 py-3 text-center text-sm font-semibold text-slate-500">Estado</th>
+                                    <th class="px-4 py-3 text-center text-sm font-semibold text-slate-500">Acciones</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-gray-200">
+                            <tbody class="divide-y divide-slate-100">
                                 @foreach($eventos as $evento)
-                                <tr class="hover:bg-gray-50">
+                                <tr class="hover:bg-slate-50">
                                     <td class="px-4 py-3 text-sm font-mono">#{{ $evento->id }}</td>
                                     <td class="px-4 py-3 text-sm">
                                         <span class="font-semibold">{{ $evento->tipo_contingencia }}</span> - {{ $evento->tipo_contingencia_descripcion }}
@@ -149,8 +149,8 @@
                 @else
                     <div class="text-center py-12">
                         <div class="text-6xl mb-4">📋</div>
-                        <p class="text-xl text-gray-600 mb-4">No hay eventos de contingencia registrados</p>
-                        <p class="text-gray-500">Las contingencias se activan cuando hay eventos de fuerza mayor que impiden el envío de DTEs al MH</p>
+                        <p class="text-xl text-slate-500 mb-4">No hay eventos de contingencia registrados</p>
+                        <p class="text-slate-500">Las contingencias se activan cuando hay eventos de fuerza mayor que impiden el envío de DTEs al MH</p>
                     </div>
                 @endif
             </div>

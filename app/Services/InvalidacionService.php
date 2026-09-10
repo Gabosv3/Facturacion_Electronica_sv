@@ -47,6 +47,8 @@ class InvalidacionService
             'solicitante_nombre' => $data['solicitante_nombre'],
             'solicitante_tipo_doc' => $data['solicitante_tipo_doc'],
             'solicitante_num_doc' => $data['solicitante_num_doc'],
+            'receptor_correo' => $data['receptor_correo'],
+            'receptor_telefono' => $data['receptor_telefono'],
             'estado' => 'pendiente',
         ]);
 
@@ -68,6 +70,8 @@ class InvalidacionService
      * - tipoDocumento: Tipo de documento del receptor
      * - numDocumento: Número de documento del receptor
      * - nombre: Nombre del receptor
+     * - telefono: Teléfono del receptor (OBLIGATORIO desde Normativa DTE 2.0, MH lo rechaza sin esto)
+     * - correo: Correo del receptor (OBLIGATORIO desde Normativa DTE 2.0, MH lo rechaza sin esto)
      *
      * CAMPOS REQUERIDOS EN "motivo":
      * - tipoAnulacion: integer (1, 2, o 3)
@@ -137,6 +141,9 @@ class InvalidacionService
             'tipoDocumento' => $factura->receptor_tipo_documento,
             'numDocumento' => $factura->receptor_num_documento,
             'nombre' => $factura->receptor_nombre,
+            // Normativa de Cumplimiento DTE 2.0 (MH): campos obligatorios desde 2026
+            'telefono' => $evento->receptor_telefono,
+            'correo' => $evento->receptor_correo,
         ];
 
         // codigoGeneracionR: REQUERIDO pero con valor null si no hay reemplazo
@@ -524,28 +531,33 @@ class InvalidacionService
     private function validarPlazos(Factura $factura): array
     {
         $fechaEmision = $factura->fecha_emision;
-        $fechaTransmision = $factura->created_at;
         $hoy = now();
 
-        $diasDesdeEmision = $fechaEmision->diffInDays($hoy);
-        $diasDesdeTransmision = $fechaTransmision->diffInDays($hoy);
-
         // Para DTE-03 (CCF), DTE-05 (Nota de Crédito): Máximo 1 día
+        //
+        // NOTA (2026-09-09): La documentación pública de la Normativa DTE 2.0
+        // indica un plazo ampliado (hasta el décimo día hábil del mes
+        // siguiente), pero el MH real (ambiente de pruebas) sigue rechazando
+        // invalidaciones fuera de 1 día con el error:
+        // "[identificacion.fecAnula] DATO NO COINCIDE CON DTE".
+        // Se revierte a 1 día porque es lo que el MH acepta en la práctica.
+        // Si el MH activa el plazo ampliado en producción, ajustar aquí.
         if (in_array($factura->tipo_dte, ['03', '05'])) {
-            if ($diasDesdeEmision > 1 || $diasDesdeTransmision > 1) {
+            if ($fechaEmision->diffInDays($hoy) > 1) {
                 return [
                     'valido' => false,
-                    'mensaje' => 'El plazo para invalidar CCF o Nota de Crédito es de máximo 1 día desde la emisión y transmisión',
+                    'mensaje' => 'El plazo para invalidar CCF o Nota de Crédito es de máximo 1 día desde la emisión (el MH rechaza fuera de este plazo)',
                 ];
             }
         }
 
         // Para DTE-01 (Factura), DTE-14 (Sujeto Excluido): Máximo 3 meses
+        // desde el otorgamiento del Sello de Recepción
         if (in_array($factura->tipo_dte, ['01', '14'])) {
-            if ($diasDesdeEmision > 90 || $diasDesdeTransmision > 90) {
+            if ($fechaEmision->diffInDays($hoy) > 90) {
                 return [
                     'valido' => false,
-                    'mensaje' => 'El plazo para invalidar Factura o Factura de Sujeto Excluido es de máximo 3 meses desde la emisión y transmisión',
+                    'mensaje' => 'El plazo para invalidar Factura o Factura de Sujeto Excluido es de máximo 3 meses desde la emisión',
                 ];
             }
         }

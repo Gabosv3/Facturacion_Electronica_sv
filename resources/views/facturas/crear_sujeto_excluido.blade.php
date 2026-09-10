@@ -9,16 +9,16 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="{{ asset('js/catalogo-municipios.js') }}"></script>
 </head>
-<body class="bg-gray-100">
+<body class="bg-slate-50">
     @include('components.navbar')
 
     <div class="container mx-auto px-4 py-8">
         <div class="max-w-5xl mx-auto">
-            <div class="bg-white rounded-lg shadow-lg p-6">
+            <div class="bg-white rounded-xl shadow-[0_1px_3px_0_rgb(0_0_0/0.06),0_4px_12px_-2px_rgb(0_0_0/0.06)] border border-slate-100 p-6">
                 <div class="flex items-center justify-between mb-6">
                     <div>
                         <h1 class="text-3xl font-bold text-orange-800">Factura de Sujeto Excluido (DTE-14)</h1>
-                        <p class="text-sm text-gray-600 mt-1">Para personas o entidades excluidas del pago de IVA</p>
+                        <p class="text-sm text-slate-500 mt-1">Para personas o entidades excluidas del pago de IVA</p>
                     </div>
                     <div class="bg-orange-100 px-4 py-2 rounded-lg">
                         <p class="text-xs text-orange-700 font-semibold">SIN IVA</p>
@@ -60,12 +60,12 @@
 
                     <!-- Datos del Receptor -->
                     <div class="mb-8">
-                        <h2 class="text-xl font-semibold text-gray-700 mb-4 border-b pb-2">Datos del Cliente</h2>
+                        <h2 class="text-xl font-semibold text-slate-700 mb-4 border-b pb-2">Datos del Cliente</h2>
                         
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Documento *</label>
-                                <select name="receptor_tipo_documento" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Tipo de Documento *</label>
+                                <select name="receptor_tipo_documento" class="w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
                                     <option value="">Seleccione...</option>
                                     <option value="36">NIT - Registro de contribuyente IVA</option>
                                     <option value="13" selected>DUI - Persona natural sin IVA</option>
@@ -73,13 +73,13 @@
                                     <option value="03">Pasaporte</option>
                                     <option value="37">Otro</option>
                                 </select>
-                                <p class="text-xs text-gray-500 mt-1">DUI preseleccionado por defecto para sujetos excluidos</p>
+                                <p class="text-xs text-slate-500 mt-1">DUI preseleccionado por defecto para sujetos excluidos</p>
                             </div>
 
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Número de Documento *</label>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Número de Documento *</label>
                                 <div class="relative">
-                                    <input type="text" id="receptor_num_documento" name="receptor_num_documento" placeholder="DUI: 12345678-9 / NIT: 1234-567890-123-4" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required value="{{ old('receptor_num_documento') }}">
+                                    <input type="text" id="receptor_num_documento" name="receptor_num_documento" placeholder="DUI: 12345678-9 / NIT: 1234-567890-123-4" class="w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required value="{{ old('receptor_num_documento') }}">
                                     <div id="busquedaLoader" style="display:none;" class="absolute right-3 top-3">
                                         <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -87,47 +87,47 @@
                                         </svg>
                                     </div>
                                 </div>
-                                <p class="text-xs text-gray-500 mt-1">DUI: 8 dígitos-1 dígito / NIT: 14 dígitos con guiones</p>
+                                <p class="text-xs text-slate-500 mt-1">DUI: 8 dígitos-1 dígito / NIT: 14 dígitos con guiones</p>
                                 <p id="resultadoBusqueda" class="text-xs mt-1 hidden"></p>
                             </div>
 
                             <div class="md:col-span-2">
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Nombre Completo *</label>
-                                <input type="text" name="receptor_nombre" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required value="{{ old('receptor_nombre') }}" style="text-transform: uppercase;" oninput="this.value = this.value.toUpperCase()">
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Nombre Completo *</label>
+                                <input type="text" name="receptor_nombre" class="w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required value="{{ old('receptor_nombre') }}" style="text-transform: uppercase;" oninput="this.value = this.value.toUpperCase()">
                             </div>
 
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Código Actividad Económica (Opcional)</label>
-                                <input type="text" name="receptor_cod_actividad" pattern="[0-9]*" inputmode="numeric" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-orange-500" value="{{ old('receptor_cod_actividad') }}" placeholder="Ej: 10010" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
-                                <p class="text-xs text-gray-500 mt-1">Código de la actividad económica del sujeto excluido (opcional según MH)</p>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Código Actividad Económica (Opcional)</label>
+                                <input type="text" name="receptor_cod_actividad" pattern="[0-9]*" inputmode="numeric" class="w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-orange-500" value="{{ old('receptor_cod_actividad') }}" placeholder="Ej: 10010" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                                <p class="text-xs text-slate-500 mt-1">Código de la actividad económica del sujeto excluido (opcional según MH)</p>
                             </div>
 
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Descripción Actividad Económica (Opcional)</label>
-                                <input type="text" name="receptor_desc_actividad" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-orange-500" value="{{ old('receptor_desc_actividad') }}" placeholder="Ej: CULTIVO DE CEREALES">
-                                <p class="text-xs text-gray-500 mt-1">Mínimo 5 caracteres (opcional según MH)</p>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Descripción Actividad Económica (Opcional)</label>
+                                <input type="text" name="receptor_desc_actividad" class="w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-orange-500" value="{{ old('receptor_desc_actividad') }}" placeholder="Ej: CULTIVO DE CEREALES">
+                                <p class="text-xs text-slate-500 mt-1">Mínimo 5 caracteres (opcional según MH)</p>
                             </div>
 
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Teléfono</label>
-                                <input type="text" name="receptor_telefono" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-orange-500" value="{{ old('receptor_telefono') }}" placeholder="7777-7777" maxlength="9" oninput="formatearTelefono(this)">
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Teléfono</label>
+                                <input type="text" name="receptor_telefono" class="w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-orange-500" value="{{ old('receptor_telefono') }}" placeholder="7777-7777" maxlength="9" oninput="formatearTelefono(this)">
                             </div>
 
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Correo Electrónico</label>
-                                <input type="email" name="receptor_correo" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" value="{{ old('receptor_correo') }}">
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Correo Electrónico</label>
+                                <input type="email" name="receptor_correo" class="w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" value="{{ old('receptor_correo') }}">
                             </div>
                         </div>
                     </div>
 
                     <!-- Dirección del Receptor -->
                     <div class="mb-8">
-                        <h2 class="text-xl font-semibold text-gray-700 mb-4 border-b pb-2">Dirección del Cliente</h2>
+                        <h2 class="text-xl font-semibold text-slate-700 mb-4 border-b pb-2">Dirección del Cliente</h2>
                         
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Departamento *</label>
-                                <select name="receptor_departamento" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Departamento *</label>
+                                <select name="receptor_departamento" class="w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
                                     <option value="">Seleccione...</option>
                                     <option value="01">Ahuachapán</option>
                                     <option value="02">Santa Ana</option>
@@ -147,16 +147,16 @@
                             </div>
 
                             <div class="md:col-span-2">
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Municipio *</label>
-                                <select name="receptor_municipio" id="municipioSelect" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Municipio *</label>
+                                <select name="receptor_municipio" id="municipioSelect" class="w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
                                     <option value="">Seleccione primero un departamento</option>
                                 </select>
-                                <p class="text-xs text-gray-500 mt-1" id="municipioHelp">Seleccione un departamento para ver los municipios</p>
+                                <p class="text-xs text-slate-500 mt-1" id="municipioHelp">Seleccione un departamento para ver los municipios</p>
                             </div>
 
                             <div class="md:col-span-3">
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Dirección Completa *</label>
-                                <textarea name="receptor_complemento" rows="2" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>{{ old('receptor_complemento') }}</textarea>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Dirección Completa *</label>
+                                <textarea name="receptor_complemento" rows="2" class="w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>{{ old('receptor_complemento') }}</textarea>
                             </div>
                         </div>
                     </div>
@@ -164,19 +164,19 @@
                     <!-- Items de la Factura -->
                     <div class="mb-8">
                         <div class="flex justify-between items-center mb-4">
-                            <h2 class="text-xl font-semibold text-gray-700">Productos/Servicios</h2>
+                            <h2 class="text-xl font-semibold text-slate-700">Productos/Servicios</h2>
                             <div class="bg-orange-100 px-3 py-1 rounded-lg">
                                 <p class="text-xs text-orange-700 font-semibold">SIN IVA</p>
                             </div>
                         </div>
                         
                         <div id="itemsContainer">
-                            <div class="item-row bg-gray-50 p-4 rounded-lg mb-4">
+                            <div class="item-row bg-slate-50 p-4 rounded-lg mb-4">
                                 <input type="hidden" name="items[0][producto_id]" class="producto-id" value="">
                                 <div class="grid grid-cols-1 md:grid-cols-7 gap-4">
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Tipo *</label>
-                                        <select name="items[0][tipo_item]" class="tipo-item tipo-select w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" data-item-index="0" required>
+                                        <label class="block text-sm font-medium text-slate-700 mb-2">Tipo *</label>
+                                        <select name="items[0][tipo_item]" class="tipo-item tipo-select w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" data-item-index="0" required>
                                             <option value="">Seleccionar</option>
                                             <option value="1">Bien</option>
                                             <option value="2">Servicio</option>
@@ -185,9 +185,9 @@
                                     </div>
 
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Código *</label>
+                                        <label class="block text-sm font-medium text-slate-700 mb-2">Código *</label>
                                         <div class="relative">
-                                            <input type="text" name="items[0][codigo]" class="codigo-item w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+                                            <input type="text" name="items[0][codigo]" class="codigo-item w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
                                             <div class="loader-producto hidden absolute right-3 top-3">
                                                 <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -200,26 +200,26 @@
                                     </div>
 
                                     <div class="md:col-span-2">
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Descripción *</label>
-                                        <input type="text" name="items[0][descripcion]" class="descripcion-item w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+                                        <label class="block text-sm font-medium text-slate-700 mb-2">Descripción *</label>
+                                        <input type="text" name="items[0][descripcion]" class="descripcion-item w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
                                         <p class="descripcion-error text-xs text-red-600 mt-1 hidden">⚠️ La descripción no puede estar vacía</p>
                                     </div>
 
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Cantidad *</label>
-                                        <input type="number" step="1" name="items[0][cantidad]" class="cantidad w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required min="1">
+                                        <label class="block text-sm font-medium text-slate-700 mb-2">Cantidad *</label>
+                                        <input type="number" step="1" name="items[0][cantidad]" class="cantidad w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required min="1">
                                         <p class="cantidad-error text-xs text-red-600 mt-1 hidden">⚠️ Debe ser un número entero positivo (ej: 1, 2, 3...)</p>
                                     </div>
 
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Precio Unit. *</label>
-                                        <input type="number" step="0.01" name="items[0][precio_unitario]" class="precio w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required min="0">
+                                        <label class="block text-sm font-medium text-slate-700 mb-2">Precio Unit. *</label>
+                                        <input type="number" step="0.01" name="items[0][precio_unitario]" class="precio w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required min="0">
                                         <p class="precio-error text-xs text-red-600 mt-1 hidden">⚠️ El precio debe ser un número positivo</p>
                                     </div>
 
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Descuento</label>
-                                        <input type="number" step="0.01" name="items[0][monto_descuento]" value="0" class="descuento w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" min="0">
+                                        <label class="block text-sm font-medium text-slate-700 mb-2">Descuento</label>
+                                        <input type="number" step="0.01" name="items[0][monto_descuento]" value="0" class="descuento w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" min="0">
                                         <p class="descuento-error text-xs text-red-600 mt-1 hidden">⚠️ El descuento no puede ser mayor que el precio unitario</p>
                                     </div>
                                 </div>
@@ -233,12 +233,12 @@
 
                     <!-- Resumen y Condiciones -->
                     <div class="mb-8">
-                        <h2 class="text-xl font-semibold text-gray-700 mb-4 border-b pb-2">Condiciones de Pago</h2>
+                        <h2 class="text-xl font-semibold text-slate-700 mb-4 border-b pb-2">Condiciones de Pago</h2>
                         
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Condición *</label>
-                                <select name="condicion_operacion" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Condición *</label>
+                                <select name="condicion_operacion" class="w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
                                     <option value="1">Contado</option>
                                     <!-- <option value="2">Crédito</option> -->
                                     <option value="3">Otro</option>
@@ -246,8 +246,8 @@
                             </div>
 
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Forma de Pago *</label>
-                                <select name="forma_pago" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Forma de Pago *</label>
+                                <select name="forma_pago" class="w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
                                     <option value="01">Efectivo</option>
                                     <option value="02">Cheque</option>
                                     <option value="03">Transferencia</option>
@@ -257,22 +257,22 @@
                             </div>
 
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Referencia de Pago</label>
-                                <input type="text" name="referencia_pago" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" value="{{ old('referencia_pago') }}">
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Referencia de Pago</label>
+                                <input type="text" name="referencia_pago" class="w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" value="{{ old('referencia_pago') }}">
                             </div>
 
                             <div class="md:col-span-3">
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Observaciones</label>
-                                <textarea name="observaciones" rows="2" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500">{{ old('observaciones') }}</textarea>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Observaciones</label>
+                                <textarea name="observaciones" rows="2" class="w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500">{{ old('observaciones') }}</textarea>
                             </div>
                         </div>
                     </div>
 
                     <!-- Resumen de Totales -->
                     <div class="bg-blue-50 p-6 rounded-lg mb-6">
-                        <h3 class="text-lg font-semibold text-gray-700 mb-4">Resumen</h3>
+                        <h3 class="text-lg font-semibold text-slate-700 mb-4">Resumen</h3>
                         <div class="space-y-2">
-                            <div class="flex justify-between text-gray-600">
+                            <div class="flex justify-between text-slate-500">
                                 <span>Subtotal:</span>
                                 <span id="subtotal">$0.00</span>
                             </div>
@@ -292,7 +292,7 @@
                         <button type="submit" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-lg">
                             Generar y Firmar Factura
                         </button>
-                        <a href="{{ route('facturas.index') }}" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold px-6 py-3 rounded-lg">
+                        <a href="{{ route('facturas.index') }}" class="bg-slate-500 hover:bg-gray-600 text-white font-semibold px-6 py-3 rounded-lg">
                             Cancelar
                         </a>
                     </div>
@@ -332,13 +332,13 @@
         document.getElementById('addItem').addEventListener('click', function() {
             const container = document.getElementById('itemsContainer');
             const newItem = document.createElement('div');
-            newItem.className = 'item-row bg-gray-50 p-4 rounded-lg mb-4';
+            newItem.className = 'item-row bg-slate-50 p-4 rounded-lg mb-4';
             newItem.innerHTML = `
                 <input type="hidden" name="items[${itemCount}][producto_id]" class="producto-id" value="">
                 <div class="grid grid-cols-1 md:grid-cols-7 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Tipo *</label>
-                        <select name="items[${itemCount}][tipo_item]" class="tipo-item tipo-select w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" data-item-index="${itemCount}" required>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Tipo *</label>
+                        <select name="items[${itemCount}][tipo_item]" class="tipo-item tipo-select w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" data-item-index="${itemCount}" required>
                             <option value="">Seleccionar</option>
                             <option value="1">Bien</option>
                             <option value="2">Servicio</option>
@@ -346,9 +346,9 @@
                         <p class="tipo-error text-xs text-red-600 mt-1 hidden">⚠️ Debe seleccionar un tipo</p>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Código *</label>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Código *</label>
                         <div class="relative">
-                            <input type="text" name="items[${itemCount}][codigo]" class="codigo-item w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+                            <input type="text" name="items[${itemCount}][codigo]" class="codigo-item w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
                             <div class="loader-producto hidden absolute right-3 top-3">
                                 <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -360,23 +360,23 @@
                         <p class="codigo-error text-xs text-red-600 mt-1 hidden">⚠️ El código no puede estar vacío</p>
                     </div>
                     <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Descripción *</label>
-                        <input type="text" name="items[${itemCount}][descripcion]" class="descripcion-item w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Descripción *</label>
+                        <input type="text" name="items[${itemCount}][descripcion]" class="descripcion-item w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required>
                         <p class="descripcion-error text-xs text-red-600 mt-1 hidden">⚠️ La descripción no puede estar vacía</p>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Cantidad *</label>
-                        <input type="number" step="1" name="items[${itemCount}][cantidad]" class="cantidad w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required min="1">
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Cantidad *</label>
+                        <input type="number" step="1" name="items[${itemCount}][cantidad]" class="cantidad w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required min="1">
                         <p class="cantidad-error text-xs text-red-600 mt-1 hidden">⚠️ Debe ser un número entero positivo (ej: 1, 2, 3...)</p>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Precio Unit. *</label>
-                        <input type="number" step="0.01" name="items[${itemCount}][precio_unitario]" class="precio w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required min="0">
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Precio Unit. *</label>
+                        <input type="number" step="0.01" name="items[${itemCount}][precio_unitario]" class="precio w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" required min="0">
                         <p class="precio-error text-xs text-red-600 mt-1 hidden">⚠️ El precio debe ser un número positivo</p>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Descuento</label>
-                        <input type="number" step="0.01" name="items[${itemCount}][monto_descuento]" value="0" class="descuento w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" min="0">
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Descuento</label>
+                        <input type="number" step="0.01" name="items[${itemCount}][monto_descuento]" value="0" class="descuento w-full border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" min="0">
                         <p class="descuento-error text-xs text-red-600 mt-1 hidden">⚠️ El descuento no puede ser mayor que el precio unitario</p>
                     </div>
                 </div>
@@ -409,7 +409,7 @@
                 
                 codigoInput.value = servicioCode;
                 codigoInput.readOnly = true;
-                codigoInput.classList.add('bg-gray-200');
+                codigoInput.classList.add('bg-slate-200');
                 codigoInput.style.cursor = 'not-allowed';
                 
                 // Remover evento de búsqueda (clonar para limpiar listeners)
@@ -422,7 +422,7 @@
                 // BIEN: código manual con búsqueda
                 codigoInput.value = '';
                 codigoInput.readOnly = false;
-                codigoInput.classList.remove('bg-gray-200');
+                codigoInput.classList.remove('bg-slate-200');
                 codigoInput.style.cursor = 'auto';
                 
                 // Re-agregar búsqueda
@@ -499,11 +499,11 @@
                     tipoSelect.addEventListener('change', function() {
                         if (this.value.trim() === '') {
                             this.classList.add('border-red-500', 'bg-red-50');
-                            this.classList.remove('border-gray-300');
+                            this.classList.remove('border-slate-200');
                             tipoError.classList.remove('hidden');
                         } else {
                             this.classList.remove('border-red-500', 'bg-red-50');
-                            this.classList.add('border-gray-300');
+                            this.classList.add('border-slate-200');
                             tipoError.classList.add('hidden');
                         }
                     });
@@ -514,11 +514,11 @@
                     codigoInput.addEventListener('blur', function() {
                         if (this.value.trim() === '') {
                             this.classList.add('border-red-500', 'bg-red-50');
-                            this.classList.remove('border-gray-300');
+                            this.classList.remove('border-slate-200');
                             codigoError.classList.remove('hidden');
                         } else {
                             this.classList.remove('border-red-500', 'bg-red-50');
-                            this.classList.add('border-gray-300');
+                            this.classList.add('border-slate-200');
                             codigoError.classList.add('hidden');
                         }
                     });
@@ -526,11 +526,11 @@
                     codigoInput.addEventListener('input', function() {
                         if (this.value.trim() === '') {
                             this.classList.add('border-red-500', 'bg-red-50');
-                            this.classList.remove('border-gray-300');
+                            this.classList.remove('border-slate-200');
                             codigoError.classList.remove('hidden');
                         } else {
                             this.classList.remove('border-red-500', 'bg-red-50');
-                            this.classList.add('border-gray-300');
+                            this.classList.add('border-slate-200');
                             codigoError.classList.add('hidden');
                         }
                     });
@@ -541,11 +541,11 @@
                     descripcionInput.addEventListener('blur', function() {
                         if (this.value.trim() === '') {
                             this.classList.add('border-red-500', 'bg-red-50');
-                            this.classList.remove('border-gray-300');
+                            this.classList.remove('border-slate-200');
                             descripcionError.classList.remove('hidden');
                         } else {
                             this.classList.remove('border-red-500', 'bg-red-50');
-                            this.classList.add('border-gray-300');
+                            this.classList.add('border-slate-200');
                             descripcionError.classList.add('hidden');
                         }
                     });
@@ -553,11 +553,11 @@
                     descripcionInput.addEventListener('input', function() {
                         if (this.value.trim() === '') {
                             this.classList.add('border-red-500', 'bg-red-50');
-                            this.classList.remove('border-gray-300');
+                            this.classList.remove('border-slate-200');
                             descripcionError.classList.remove('hidden');
                         } else {
                             this.classList.remove('border-red-500', 'bg-red-50');
-                            this.classList.add('border-gray-300');
+                            this.classList.add('border-slate-200');
                             descripcionError.classList.add('hidden');
                         }
                     });
@@ -572,7 +572,7 @@
                         // Verificar si es vacío o no es número
                         if (valor === '' || isNaN(numero)) {
                             this.classList.add('border-red-500', 'bg-red-50');
-                            this.classList.remove('border-gray-300');
+                            this.classList.remove('border-slate-200');
                             cantidadError.classList.remove('hidden');
                             return;
                         }
@@ -580,7 +580,7 @@
                         // Verificar si es positivo
                         if (numero <= 0) {
                             this.classList.add('border-red-500', 'bg-red-50');
-                            this.classList.remove('border-gray-300');
+                            this.classList.remove('border-slate-200');
                             cantidadError.classList.remove('hidden');
                             return;
                         }
@@ -588,14 +588,14 @@
                         // Verificar si es entero
                         if (!Number.isInteger(numero)) {
                             this.classList.add('border-red-500', 'bg-red-50');
-                            this.classList.remove('border-gray-300');
+                            this.classList.remove('border-slate-200');
                             cantidadError.classList.remove('hidden');
                             return;
                         }
 
                         // Si es válido
                         this.classList.remove('border-red-500', 'bg-red-50');
-                        this.classList.add('border-gray-300');
+                        this.classList.add('border-slate-200');
                         cantidadError.classList.add('hidden');
                         calcularTotales();
                     });
@@ -610,7 +610,7 @@
                         // Verificar si es vacío o no es número
                         if (valor === '' || isNaN(numero)) {
                             this.classList.add('border-red-500', 'bg-red-50');
-                            this.classList.remove('border-gray-300');
+                            this.classList.remove('border-slate-200');
                             precioError.classList.remove('hidden');
                             return;
                         }
@@ -618,14 +618,14 @@
                         // Verificar si es positivo
                         if (numero <= 0) {
                             this.classList.add('border-red-500', 'bg-red-50');
-                            this.classList.remove('border-gray-300');
+                            this.classList.remove('border-slate-200');
                             precioError.classList.remove('hidden');
                             return;
                         }
 
                         // Si es válido
                         this.classList.remove('border-red-500', 'bg-red-50');
-                        this.classList.add('border-gray-300');
+                        this.classList.add('border-slate-200');
                         precioError.classList.add('hidden');
                         calcularTotales();
                     });
@@ -647,7 +647,7 @@
                     // Validación 1: Verificar que el descuento sea positivo
                     if (descuento < 0) {
                         descuentoInput.classList.add('border-red-500', 'bg-red-50');
-                        descuentoInput.classList.remove('border-gray-300');
+                        descuentoInput.classList.remove('border-slate-200');
                         errorMsg.classList.remove('hidden');
                         errorMsg.textContent = '⚠️ El descuento debe ser un número positivo o cero';
                         return false;
@@ -657,14 +657,14 @@
                     if (descuento > precio) {
                         // Descuento inválido
                         descuentoInput.classList.add('border-red-500', 'bg-red-50');
-                        descuentoInput.classList.remove('border-gray-300');
+                        descuentoInput.classList.remove('border-slate-200');
                         errorMsg.classList.remove('hidden');
                         errorMsg.textContent = '⚠️ El descuento no puede ser mayor que el precio unitario';
                         return false;
                     } else {
                         // Descuento válido
                         descuentoInput.classList.remove('border-red-500', 'bg-red-50');
-                        descuentoInput.classList.add('border-gray-300');
+                        descuentoInput.classList.add('border-slate-200');
                         errorMsg.classList.add('hidden');
                         return true;
                     }
@@ -709,7 +709,7 @@
                 municipioSelect.disabled = false;
             } else {
                 municipioHelp.textContent = 'Seleccione un departamento para ver los municipios';
-                municipioHelp.className = 'text-xs text-gray-500 mt-1';
+                municipioHelp.className = 'text-xs text-slate-500 mt-1';
                 municipioSelect.disabled = true;
             }
         });
@@ -740,22 +740,22 @@
                 case '02': // Carnet de residente
                     numDocInput.placeholder = 'Número de carnet de residente';
                     helpText.textContent = 'Ingrese el número de carnet de residente';
-                    helpText.className = 'text-xs text-gray-500 mt-1';
+                    helpText.className = 'text-xs text-slate-500 mt-1';
                     break;
                 case '03': // Pasaporte
                     numDocInput.placeholder = 'Número de pasaporte';
                     helpText.textContent = 'Ingrese el número de pasaporte';
-                    helpText.className = 'text-xs text-gray-500 mt-1';
+                    helpText.className = 'text-xs text-slate-500 mt-1';
                     break;
                 case '37': // Otro
                     numDocInput.placeholder = 'Otro documento de identificación';
                     helpText.textContent = 'Ingrese el número de documento';
-                    helpText.className = 'text-xs text-gray-500 mt-1';
+                    helpText.className = 'text-xs text-slate-500 mt-1';
                     break;
                 default:
                     numDocInput.placeholder = 'Seleccione primero el tipo de documento';
                     helpText.textContent = 'Seleccione el tipo de documento';
-                    helpText.className = 'text-xs text-gray-500 mt-1';
+                    helpText.className = 'text-xs text-slate-500 mt-1';
             }
         });
 

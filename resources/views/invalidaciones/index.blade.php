@@ -7,14 +7,14 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
-<body class="bg-gray-100">
+<body class="bg-slate-50">
     @include('components.navbar')
 
     <div class="container mx-auto px-4 py-8">
         <div class="max-w-7xl mx-auto">
-            <div class="bg-white rounded-lg shadow-lg p-6">
+            <div class="bg-white rounded-xl shadow-[0_1px_3px_0_rgb(0_0_0/0.06),0_4px_12px_-2px_rgb(0_0_0/0.06)] border border-slate-100 p-6">
                 <div class="flex justify-between items-center mb-6">
-                    <h1 class="text-3xl font-bold text-gray-800">Eventos de Invalidación</h1>
+                    <h1 class="text-3xl font-bold text-slate-800">Eventos de Invalidación</h1>
                     <a href="{{ route('invalidaciones.seleccionar') }}"
                        class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition duration-150 ease-in-out shadow-md">
                         Nueva Invalidación
@@ -36,19 +36,19 @@
                 <!-- Tabla de eventos -->
                 <div class="overflow-x-auto">
                     <table class="min-w-full table-auto">
-                        <thead class="bg-gray-200">
+                        <thead class="bg-slate-200">
                             <tr>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Código</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Factura</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Tipo</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Fecha Evento</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Estado</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Acciones</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Código</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Factura</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Tipo</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Fecha Evento</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Estado</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Acciones</th>
                             </tr>
                         </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
+                        <tbody class="bg-white divide-y divide-slate-100">
                             @forelse($eventos as $evento)
-                                <tr class="hover:bg-gray-50">
+                                <tr class="hover:bg-slate-50">
                                     <td class="px-4 py-4 whitespace-nowrap">
                                         <div class="text-sm font-mono text-gray-900">
                                             {{ substr($evento->codigo_invalidacion, 0, 8) }}...
@@ -58,7 +58,7 @@
                                         <div class="text-sm font-semibold text-gray-900">
                                             {{ $evento->factura->numero_control }}
                                         </div>
-                                        <div class="text-xs text-gray-500">
+                                        <div class="text-xs text-slate-500">
                                             {{ $evento->factura->receptor_nombre }}
                                         </div>
                                     </td>
@@ -82,7 +82,7 @@
                                                 'error' => 'bg-red-100 text-red-800',
                                             ];
                                         @endphp
-                                        <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full {{ $estadoClasses[$evento->estado] ?? 'bg-gray-100 text-gray-800' }}">
+                                        <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full {{ $estadoClasses[$evento->estado] ?? 'bg-slate-100 text-slate-800' }}">
                                             {{ ucfirst($evento->estado) }}
                                         </span>
                                     </td>
@@ -108,7 +108,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="px-4 py-8 text-center text-gray-500">
+                                    <td colspan="6" class="px-4 py-8 text-center text-slate-500">
                                         No hay eventos de invalidación registrados.
                                     </td>
                                 </tr>
