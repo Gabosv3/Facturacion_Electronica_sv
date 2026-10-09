@@ -74,6 +74,20 @@ class HomeController extends Controller
             ];
         });
 
+        // Comparativo de ventas de los últimos 12 meses
+        $ventasUltimosMeses = collect(range(11, 0))->map(function ($mesesAtras) {
+            $fecha = now()->subMonthsNoOverflow($mesesAtras);
+            $total = Factura::whereMonth('fecha_emision', $fecha->month)
+                ->whereYear('fecha_emision', $fecha->year)
+                ->whereIn('estado', ['enviado_mh', 'firmado', 'firmado_contingencia'])
+                ->sum('total_pagar');
+            return [
+                'mes' => ucfirst($fecha->translatedFormat('M')) . ' ' . $fecha->format('y'),
+                'total' => (float) $total,
+                'esMesActual' => $fecha->isSameMonth(now()) && $fecha->isSameYear(now()),
+            ];
+        });
+
         return view('home.index', compact(
             'totalVentasMes',
             'cantidadFacturasMes',
@@ -88,7 +102,8 @@ class HomeController extends Controller
             'contingenciaActiva',
             'tokenActivo',
             'ultimasFacturas',
-            'ventasUltimos7Dias'
+            'ventasUltimos7Dias',
+            'ventasUltimosMeses'
         ));
     }
 }

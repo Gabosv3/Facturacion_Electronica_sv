@@ -155,6 +155,22 @@
         </div>
     </div>
 
+    <!-- Comparativo mensual -->
+    @php $maxVentaMes = max(1, $ventasUltimosMeses->max('total')); @endphp
+    <div class="bg-white rounded-xl border border-slate-100 shadow-[0_1px_3px_0_rgb(0_0_0_/_0.06)] p-5 mb-6">
+        <h2 class="text-sm font-semibold text-slate-700 mb-4">Comparativo de ventas — últimos 12 meses</h2>
+        <div class="flex items-end justify-between gap-1.5 h-44 overflow-x-auto">
+            @foreach($ventasUltimosMeses as $mesData)
+                <div class="flex-1 min-w-[32px] flex flex-col items-center justify-end h-full gap-1.5 group">
+                    <span class="text-[10px] text-slate-400 font-medium opacity-0 group-hover:opacity-100 transition whitespace-nowrap">${{ number_format($mesData['total'], 0) }}</span>
+                    <div class="w-full {{ $mesData['esMesActual'] ? 'bg-blue-500' : 'bg-blue-100 hover:bg-blue-400' }} transition-colors rounded-md"
+                         style="height: {{ max(4, round(($mesData['total'] / $maxVentaMes) * 100)) }}%"></div>
+                    <span class="text-[10px] {{ $mesData['esMesActual'] ? 'text-blue-600 font-bold' : 'text-slate-400 font-medium' }} whitespace-nowrap">{{ $mesData['mes'] }}</span>
+                </div>
+            @endforeach
+        </div>
+    </div>
+
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
         <!-- Documentos por tipo -->
         <div class="bg-white rounded-xl border border-slate-100 shadow-[0_1px_3px_0_rgb(0_0_0_/_0.06)] p-5">

@@ -21,16 +21,22 @@
                 <!-- Facturación -->
                 <div class="relative nav-group" id="navFacturacion">
                     <button type="button" onclick="toggleDropdown('navFacturacionPanel')"
-                            class="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs(['facturas.*','invalidaciones.*']) ? 'text-blue-700 bg-blue-50' : 'text-slate-600 hover:text-blue-700 hover:bg-slate-50' }}">
+                            class="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs(['facturas.*','invalidaciones.*','clientes.*','cotizaciones.*']) ? 'text-blue-700 bg-blue-50' : 'text-slate-600 hover:text-blue-700 hover:bg-slate-50' }}">
                         Facturación
                         <svg class="w-3.5 h-3.5 opacity-60" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
                     </button>
                     <div id="navFacturacionPanel" class="dropdown-panel hidden absolute left-0 mt-2 w-56 bg-white rounded-xl shadow-[0_12px_32px_-8px_rgba(30,58,138,0.2)] border border-slate-100 overflow-hidden">
+                        <a href="{{ route('cotizaciones.index') }}" class="flex items-center gap-2.5 px-4 py-2.5 text-sm {{ request()->routeIs('cotizaciones.*') ? 'text-blue-700 bg-blue-50 font-medium' : 'text-slate-700 hover:bg-slate-50' }} transition">
+                            📝 Cotizaciones
+                        </a>
                         <a href="{{ route('facturas.index') }}" class="flex items-center gap-2.5 px-4 py-2.5 text-sm {{ request()->routeIs('facturas.*') ? 'text-blue-700 bg-blue-50 font-medium' : 'text-slate-700 hover:bg-slate-50' }} transition">
                             📄 Facturas
                         </a>
                         <a href="{{ route('invalidaciones.index') }}" class="flex items-center gap-2.5 px-4 py-2.5 text-sm {{ request()->routeIs('invalidaciones.*') ? 'text-blue-700 bg-blue-50 font-medium' : 'text-slate-700 hover:bg-slate-50' }} transition">
                             ❌ Invalidaciones
+                        </a>
+                        <a href="{{ route('clientes.index') }}" class="flex items-center gap-2.5 px-4 py-2.5 text-sm {{ request()->routeIs('clientes.*') ? 'text-blue-700 bg-blue-50 font-medium' : 'text-slate-700 hover:bg-slate-50' }} transition">
+                            👥 Clientes
                         </a>
                     </div>
                 </div>
@@ -55,13 +61,19 @@
                 <!-- Herramientas -->
                 <div class="relative nav-group" id="navHerramientas">
                     <button type="button" onclick="toggleDropdown('navHerramientasPanel')"
-                            class="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs(['kardex.*','admin.tokens.*']) ? 'text-blue-700 bg-blue-50' : 'text-slate-600 hover:text-blue-700 hover:bg-slate-50' }}">
+                            class="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs(['kardex.*','admin.tokens.*','libro_ventas.*','recordatorios.*']) ? 'text-blue-700 bg-blue-50' : 'text-slate-600 hover:text-blue-700 hover:bg-slate-50' }}">
                         Herramientas
                         <svg class="w-3.5 h-3.5 opacity-60" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
                     </button>
                     <div id="navHerramientasPanel" class="dropdown-panel hidden absolute left-0 mt-2 w-56 bg-white rounded-xl shadow-[0_12px_32px_-8px_rgba(30,58,138,0.2)] border border-slate-100 overflow-hidden">
                         <a href="{{ route('kardex.index') }}" class="flex items-center gap-2.5 px-4 py-2.5 text-sm {{ request()->routeIs('kardex.*') ? 'text-blue-700 bg-blue-50 font-medium' : 'text-slate-700 hover:bg-slate-50' }} transition">
                             📦 Kardex
+                        </a>
+                        <a href="{{ route('libro_ventas.index') }}" class="flex items-center gap-2.5 px-4 py-2.5 text-sm {{ request()->routeIs('libro_ventas.*') ? 'text-blue-700 bg-blue-50 font-medium' : 'text-slate-700 hover:bg-slate-50' }} transition">
+                            📊 Libro de Ventas
+                        </a>
+                        <a href="{{ route('recordatorios.index') }}" class="flex items-center gap-2.5 px-4 py-2.5 text-sm {{ request()->routeIs('recordatorios.*') ? 'text-blue-700 bg-blue-50 font-medium' : 'text-slate-700 hover:bg-slate-50' }} transition">
+                            🔔 Recordatorios
                         </a>
                         <a href="{{ route('admin.tokens.index') }}" class="flex items-center gap-2.5 px-4 py-2.5 text-sm {{ request()->routeIs('admin.tokens.*') ? 'text-blue-700 bg-blue-50 font-medium' : 'text-slate-700 hover:bg-slate-50' }} transition">
                             🔑 Tokens
@@ -151,6 +163,8 @@
                 <div class="flex flex-col gap-0.5">
                     <a href="{{ route('facturas.index') }}" class="px-3 py-2.5 rounded-lg text-sm font-medium {{ request()->routeIs('facturas.*') ? 'text-blue-700 bg-blue-50' : 'text-slate-600' }}">📄 Facturas</a>
                     <a href="{{ route('invalidaciones.index') }}" class="px-3 py-2.5 rounded-lg text-sm font-medium {{ request()->routeIs('invalidaciones.*') ? 'text-blue-700 bg-blue-50' : 'text-slate-600' }}">❌ Invalidaciones</a>
+                    <a href="{{ route('cotizaciones.index') }}" class="px-3 py-2.5 rounded-lg text-sm font-medium {{ request()->routeIs('cotizaciones.*') ? 'text-blue-700 bg-blue-50' : 'text-slate-600' }}">📝 Cotizaciones</a>
+                    <a href="{{ route('clientes.index') }}" class="px-3 py-2.5 rounded-lg text-sm font-medium {{ request()->routeIs('clientes.*') ? 'text-blue-700 bg-blue-50' : 'text-slate-600' }}">👥 Clientes</a>
                 </div>
             </div>
 
@@ -166,6 +180,8 @@
                 <p class="px-1 text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Herramientas</p>
                 <div class="flex flex-col gap-0.5">
                     <a href="{{ route('kardex.index') }}" class="px-3 py-2.5 rounded-lg text-sm font-medium {{ request()->routeIs('kardex.*') ? 'text-blue-700 bg-blue-50' : 'text-slate-600' }}">📦 Kardex</a>
+                    <a href="{{ route('libro_ventas.index') }}" class="px-3 py-2.5 rounded-lg text-sm font-medium {{ request()->routeIs('libro_ventas.*') ? 'text-blue-700 bg-blue-50' : 'text-slate-600' }}">📊 Libro de Ventas</a>
+                    <a href="{{ route('recordatorios.index') }}" class="px-3 py-2.5 rounded-lg text-sm font-medium {{ request()->routeIs('recordatorios.*') ? 'text-blue-700 bg-blue-50' : 'text-slate-600' }}">🔔 Recordatorios</a>
                     <a href="{{ route('admin.tokens.index') }}" class="px-3 py-2.5 rounded-lg text-sm font-medium {{ request()->routeIs('admin.tokens.*') ? 'text-blue-700 bg-blue-50' : 'text-slate-600' }}">🔑 Tokens</a>
                 </div>
             </div>

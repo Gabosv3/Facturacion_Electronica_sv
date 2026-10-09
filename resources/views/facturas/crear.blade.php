@@ -14,18 +14,32 @@
 
     <div class="container mx-auto px-4 py-8">
         <div class="max-w-5xl mx-auto">
-            <div class="bg-white rounded-xl shadow-[0_1px_3px_0_rgb(0_0_0/0.06),0_4px_12px_-2px_rgb(0_0_0/0.06)] border border-slate-100 p-6">
-                <h1 class="text-3xl font-bold text-slate-800 mb-6">Generar Factura Electrónica</h1>
+            <div class="flex items-center gap-3 mb-5">
+                <a href="{{ route('facturas.index') }}" class="text-slate-400 hover:text-slate-600 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+                </a>
+                <div>
+                    <h1 class="text-2xl font-bold text-slate-800 tracking-tight">Generar Factura Electrónica</h1>
+                    <p class="text-sm text-slate-500 mt-0.5">DTE-01 · Consumidor Final</p>
+                </div>
+            </div>
 
+            <div class="bg-white rounded-2xl shadow-[0_1px_3px_0_rgb(0_0_0/0.06),0_4px_12px_-2px_rgb(0_0_0/0.06)] border border-slate-100 p-6 sm:p-8">
                 @if(session('error'))
-                    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-                        {{ session('error') }}
+                    <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-5 text-sm">
+                        ⚠️ {{ session('error') }}
                     </div>
                 @endif
 
                 @if(session('warning'))
-                    <div class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded mb-4">
-                        {{ session('warning') }}
+                    <div class="bg-amber-50 border border-amber-200 text-amber-700 px-4 py-3 rounded-xl mb-5 text-sm">
+                        🔔 {{ session('warning') }}
+                    </div>
+                @endif
+
+                @if($cotizacionPrefill ?? null)
+                    <div class="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-xl mb-5 text-sm">
+                        📋 Datos cargados desde una cotización. Completa los campos fiscales que falten (tipo/número de documento, dirección) antes de generar.
                     </div>
                 @endif
 
@@ -36,10 +50,10 @@
                     <input type="hidden" name="motor_clientes_ids" id="motorClientesIds" value="">
 
                     <!-- Checkbox Clientes Varios -->
-                    <div class="mb-6 p-4 bg-yellow-50 border-2 border-yellow-300 rounded-lg">
+                    <div class="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
                         <div class="flex items-center gap-3">
-                            <input type="checkbox" id="clientesVarios" name="clientes_varios" value="1" class="w-5 h-5 rounded border-slate-200 text-blue-600 focus:ring-blue-500">
-                            <label for="clientesVarios" class="text-lg font-semibold text-slate-800 cursor-pointer">
+                            <input type="checkbox" id="clientesVarios" name="clientes_varios" value="1" class="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                            <label for="clientesVarios" class="text-base font-semibold text-slate-800 cursor-pointer">
                                 Factura de Clientes Varios
                             </label>
                         </div>
@@ -50,7 +64,7 @@
 
                     <!-- Datos del Receptor -->
                     <div class="mb-8" id="datosClienteSection">
-                        <h2 class="text-xl font-semibold text-slate-700 mb-4 border-b pb-2">Datos del Cliente</h2>
+                        <h2 class="text-sm font-bold text-slate-700 mb-4 pb-2 border-b border-slate-100 uppercase tracking-wide">Datos del Cliente</h2>
                         
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
@@ -117,7 +131,7 @@
 
                     <!-- Dirección del Receptor -->
                     <div class="mb-8" id="direccionClienteSection">
-                        <h2 class="text-xl font-semibold text-slate-700 mb-4 border-b pb-2">Dirección del Cliente</h2>
+                        <h2 class="text-sm font-bold text-slate-700 mb-4 pb-2 border-b border-slate-100 uppercase tracking-wide">Dirección del Cliente</h2>
                         
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
@@ -158,16 +172,16 @@
 
                     <!-- Items de la Factura -->
                     <div class="mb-8">
-                        <div class="flex justify-between items-center mb-4">
-                            <h2 class="text-xl font-semibold text-slate-700">Productos/Servicios</h2>
+                        <div class="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
+                            <h2 class="text-sm font-bold text-slate-700 uppercase tracking-wide">Productos/Servicios</h2>
                             <div class="flex items-center gap-2">
-                                <input type="checkbox" id="precioIncluyeIva" name="precio_incluye_iva" value="1" checked class="rounded">
-                                <label for="precioIncluyeIva" class="text-sm text-slate-700">Precio incluye IVA</label>
+                                <input type="checkbox" id="precioIncluyeIva" name="precio_incluye_iva" value="1" checked class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                <label for="precioIncluyeIva" class="text-sm text-slate-600">Precio incluye IVA</label>
                             </div>
                         </div>
-                        
+
                         <div id="itemsContainer">
-                            <div class="item-row bg-slate-50 p-4 rounded-lg mb-4">
+                            <div class="item-row bg-slate-50 border border-slate-100 p-4 rounded-xl mb-4">
                                 <input type="hidden" name="items[0][producto_id]" class="producto-id" value="">
                                 <div class="grid grid-cols-1 md:grid-cols-7 gap-4">
                                     <div>
@@ -216,14 +230,15 @@
                             </div>
                         </div>
 
-                        <button type="button" id="addItem" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
-                            + Agregar Item
+                        <button type="button" id="addItem" class="flex items-center gap-1.5 bg-white hover:bg-slate-50 text-blue-600 font-medium text-sm px-4 py-2 rounded-lg border border-blue-200 transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                            Agregar Item
                         </button>
                     </div>
 
                     <!-- Resumen y Condiciones -->
                     <div class="mb-8">
-                        <h2 class="text-xl font-semibold text-slate-700 mb-4 border-b pb-2">Condiciones de Pago</h2>
+                        <h2 class="text-sm font-bold text-slate-700 mb-4 pb-2 border-b border-slate-100 uppercase tracking-wide">Condiciones de Pago</h2>
                         
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
@@ -259,30 +274,30 @@
                     </div>
 
                     <!-- Resumen de Totales -->
-                    <div class="bg-blue-50 p-6 rounded-lg mb-6">
-                        <h3 class="text-lg font-semibold text-slate-700 mb-4">Resumen</h3>
+                    <div class="bg-slate-50 border border-slate-100 p-5 rounded-xl mb-6">
+                        <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wide mb-3">Resumen</h3>
                         <div class="space-y-2">
-                            <div class="flex justify-between">
-                                <span class="text-slate-500">Subtotal (sin IVA):</span>
-                                <span class="font-semibold" id="subtotal">$0.00</span>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-slate-500" id="subtotalLabel">Subtotal:</span>
+                                <span class="font-semibold text-slate-700" id="subtotal">$0.00</span>
                             </div>
-                            <div class="flex justify-between" style="display: none">
-                                <span class="text-slate-500">IVA (13%):</span>
-                                <span class="font-semibold" id="iva">$0.00</span>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-slate-500" id="ivaLabel">IVA (13%, incluido):</span>
+                                <span class="font-semibold text-slate-700" id="iva">$0.00</span>
                             </div>
-                            <div class="flex justify-between text-xl font-bold text-blue-600 border-t pt-2">
-                                <span>Total:</span>
+                            <div class="flex justify-between text-xl font-bold text-blue-600 border-t border-slate-200 pt-2">
+                                <span>Total a pagar:</span>
                                 <span id="total">$0.00</span>
                             </div>
                         </div>
                     </div>
 
                     <!-- Botones -->
-                    <div class="flex gap-4">
-                        <button type="submit" id="submitBtn" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-lg">
+                    <div class="flex gap-3">
+                        <button type="submit" id="submitBtn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition shadow-sm">
                             Generar y Firmar Factura
                         </button>
-                        <a href="{{ route('facturas.index') }}" class="bg-slate-500 hover:bg-gray-600 text-white font-semibold px-6 py-3 rounded-lg">
+                        <a href="{{ route('facturas.index') }}" class="bg-white hover:bg-slate-50 text-slate-600 font-medium px-6 py-3 rounded-lg border border-slate-200 transition">
                             Cancelar
                         </a>
                     </div>
@@ -365,7 +380,7 @@
         document.getElementById('addItem').addEventListener('click', function() {
             const container = document.getElementById('itemsContainer');
             const newItem = document.createElement('div');
-            newItem.className = 'item-row bg-slate-50 p-4 rounded-lg mb-4';
+            newItem.className = 'item-row bg-slate-50 border border-slate-100 p-4 rounded-xl mb-4';
             
             newItem.innerHTML = `
                 <input type="hidden" name="items[${itemCount}][producto_id]" class="producto-id" value="">
@@ -517,6 +532,8 @@
                 // Total = Subtotal (NO sumar IVA)
                 const total = subtotal;
 
+                document.getElementById('subtotalLabel').textContent = 'Subtotal (con IVA incluido):';
+                document.getElementById('ivaLabel').textContent = 'IVA (13%, ya incluido):';
                 document.getElementById('subtotal').textContent = '$' + subtotal.toFixed(2);
                 document.getElementById('iva').textContent = '$' + totalIva.toFixed(2);
                 document.getElementById('total').textContent = '$' + total.toFixed(2);
@@ -535,6 +552,8 @@
                 const totalIva = subtotal * tasaIva;
                 const total = subtotal + totalIva;
 
+                document.getElementById('subtotalLabel').textContent = 'Subtotal (sin IVA):';
+                document.getElementById('ivaLabel').textContent = 'IVA (13%, se suma):';
                 document.getElementById('subtotal').textContent = '$' + subtotal.toFixed(2);
                 document.getElementById('iva').textContent = '$' + totalIva.toFixed(2);
                 document.getElementById('total').textContent = '$' + total.toFixed(2);
@@ -1117,26 +1136,163 @@
             }
         }, true); // Usar captura en lugar de burbuja
 
-        // Confirmación final
+        // ==========================================
+        // Vista previa de la factura antes de generarla
+        // ==========================================
+        function construirVistaPreviaHtml() {
+            const esClientesVarios = document.getElementById('clientesVarios').checked;
+            const nombreCliente = esClientesVarios
+                ? 'CLIENTES VARIOS'
+                : (document.querySelector('input[name="receptor_nombre"]').value || '—');
+            const numDocumento = esClientesVarios
+                ? ''
+                : (document.getElementById('receptor_num_documento').value || '—');
+
+            const condicionTexto = document.querySelector('select[name="condicion_operacion"]').selectedOptions[0]?.textContent || '';
+            const formaPagoTexto = document.querySelector('select[name="forma_pago"]').selectedOptions[0]?.textContent || '';
+
+            let filasHtml = '';
+            document.querySelectorAll('.item-row').forEach(row => {
+                const descripcion = row.querySelector('input[name*="[descripcion]"]')?.value || '';
+                const cantidad = parseFloat(row.querySelector('.cantidad')?.value) || 0;
+                const precio = parseFloat(row.querySelector('.precio')?.value) || 0;
+                const descuento = parseFloat(row.querySelector('.descuento')?.value) || 0;
+                const totalLinea = (cantidad * precio) - descuento;
+
+                if (!descripcion && cantidad === 0) return;
+
+                filasHtml += `
+                    <tr>
+                        <td style="padding:6px 8px;border-bottom:1px solid #e2e8f0;text-align:left;">${descripcion || '(sin descripción)'}</td>
+                        <td style="padding:6px 8px;border-bottom:1px solid #e2e8f0;text-align:right;">${cantidad.toFixed(2)}</td>
+                        <td style="padding:6px 8px;border-bottom:1px solid #e2e8f0;text-align:right;">$${precio.toFixed(2)}</td>
+                        <td style="padding:6px 8px;border-bottom:1px solid #e2e8f0;text-align:right;font-weight:600;">$${totalLinea.toFixed(2)}</td>
+                    </tr>`;
+            });
+
+            if (!filasHtml) {
+                filasHtml = `<tr><td colspan="4" style="padding:12px;text-align:center;color:#94a3b8;">Sin productos agregados</td></tr>`;
+            }
+
+            const subtotal = document.getElementById('subtotal').textContent;
+            const iva = document.getElementById('iva').textContent;
+            const total = document.getElementById('total').textContent;
+            const ivaLabel = document.getElementById('ivaLabel').textContent;
+            const subtotalLabel = document.getElementById('subtotalLabel').textContent;
+
+            return `
+                <div style="text-align:left;font-family:Inter,ui-sans-serif,sans-serif;">
+                    <div style="border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;">
+                        <div style="background:#eff6ff;padding:14px 16px;border-bottom:1px solid #dbeafe;">
+                            <div style="font-size:11px;font-weight:700;color:#2563eb;text-transform:uppercase;letter-spacing:0.05em;">Factura Electrónica · DTE-01</div>
+                            <div style="font-size:15px;font-weight:700;color:#1e293b;margin-top:2px;">${nombreCliente}</div>
+                            ${numDocumento ? `<div style="font-size:12px;color:#64748b;">${numDocumento}</div>` : ''}
+                        </div>
+
+                        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+                            <thead>
+                                <tr style="background:#f8fafc;">
+                                    <th style="padding:6px 8px;text-align:left;color:#64748b;font-size:10px;text-transform:uppercase;">Descripción</th>
+                                    <th style="padding:6px 8px;text-align:right;color:#64748b;font-size:10px;text-transform:uppercase;">Cant.</th>
+                                    <th style="padding:6px 8px;text-align:right;color:#64748b;font-size:10px;text-transform:uppercase;">P. Unit.</th>
+                                    <th style="padding:6px 8px;text-align:right;color:#64748b;font-size:10px;text-transform:uppercase;">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>${filasHtml}</tbody>
+                        </table>
+
+                        <div style="padding:14px 16px;background:#f8fafc;border-top:1px solid #e2e8f0;">
+                            <div style="display:flex;justify-content:space-between;font-size:12px;color:#64748b;margin-bottom:4px;">
+                                <span>${subtotalLabel}</span><span>${subtotal}</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;font-size:12px;color:#64748b;margin-bottom:8px;">
+                                <span>${ivaLabel}</span><span>${iva}</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;font-size:17px;font-weight:700;color:#2563eb;border-top:1px solid #cbd5e1;padding-top:8px;">
+                                <span>Total a pagar</span><span>${total}</span>
+                            </div>
+                        </div>
+
+                        <div style="padding:10px 16px;font-size:11px;color:#94a3b8;border-top:1px solid #e2e8f0;">
+                            Condición: ${condicionTexto} &nbsp;·&nbsp; Forma de pago: ${formaPagoTexto}
+                        </div>
+                    </div>
+                    <p style="font-size:11px;color:#94a3b8;margin-top:10px;text-align:center;">
+                        Esta es una vista previa aproximada. El PDF final incluye el sello del Ministerio de Hacienda, código QR y formato oficial.
+                    </p>
+                </div>`;
+        }
+
+        // Confirmación final con vista previa
         document.getElementById('facturaForm').addEventListener('submit', function(e) {
             if (e.defaultPrevented) return; // Si ya hubo error, no mostrar confirmación
 
             e.preventDefault(); // Detener envío
+            const formularioActual = this;
+
             Swal.fire({
-                title: '¿Estás seguro?',
-                text: "Estás a punto de emitir una Factura. Verifica que todos los datos sean correctos.",
-                icon: 'warning',
+                title: 'Vista previa de la factura',
+                html: construirVistaPreviaHtml(),
+                icon: undefined,
+                width: '560px',
                 showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Sí, emitir factura',
-                cancelButtonText: 'Cancelar'
+                confirmButtonColor: '#2563eb',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: '✓ Confirmar y Generar',
+                cancelButtonText: 'Volver a editar',
+                customClass: {
+                    popup: 'text-left'
+                }
             }).then((result) => {
                 if (result.isConfirmed) {
-                    this.submit();
+                    formularioActual.submit();
                 }
             });
         });
+
+        // ==========================================
+        // Precargar datos desde una Cotización (si aplica)
+        // ==========================================
+        @if($cotizacionPrefill ?? null)
+        (function () {
+            const prefill = @json($cotizacionPrefill);
+
+            document.querySelector('input[name="receptor_nombre"]').value = (prefill.cliente_nombre || '').toUpperCase();
+            if (prefill.cliente_telefono) {
+                document.querySelector('input[name="receptor_telefono"]').value = prefill.cliente_telefono;
+            }
+            if (prefill.cliente_correo) {
+                document.querySelector('input[name="receptor_correo"]').value = prefill.cliente_correo;
+            }
+
+            const items = prefill.items || [];
+            items.forEach((item, idx) => {
+                if (idx > 0) {
+                    document.getElementById('addItem').click();
+                }
+
+                const fila = document.querySelectorAll('.item-row')[idx];
+                if (!fila) return;
+
+                const tipoSelect = fila.querySelector('.tipo-item');
+                const codigoInput = fila.querySelector('.codigo-producto');
+
+                // Por defecto "Servicio" para evitar disparar la búsqueda de producto
+                // (la cotización no tiene producto_id real del catálogo de Motors González)
+                if (tipoSelect) {
+                    tipoSelect.value = '2';
+                    tipoSelect.dispatchEvent(new Event('change'));
+                }
+
+                fila.querySelector('input[name*="[descripcion]"]').value = item.descripcion || '';
+                fila.querySelector('.cantidad').value = item.cantidad || 1;
+                fila.querySelector('.precio').value = item.precio_unitario || 0;
+                fila.querySelector('.descuento').value = item.monto_descuento || 0;
+            });
+
+            calcularTotales();
+        })();
+        @endif
     </script>
 </body>
 </html>

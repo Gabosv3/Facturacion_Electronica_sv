@@ -49,7 +49,7 @@
                 @endif
 
                 @if(session('warning'))
-                    <div class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded mb-4">
+                    <div class="bg-amber-50 border border-amber-200 text-amber-700 px-4 py-3 rounded-xl mb-4 text-sm">
                         {{ session('warning') }}
                     </div>
                 @endif
@@ -60,7 +60,7 @@
 
                     <!-- Datos del Receptor -->
                     <div class="mb-8">
-                        <h2 class="text-xl font-semibold text-slate-700 mb-4 border-b pb-2">Datos del Cliente</h2>
+                        <h2 class="text-sm font-bold text-slate-700 mb-4 pb-2 border-b border-slate-100 uppercase tracking-wide">Datos del Cliente</h2>
                         
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
@@ -122,7 +122,7 @@
 
                     <!-- Dirección del Receptor -->
                     <div class="mb-8">
-                        <h2 class="text-xl font-semibold text-slate-700 mb-4 border-b pb-2">Dirección del Cliente</h2>
+                        <h2 class="text-sm font-bold text-slate-700 mb-4 pb-2 border-b border-slate-100 uppercase tracking-wide">Dirección del Cliente</h2>
                         
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
@@ -171,7 +171,7 @@
                         </div>
                         
                         <div id="itemsContainer">
-                            <div class="item-row bg-slate-50 p-4 rounded-lg mb-4">
+                            <div class="item-row bg-slate-50 border border-slate-100 p-4 rounded-xl mb-4">
                                 <input type="hidden" name="items[0][producto_id]" class="producto-id" value="">
                                 <div class="grid grid-cols-1 md:grid-cols-7 gap-4">
                                     <div>
@@ -226,14 +226,15 @@
                             </div>
                         </div>
 
-                        <button type="button" id="addItem" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
-                            + Agregar Item
+                        <button type="button" id="addItem" class="flex items-center gap-1.5 bg-white hover:bg-slate-50 text-blue-600 font-medium text-sm px-4 py-2 rounded-lg border border-blue-200 transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                            Agregar Item
                         </button>
                     </div>
 
                     <!-- Resumen y Condiciones -->
                     <div class="mb-8">
-                        <h2 class="text-xl font-semibold text-slate-700 mb-4 border-b pb-2">Condiciones de Pago</h2>
+                        <h2 class="text-sm font-bold text-slate-700 mb-4 pb-2 border-b border-slate-100 uppercase tracking-wide">Condiciones de Pago</h2>
                         
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
@@ -269,7 +270,7 @@
                     </div>
 
                     <!-- Resumen de Totales -->
-                    <div class="bg-blue-50 p-6 rounded-lg mb-6">
+                    <div class="bg-slate-50 border border-slate-100 p-5 rounded-xl mb-6">
                         <h3 class="text-lg font-semibold text-slate-700 mb-4">Resumen</h3>
                         <div class="space-y-2">
                             <div class="flex justify-between text-slate-500">
@@ -332,7 +333,7 @@
         document.getElementById('addItem').addEventListener('click', function() {
             const container = document.getElementById('itemsContainer');
             const newItem = document.createElement('div');
-            newItem.className = 'item-row bg-slate-50 p-4 rounded-lg mb-4';
+            newItem.className = 'item-row bg-slate-50 border border-slate-100 p-4 rounded-xl mb-4';
             newItem.innerHTML = `
                 <input type="hidden" name="items[${itemCount}][producto_id]" class="producto-id" value="">
                 <div class="grid grid-cols-1 md:grid-cols-7 gap-4">

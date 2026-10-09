@@ -36,7 +36,9 @@ class FacturaController extends Controller
      */
     public function create()
     {
-        return view('facturas.crear');
+        $cotizacionPrefill = Session::get('cotizacion_prefill');
+
+        return view('facturas.crear', compact('cotizacionPrefill'));
     }
 
     /**

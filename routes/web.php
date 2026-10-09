@@ -9,6 +9,10 @@ use App\Http\Controllers\ConsultaController;
 use App\Http\Controllers\InvalidacionController;
 use App\Http\Controllers\KardexController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\ClienteController;
+use App\Http\Controllers\LibroVentasController;
+use App\Http\Controllers\RecordatorioController;
+use App\Http\Controllers\CotizacionController;
 
 // Rutas públicas (sin autenticación)
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
@@ -100,6 +104,32 @@ Route::prefix('kardex')->name('kardex.')->group(function () {
     Route::get('/', [KardexController::class, 'index'])->name('index');
     Route::post('/exportar', [KardexController::class, 'exportar'])->name('exportar');
     Route::get('/debug-api', [KardexController::class, 'debugApi'])->name('debug_api');
+});
+
+// Rutas de Clientes (consumo detallado por cliente)
+Route::prefix('clientes')->name('clientes.')->group(function () {
+    Route::get('/', [ClienteController::class, 'index'])->name('index');
+    Route::get('/{documento}', [ClienteController::class, 'show'])->where('documento', '.*')->name('show');
+});
+
+// Ruta de Libro de Ventas (reporte mensual de IVA)
+Route::prefix('libro-ventas')->name('libro_ventas.')->group(function () {
+    Route::get('/', [LibroVentasController::class, 'index'])->name('index');
+    Route::get('/exportar', [LibroVentasController::class, 'exportar'])->name('exportar');
+});
+
+// Ruta de Recordatorios de Mantenimiento
+Route::get('/recordatorios', [RecordatorioController::class, 'index'])->name('recordatorios.index');
+
+// Rutas de Cotizaciones
+Route::prefix('cotizaciones')->name('cotizaciones.')->group(function () {
+    Route::get('/', [CotizacionController::class, 'index'])->name('index');
+    Route::get('/crear', [CotizacionController::class, 'create'])->name('create');
+    Route::post('/guardar', [CotizacionController::class, 'store'])->name('store');
+    Route::get('/{cotizacion}', [CotizacionController::class, 'show'])->name('show');
+    Route::post('/{cotizacion}/estado', [CotizacionController::class, 'cambiarEstado'])->name('cambiarEstado');
+    Route::post('/{cotizacion}/convertir', [CotizacionController::class, 'convertirAFactura'])->name('convertir');
+    Route::delete('/{cotizacion}', [CotizacionController::class, 'destroy'])->name('destroy');
 });
 
 // Ruta de logout

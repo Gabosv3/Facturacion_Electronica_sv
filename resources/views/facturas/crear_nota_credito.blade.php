@@ -27,7 +27,7 @@
                     </ul>
                 </div>
 
-                <div class="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-3 rounded mb-6">
+                <div class="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-xl mb-6 text-sm">
                     <p class="font-semibold">⚠️ Importante - Limitación del MH</p>
                     <p class="text-sm mt-2">
                         Las Notas de Crédito <strong>solo se pueden emitir para facturas con NIT</strong> (no DUI).
@@ -46,7 +46,7 @@
                 @endif
 
                 @if(session('warning'))
-                    <div class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded mb-4">
+                    <div class="bg-amber-50 border border-amber-200 text-amber-700 px-4 py-3 rounded-xl mb-4 text-sm">
                         {{ session('warning') }}
                     </div>
                 @endif
@@ -57,7 +57,7 @@
 
                     <!-- Selección de Documento a Relacionar -->
                     <div class="mb-8">
-                        <h2 class="text-xl font-semibold text-slate-700 mb-4 border-b pb-2">Documento a Anular/Ajustar</h2>
+                        <h2 class="text-sm font-bold text-slate-700 mb-4 pb-2 border-b border-slate-100 uppercase tracking-wide">Documento a Anular/Ajustar</h2>
 
                         <div class="grid grid-cols-1 gap-4">
                             <div>
@@ -185,7 +185,7 @@
 
                     <!-- Datos del Receptor (se llenan automáticamente) -->
                     <div class="mb-8">
-                        <h2 class="text-xl font-semibold text-slate-700 mb-4 border-b pb-2">Datos del Cliente (automático)</h2>
+                        <h2 class="text-sm font-bold text-slate-700 mb-4 pb-2 border-b border-slate-100 uppercase tracking-wide">Datos del Cliente (automático)</h2>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
@@ -239,7 +239,7 @@
 
                     <!-- Dirección del Receptor (automático) -->
                     <div class="mb-8">
-                        <h2 class="text-xl font-semibold text-slate-700 mb-4 border-b pb-2">Dirección del Cliente (automático)</h2>
+                        <h2 class="text-sm font-bold text-slate-700 mb-4 pb-2 border-b border-slate-100 uppercase tracking-wide">Dirección del Cliente (automático)</h2>
 
                         <input type="hidden" name="receptor_departamento" id="receptor_departamento" value="06">
                         <input type="hidden" name="receptor_municipio" id="receptor_municipio" value="23">
@@ -264,7 +264,7 @@
                         </div>
 
                         <div id="items-container">
-                            <div class="item-row bg-slate-50 p-4 rounded-lg mb-4">
+                            <div class="item-row bg-slate-50 border border-slate-100 p-4 rounded-xl mb-4">
                                 <input type="hidden" name="items[0][producto_id]" class="producto-id" value="">
                                 <div class="grid grid-cols-1 md:grid-cols-7 gap-4">
                                     <div>
@@ -309,14 +309,15 @@
                             </div>
                         </div>
 
-                        <button type="button" id="addItem" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">
-                            + Agregar Item
+                        <button type="button" id="addItem" class="flex items-center gap-1.5 bg-white hover:bg-slate-50 text-blue-600 font-medium text-sm px-4 py-2 rounded-lg border border-blue-200 transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                            Agregar Item
                         </button>
                     </div>
 
                     <!-- Condiciones de Pago -->
                     <div class="mb-8">
-                        <h2 class="text-xl font-semibold text-slate-700 mb-4 border-b pb-2">Condiciones de Pago</h2>
+                        <h2 class="text-sm font-bold text-slate-700 mb-4 pb-2 border-b border-slate-100 uppercase tracking-wide">Condiciones de Pago</h2>
 
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
@@ -348,7 +349,7 @@
 
                     <!-- Observaciones -->
                     <div class="mb-8">
-                        <h2 class="text-xl font-semibold text-slate-700 mb-4 border-b pb-2">Observaciones</h2>
+                        <h2 class="text-sm font-bold text-slate-700 mb-4 pb-2 border-b border-slate-100 uppercase tracking-wide">Observaciones</h2>
                         <textarea name="observaciones" rows="3" class="w-full border border-slate-200 rounded-lg px-4 py-2" placeholder="Motivo de la nota de crédito..."></textarea>
                     </div>
 
@@ -550,7 +551,7 @@
         document.getElementById('addItem').addEventListener('click', function() {
             const container = document.getElementById('items-container');
             const newItem = `
-                <div class="item-row bg-slate-50 p-4 rounded-lg mb-4">
+                <div class="item-row bg-slate-50 border border-slate-100 p-4 rounded-xl mb-4">
                     <input type="hidden" name="items[${itemCount}][producto_id]" class="producto-id" value="">
                     <div class="grid grid-cols-1 md:grid-cols-7 gap-4">
                         <div>
@@ -804,7 +805,7 @@
                     // Agregar cada item de la factura
                     currentFacturaItems.forEach((item, index) => {
                         const newItem = `
-                            <div class="item-row bg-slate-50 p-4 rounded-lg mb-4">
+                            <div class="item-row bg-slate-50 border border-slate-100 p-4 rounded-xl mb-4">
                                 <input type="hidden" name="items[${index}][producto_id]" class="producto-id" value="${item.producto_id || ''}">
                                 <div class="grid grid-cols-1 md:grid-cols-7 gap-4">
                                     <div>
